@@ -43,13 +43,11 @@ High functional & API keyless Stats (overlay-like) Forge mod, that utilizes Scra
 
 ## Download
 
-Go to the releases tab and download, alternatively, you can join our Discord.
-
-[Discord](https://discord.gg/3cH4yyf5Xp)
+Go to the releases tab and download.
 
 ## Support and feedback
 
-You can open an issue ticket or join our discord to discuss suggestions, feedback and lot more
+You can open an issue ticket.
 
 ## Description
 
@@ -59,8 +57,6 @@ Fontaine is an internal Forge 1.8.9 mod for Hypixel Bedwars, allows its users to
 ## Known issues
 
 - Doesn't work on few VPN's, cant reproduce. PIA & Windscribe should work.
-
-- URCHIN 404: This error is caused by Urchin API not having cached the player the overlay is querying, need to wait for Urchin to fix it.
 
 - Failed to fetch stats for.. 500: Mostly means the account it's querying is very new, and Minecraft API cache can't return an UUID for them. Means they probably have no stats.
 
