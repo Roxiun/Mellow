@@ -16,7 +16,8 @@ import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.ChatComponentText;
-
+import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.util.IChatComponent;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -25,7 +26,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import scala.reflect.internal.Trees;
-
+import net.minecraft.scoreboard.ScorePlayerTeam;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -175,25 +176,50 @@ public class Statsify {
         if (playerTeam == null) {
             return playerName;
         }
-        int length = playerTeam.getColorPrefix().length();
-        if (length == 10) {
-            return playerTeam.getColorPrefix() + playerName + playerTeam.getColorSuffix();
-        }
+
+
+            int length = playerTeam.getColorPrefix().length();
+
+            if (length == 10) {
+                return playerTeam.getColorPrefix() + playerName + playerTeam.getColorSuffix();
+            }
+
+            if(length == 8) {
+                return playerTeam.getColorPrefix() + playerName;
+
+            }
+
         return playerName;
+
     }
 
     private String[] getTabDisplayName2(String playerName) {
 
         ScorePlayerTeam playerTeam = Minecraft.getMinecraft().theWorld.getScoreboard().getPlayersTeam(playerName);
+
         if (playerTeam == null) {
+            mc.thePlayer.addChatMessage(
+                    new ChatComponentText("\u00a7r[\u00a7bF\u00a7r] " + playerName + " |  IS NULL "));
+
             return new String[]{"", playerName, ""};
+
         }
-        int length = playerTeam.getColorPrefix().length();
+            int length = playerTeam.getColorPrefix().length();
+
         if (length == 10) {
             String val[] = new String[3];
             val[0] = playerTeam.getColorPrefix();
             val[1] = playerName;
             val[2] = playerTeam.getColorSuffix();
+            return val;
+        }
+
+        if(length == 8)
+        {
+            String val[] = new String[3];
+            val[0] = playerTeam.getColorPrefix();
+            val[1] = playerName;
+            val[2] = "";
             return val;
         }
         return new String[]{"", playerName, ""};
@@ -608,7 +634,7 @@ public class Statsify {
             }
         } catch (Exception e) {
 
-            return "Failed to fetch stats for " + playerName + " [DOWNSTREAM2]";
+            return EnumChatFormatting.RED +  playerName + " is possibly nicked.";
 
 
 
