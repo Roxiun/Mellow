@@ -550,7 +550,7 @@ public class Statsify {
     }
 
     public String fetch25KarmaStats(String playerName) throws IOException {
-
+        String responsecode = "";
         try {
             String statsUrl = "";
             if(reqUUID) {
@@ -558,10 +558,10 @@ public class Statsify {
                 if (uuid == "NICKED") {
                     return getTabDisplayName(playerName) + " \u00a7r is nicked.";
                 }
-                statsUrl = "https://bwstats.shivam.pro/user/" + uuid;
+                statsUrl = "https://bwstats.shivam.pro/api/user/" + uuid;
             }
             if(!reqUUID){
-                statsUrl = "https://bwstats.shivam.pro/user/" + playerName;
+                statsUrl = "https://bwstats.shivam.pro/api/user/" + playerName;
             }
             HttpURLConnection conn = (HttpURLConnection) (new URL(statsUrl)).openConnection();
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
@@ -569,32 +569,30 @@ public class Statsify {
             InputStream input = (InputStream) (conn.getContentEncoding() != null && conn.getContentEncoding().equalsIgnoreCase("gzip") ? new GZIPInputStream(conn.getInputStream()) : conn.getInputStream());
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             StringBuilder response = new StringBuilder();
-
-            String line;
+            responsecode = conn.getResponseCode() + "-" + conn.getResponseMessage();
+                    String line;
             while ((line = reader.readLine()) != null) {
                 response.append(line);
             }
 
             reader.close();
-            String html = response.toString();
-            String finalKills = extractValue(html, "<td>Final Kills</td><td>", "</td>").replace(",", "");
-            String finalDeaths = extractValue(html, "<td>Final Deaths</td><td>", "</td>").replace(",", "");
+            String json = response.toString();
 
-            String wlrStr = extractValue(html, "<td>Win/Loss Ratio</td><td>", "</td>");
-            String levelStr = extractValue(html, "Level: ", " ");
-            String wsStr = extractValue(html, "<td>Winstreak</td><td>", "</td>");
+            String levelStr = extractJsonValue(json, "\"level\":", ",");
+            String finalKillsStr = extractJsonValue(json, "\"finalKills\":", ",");
+            String finalDeathsStr = extractJsonValue(json, "\"finalDeaths\":", ",");
+            String wlrStr = extractJsonValue(json, "\"wlr\":", ",");
+            String wsStr = extractJsonValue(json, "\"winstreak\":", "[,}]");
 
-            double wlr = Double.parseDouble(wlrStr);
-            int level = Integer.parseInt(levelStr.replaceAll("[^0-9]", ""));
-            int ws = Integer.parseInt(wsStr.replaceAll("[^0-9]", ""));
-            double fkdrValue;
+
+            int level = Integer.parseInt(levelStr.trim());
+            int finalKills = Integer.parseInt(finalKillsStr.trim());
+            int finalDeaths = Integer.parseInt(finalDeathsStr.trim());
+            double wlr = Double.parseDouble(wlrStr.trim());
+            int winstreak = Integer.parseInt(wsStr.trim());
+            double fkdrValue = finalDeaths == 0 ? finalKills : (double) finalKills / finalDeaths;
             try {
 
-                if (finalDeaths.equals("0")) {
-                    fkdrValue = Double.parseDouble(finalKills);
-                } else {
-                    fkdrValue = (double) Integer.parseInt(finalKills) / Integer.parseInt(finalDeaths);
-                }
 
                 if (fkdrValue < minFkdr) {
                     return "";
@@ -609,7 +607,7 @@ public class Statsify {
                 DecimalFormat df = new DecimalFormat("#.##");
                 String formattedFkdr = df.format(fkdrValue);
                 String formattedWinstreak;
-                if (ws < 1) {
+                if (winstreak < 1) {
                     formattedWinstreak = "";
                 } else {
                     formattedWinstreak = formatWinstreak(wsStr);
@@ -620,7 +618,7 @@ public class Statsify {
                     sendToTablist(playerName, tabfkdr, formattedStars);
                 }
                 if (tags) {
-                    String tagsValue = buildTags(playerName, playerName, Integer.parseInt(levelStr), fkdrValue, Integer.parseInt(wsStr), Integer.parseInt(finalKills), Integer.parseInt(finalDeaths));
+                    String tagsValue = buildTags(playerName, playerName, Integer.parseInt(levelStr), fkdrValue, Integer.parseInt(wsStr), finalKills, finalDeaths);
                     if (tagsValue.endsWith(" ")) tagsValue = tagsValue.substring(0, tagsValue.length() - 1);
                     if (formattedWinstreak == "") {
                         return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + " \u00a7r\u00a77|\u00a7r" + " [ " + tagsValue + " ]";
@@ -643,7 +641,7 @@ public class Statsify {
             }
         } catch (Exception e) {
 
-            return EnumChatFormatting.RED +  playerName + " is possibly nicked.";
+                return EnumChatFormatting.RED + playerName + " is possibly nicked. ";
 
 
 
@@ -651,7 +649,19 @@ public class Statsify {
     }
 
 
-
+    private String extractJsonValue(String text, String key, String endDelimiters) {
+        int start = text.indexOf(key);
+        if (start == -1) return "0";
+        start += key.length();
+        StringBuilder sb = new StringBuilder();
+        while (start < text.length()) {
+            char c = text.charAt(start);
+            if (endDelimiters.indexOf(c) >= 0) break;
+            sb.append(c);
+            start++;
+        }
+        return sb.toString().replaceAll("[^0-9.]", ""); // keeps digits and decimal point
+    }
 
 /*      Tags are not completed    */
 
