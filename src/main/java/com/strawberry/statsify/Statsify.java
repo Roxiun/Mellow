@@ -552,45 +552,49 @@ public class Statsify {
     public String fetch25KarmaStats(String playerName) throws IOException {
         String responsecode = "";
         try {
-            String statsUrl = "";
-            if(reqUUID) {
+            String statsUrl;
+            if (reqUUID) {
                 String uuid = fetchUUID(playerName);
-                if (uuid == "NICKED") {
+                if ("NICKED".equals(uuid)) {
                     return getTabDisplayName(playerName) + " \u00a7r is nicked.";
                 }
-                statsUrl = "https://bwstats.shivam.pro/api/user/" + uuid;
+                statsUrl = "https://bwstats.shivam.pro/user/" + uuid;
+            } else {
+                statsUrl = "https://bwstats.shivam.pro/user/" + playerName;
             }
-            if(!reqUUID){
-                statsUrl = "https://bwstats.shivam.pro/api/user/" + playerName;
-            }
-            HttpURLConnection conn = (HttpURLConnection) (new URL(statsUrl)).openConnection();
+
+            HttpURLConnection conn = (HttpURLConnection) new URL(statsUrl).openConnection();
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setRequestProperty("Accept-Encoding", "gzip");
-            InputStream input = (InputStream) (conn.getContentEncoding() != null && conn.getContentEncoding().equalsIgnoreCase("gzip") ? new GZIPInputStream(conn.getInputStream()) : conn.getInputStream());
+
+            InputStream input = "gzip".equalsIgnoreCase(conn.getContentEncoding())
+                    ? new GZIPInputStream(conn.getInputStream())
+                    : conn.getInputStream();
+
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             StringBuilder response = new StringBuilder();
             responsecode = conn.getResponseCode() + "-" + conn.getResponseMessage();
-                    String line;
+            String line;
             while ((line = reader.readLine()) != null) {
                 response.append(line);
             }
-
             reader.close();
-            String json = response.toString();
 
-            String levelStr = extractJsonValue(json, "\"level\":", ",");
-            String finalKillsStr = extractJsonValue(json, "\"finalKills\":", ",");
-            String finalDeathsStr = extractJsonValue(json, "\"finalDeaths\":", ",");
-            String wlrStr = extractJsonValue(json, "\"wlr\":", ",");
-            String wsStr = extractJsonValue(json, "\"winstreak\":", "[,}]");
+            String html = response.toString();
+            String levelStr = extractLevel(html);  // From Quick Stats
+            String finalKillsStr = extractTableStat(html, "Final Kills");
+            String finalDeathsStr = extractTableStat(html, "Final Deaths");
+            String wlrStr = extractTableStat(html, "Win/Loss Ratio");
+            String wsStr = extractTableStat(html, "Winstreak");
 
 
-            int level = Integer.parseInt(levelStr.trim());
-            int finalKills = Integer.parseInt(finalKillsStr.trim());
-            int finalDeaths = Integer.parseInt(finalDeathsStr.trim());
-            double wlr = Double.parseDouble(wlrStr.trim());
-            int winstreak = Integer.parseInt(wsStr.trim());
+            int level = Integer.parseInt(levelStr.replace(",", "").trim());
+            int finalKills = Integer.parseInt(finalKillsStr.replace(",", "").trim());
+            int finalDeaths = Integer.parseInt(finalDeathsStr.replace(",", "").trim());
+            double wlr = Double.parseDouble(wlrStr.replace(",", "").trim());
+            int winstreak = Integer.parseInt(wsStr.replace(",", "").trim());
             double fkdrValue = finalDeaths == 0 ? finalKills : (double) finalKills / finalDeaths;
+
             try {
 
 
@@ -649,21 +653,23 @@ public class Statsify {
     }
 
 
-    private String extractJsonValue(String text, String key, String endDelimiters) {
-        int start = text.indexOf(key);
-        if (start == -1) return "0";
-        start += key.length();
-        StringBuilder sb = new StringBuilder();
-        while (start < text.length()) {
-            char c = text.charAt(start);
-            if (endDelimiters.indexOf(c) >= 0) break;
-            sb.append(c);
-            start++;
-        }
-        return sb.toString().replaceAll("[^0-9.]", ""); // keeps digits and decimal point
+    private static String extractLevel(String html) {
+        // From Quick Stats section
+        Pattern pattern = Pattern.compile(">Level</span><span[^>]*?font-mono[^>]*?>(.*?)</span>");
+        Matcher matcher = pattern.matcher(html);
+        return matcher.find() ? matcher.group(1) : "0";
     }
 
-/*      Tags are not completed    */
+    private static String extractTableStat(String html, String label) {
+        // From Main Mode Statistics table
+        String regex = "<td[^>]*>\\s*" + Pattern.quote(label) + "\\s*</td>\\s*<td[^>]*>(.*?)</td>";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(html);
+        return matcher.find() ? matcher.group(1) : "0";
+    }
+
+
+    /*      Tags are not completed    */
 
     private String buildTags(String name,String uuid, int stars, double fkdr, int ws, int finals, int fdeaths){
         /*
