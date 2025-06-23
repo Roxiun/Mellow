@@ -55,7 +55,7 @@ public class Statsify {
     private Boolean tags = false;
     private Boolean tabstats = true;
     private Boolean urchin = false;
-    private Boolean reqUUID = true;
+    private Boolean reqUUID = false;
     private Boolean autowho = true;
     private String tabFormat = "bracket_star_name_dot_fkdr";
     private static final Map<String, List<String>> playerSuffixes = new HashMap<>();
@@ -333,7 +333,7 @@ public class Statsify {
             for (String playerName : onlinePlayers) {
                 executor.submit(() -> {
                     try {
-                        String stats = fetch25KarmaStats(playerName);
+                        String stats = fetchBedwarsStats(playerName);
                         if (!stats.isEmpty()) {
                             mc.addScheduledTask(() -> mc.thePlayer.addChatMessage(
                                     new ChatComponentText("\u00a7r[\u00a7bF\u00a7r] " + stats)
@@ -372,86 +372,54 @@ public class Statsify {
 
 
     public static String fetchUUID(String username) {
-        String urlString = "https://api.minecraftservices.com/minecraft/profile/lookup/name/" + username;
-        String uuid = null;
-
         try {
-            // Attempt to fetch from the official Minecraft API
-            URL url = new URL(urlString);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String urlString = "https://api.minecraftservices.com/minecraft/profile/lookup/name/" + username;
+            HttpURLConnection connection = (HttpURLConnection) new URL(urlString).openConnection();
             connection.setRequestMethod("GET");
 
             int responseCode = connection.getResponseCode();
-
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                // Handle success response from official API
+            if (responseCode == 200) {
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 StringBuilder response = new StringBuilder();
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
+                String line;
+                while ((line = in.readLine()) != null) response.append(line);
                 in.close();
+                String uuid = extractUUID(response.toString());
+                return uuid != null ? uuid : "NICKED";
+            }
 
-                String responseString = response.toString();
-                uuid = extractUUID(responseString);
-                if (uuid == "NICKED") {
-                    return "NICKED";
-                }
-            } else if (responseCode == 429) {
-                // If the official API returns 429 (Too Many Requests), fall back to minetools API
+            if (responseCode == 404) return "NICKED";
 
-
+            if (responseCode == 429) {
+                // Rate limited, fallback to minetools
                 urlString = "https://api.minetools.eu/uuid/" + username;
-                url = new URL(urlString);
-                connection = (HttpURLConnection) url.openConnection();
+                connection = (HttpURLConnection) new URL(urlString).openConnection();
                 connection.setRequestMethod("GET");
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 StringBuilder response = new StringBuilder();
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
+                String line;
+                while ((line = in.readLine()) != null) response.append(line);
                 in.close();
 
-                String responseString = response.toString();
-
-                String[] parts = responseString.split("\"id\"");
+                if (response.toString().contains("\"id\": null")) return "NICKED";
+                String[] parts = response.toString().split("\"id\":\"");
                 if (parts.length > 1) {
-
-                    String secondPart = parts[1];
-
-
-                    String[] quotes = secondPart.split("\"");
-                    if (quotes.length > 2) {
-
-                        String result = quotes[1];
-                        if (!responseString.contains("\"id\": null")) {
-                            return result;
-                        } else {
-                            return username;
-                        }
-                    }
+                    return parts[1].split("\"")[0];
+                } else {
+                    return "NICKED";
                 }
-            } else if (responseCode == 404) {
-
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(username + " is possibly nicked."));
             }
-        } catch (Exception e) {
 
-            e.printStackTrace();
-        }
+        } catch (Exception ignored) {}
 
-        return uuid;
+        return "NICKED";
     }
 
 
     private static String extractUUID(String response) {
         String[] parts = response.split("\"");
-        if (response.contains("Couldn't find any profile with name")) {
+        if (response.contains("Couldn't")) {
             return "NICKED";
         }
 
@@ -549,107 +517,93 @@ public class Statsify {
         return "";
     }
 
-    public String fetch25KarmaStats(String playerName) throws IOException {
-        String responsecode = "";
+    public String fetchBedwarsStats(String playerName) throws IOException {
         try {
-            String statsUrl;
+        String uuidOrName = playerName;
+
             if (reqUUID) {
                 String uuid = fetchUUID(playerName);
                 if ("NICKED".equals(uuid)) {
-                    return getTabDisplayName(playerName) + " \u00a7r is nicked.";
+                    return getTabDisplayName(playerName) + " \u00a7cis nicked.";
                 }
-                statsUrl = "https://bwstats.shivam.pro/user/" + uuid;
-            } else {
-                statsUrl = "https://bwstats.shivam.pro/user/" + playerName;
+                uuidOrName = uuid;
             }
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(statsUrl).openConnection();
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-            conn.setRequestProperty("Accept-Encoding", "gzip");
-
-            InputStream input = "gzip".equalsIgnoreCase(conn.getContentEncoding())
-                    ? new GZIPInputStream(conn.getInputStream())
-                    : conn.getInputStream();
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-            StringBuilder response = new StringBuilder();
-            responsecode = conn.getResponseCode() + "-" + conn.getResponseMessage();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
+            String stjson = nadeshikoAPI(uuidOrName);
+            if (stjson == null || stjson.isEmpty()) {
+                return getTabDisplayName(playerName) + " \u00a7cis possibly nicked.";
             }
-            reader.close();
 
-            String html = response.toString();
-            String levelStr = extractLevel(html);  // From Quick Stats
-            String finalKillsStr = extractTableStat(html, "Final Kills");
-            String finalDeathsStr = extractTableStat(html, "Final Deaths");
-            String wlrStr = extractTableStat(html, "Win/Loss Ratio");
-            String wsStr = extractTableStat(html, "Winstreak");
+            JsonObject rootObject = new JsonParser().parse(stjson).getAsJsonObject();
+            JsonObject profile = rootObject.getAsJsonObject("profile");
+            String displayedName = profile.has("tagged_name") ? profile.get("tagged_name").getAsString() : playerName;
+            JsonObject ach = rootObject.getAsJsonObject("achievements");
+            String levelStr = ach.has("bedwars_level") ? ach.get("bedwars_level").getAsString() : "0";
+            String formattedStars = formatStars(levelStr);
 
+            JsonObject bedwarsStats = rootObject.getAsJsonObject("stats").getAsJsonObject("Bedwars");
 
-            int level = Integer.parseInt(levelStr.replace(",", "").trim());
-            int finalKills = Integer.parseInt(finalKillsStr.replace(",", "").trim());
-            int finalDeaths = Integer.parseInt(finalDeathsStr.replace(",", "").trim());
-            double wlr = Double.parseDouble(wlrStr.replace(",", "").trim());
-            int winstreak = Integer.parseInt(wsStr.replace(",", "").trim());
+            String finalKillsStr = bedwarsStats.has("final_kills_bedwars") ? bedwarsStats.get("final_kills_bedwars").getAsString() : "0";
+            String finalDeathsStr = bedwarsStats.has("final_deaths_bedwars") ? bedwarsStats.get("final_deaths_bedwars").getAsString() : "0";
+            int wins = bedwarsStats.has("wins_bedwars") ? bedwarsStats.get("wins_bedwars").getAsInt() : 0;
+            int losses = bedwarsStats.has("losses_bedwars") ? bedwarsStats.get("losses_bedwars").getAsInt() : 0;
+            double wlr = losses == 0 ? wins : (double) wins / losses;
+            DecimalFormat dfm = new DecimalFormat("#.##");
+            String wlrStr = dfm.format(wlr);
+            String wsStr = bedwarsStats.has("winstreak") ? bedwarsStats.get("winstreak").getAsString() : "0";
+
+            int finalKills = Integer.parseInt(finalKillsStr.replace(",", ""));
+            int finalDeaths = Integer.parseInt(finalDeathsStr.replace(",", ""));
             double fkdrValue = finalDeaths == 0 ? finalKills : (double) finalKills / finalDeaths;
 
-            try {
-
-
-                if (fkdrValue < minFkdr) {
-                    return "";
-                }
-
-                String fkdrColor = "\u00a77";
-                if (fkdrValue >= 1 && fkdrValue < 3) fkdrColor = "\u00a7f";
-                if (fkdrValue >= 3 && fkdrValue < 8) fkdrColor = "\u00a7a";
-                if (fkdrValue >= 8 && fkdrValue < 16) fkdrColor = "\u00a76";
-                if (fkdrValue >= 16 && fkdrValue < 25) fkdrColor = "\u00a7d";
-                if (fkdrValue > 25) fkdrColor = "\u00a74";
-                DecimalFormat df = new DecimalFormat("#.##");
-                String formattedFkdr = df.format(fkdrValue);
-                String formattedWinstreak;
-                if (winstreak < 1) {
-                    formattedWinstreak = "";
-                } else {
-                    formattedWinstreak = formatWinstreak(wsStr);
-                }
-                String formattedStars = formatStars(levelStr);
-                String tabfkdr = fkdrColor + formattedFkdr;
-                if (tabstats) {
-                    sendToTablist(playerName, tabfkdr, formattedStars);
-                }
-                if (tags) {
-                    String tagsValue = buildTags(playerName, playerName, Integer.parseInt(levelStr), fkdrValue, Integer.parseInt(wsStr), finalKills, finalDeaths);
-                    if (tagsValue.endsWith(" ")) tagsValue = tagsValue.substring(0, tagsValue.length() - 1);
-                    if (formattedWinstreak == "") {
-                        return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + " \u00a7r\u00a77|\u00a7r" + " [ " + tagsValue + " ]";
-                    } else {
-                        return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + " \u00a7r\u00a77|\u00a7r WS: " + formattedWinstreak + "\u00a7r [ " + tagsValue + " ]";
-                    }
-                } else {
-                    if (formattedWinstreak == "")
-                        return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + "\u00a7r";
-                    else
-                        return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + " \u00a7r\u00a77|\u00a7r WS: " + formattedWinstreak + "\u00a7r";
-
-                }
-            } catch (Exception e) {
-
-                return "Failed to fetch stats for " + playerName + " [DOWNSTREAM1]";
-
-
-
+            if (fkdrValue < minFkdr) {
+                return "";
             }
-        } catch (Exception e) {
 
-                return EnumChatFormatting.RED + playerName + " is possibly nicked. ";
+            String fkdrColor = "\u00a77";
+            if (fkdrValue >= 1 && fkdrValue < 3) fkdrColor = "\u00a7f";
+            if (fkdrValue >= 3 && fkdrValue < 8) fkdrColor = "\u00a7a";
+            if (fkdrValue >= 8 && fkdrValue < 16) fkdrColor = "\u00a76";
+            if (fkdrValue >= 16 && fkdrValue < 25) fkdrColor = "\u00a7d";
+            if (fkdrValue > 25) fkdrColor = "\u00a74";
 
+            DecimalFormat df = new DecimalFormat("#.##");
+            String formattedFkdr = df.format(fkdrValue);
+            String formattedWinstreak = "";
+            int winstreak = Integer.parseInt(wsStr.replace(",", "").trim());
+            if (winstreak > 0) {
+                formattedWinstreak = formatWinstreak(wsStr);
+            }
+
+            String tabfkdr = fkdrColor + formattedFkdr;
+            if (tabstats) {
+                sendToTablist(playerName, tabfkdr, formattedStars);
+            }
+
+            if (tags) {
+                String tagsValue = buildTags(playerName, playerName, Integer.parseInt(levelStr), fkdrValue, winstreak, finalKills, finalDeaths);
+                if (tagsValue.endsWith(" ")) {
+                    tagsValue = tagsValue.substring(0, tagsValue.length() - 1);
+                }
+                if (formattedWinstreak.isEmpty()) {
+                    return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + " \u00a7r\u00a77|\u00a7r [ " + tagsValue + " ]";
+                } else {
+                    return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + " \u00a7r\u00a77|\u00a7r WS: " + formattedWinstreak + "\u00a7r [ " + tagsValue + " ]";
+                }
+            } else {
+                if (formattedWinstreak.isEmpty()) {
+                    return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + "\u00a7r";
+                } else {
+                    return getTabDisplayName(playerName) + " \u00a7r" + formattedStars + "\u00a7r\u00a77 |\u00a7r FKDR: " + fkdrColor + formattedFkdr + " \u00a7r\u00a77|\u00a7r WS: " + formattedWinstreak + "\u00a7r";
+                }
+            }
 
 
         }
+        catch (Exception e) {
+            return EnumChatFormatting.RED + playerName + " is possibly nicked.";
+        }
+
     }
 
 
@@ -838,7 +792,7 @@ Prename check end
         }
 
         if (Stars >= 100 && Stars < 200) {
-            color = "\u00a7b";
+            color = "\u00A7f";
             return color + text + "\u272b";
         }
         if (Stars >= 200 && Stars < 300) {
@@ -1186,10 +1140,10 @@ Prename check end
         }
     }
     private String fetchPlayerStatss(String playerName) throws IOException {
-        String uuid = fetchUUID(playerName);
-        String stjson = nadeshikoAPI(uuid);
+
+        String stjson = nadeshikoAPI(playerName);
         if (stjson == null || stjson.isEmpty()) {
-            throw new IOException("Received empty response from API for player: " + playerName);
+            return playerName + " \u00a7c is possibly nicked.";
         }
 
         JsonObject rootObject = new JsonParser().parse(stjson).getAsJsonObject();
