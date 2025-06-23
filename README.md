@@ -47,9 +47,6 @@ High functional & API keyless Stats (overlay-like) Forge mod, that utilizes Scra
 
 Go to the releases tab and download.
 
-## Support and feedback
-
-You can open an issue ticket.
 
 ## Description
 
@@ -59,10 +56,6 @@ Fontaine is an internal Forge 1.8.9 mod for Hypixel Bedwars, allows its users to
 ## Known issues
 
 - Doesn't work on few VPN's, cant reproduce. PIA & Windscribe should work.
-
-- Failed to fetch stats for.. 500: Mostly means the account it's querying is very new, and Minecraft API cache can't return an UUID for them. Means they probably have no stats.
-
-- Urchin is broken.
 
 
 ## How-To
@@ -74,6 +67,8 @@ To **check the stats of players in your game**, type `/who` in-game
 To set the Minimum FKDR to show on `/who`, type `/minfkdr <number>`
 
 To enable / disable **stats on tablist**, type `/tabstats <on/off>`
+
+To see how to **customize the way stats show** on tablist, type  `/tabformat`
 
 To enable / disable **custom tags**, or get information about them, type `/bwtags`
 
