@@ -1139,7 +1139,7 @@ Prename check end
         }
     }
     private String fetchPlayerStatss(String playerName) throws IOException {
-        String uuid = getUUIDFromName(playerName);
+        String uuid = fetchUUID(playerName);
         String stjson = nadeshikoAPI(uuid);
         if (stjson == null || stjson.isEmpty()) {
             return playerName + " \u00a7c is possibly nicked.";
