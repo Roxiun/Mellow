@@ -67,7 +67,21 @@ public class NumberDenicker {
                         nickName,
                         k -> new PotentialNick()
                     );
-                    if (isPlayerInGame(nickName) && !player.finalsChecked) {
+                    if (
+                        isPlayerInGame(nickName) &&
+                        (!player.finalsChecked || !player.fuzzy_finalsChecked)
+                    ) {
+                        mc.addScheduledTask(() ->
+                            mc.thePlayer.addChatMessage(
+                                new ChatComponentText(
+                                    "§4[ND] Attempting to denick " +
+                                        nickName +
+                                        " with " +
+                                        finalNumberStr +
+                                        " finals"
+                                )
+                            )
+                        );
                         processNumbers("finals", nickName, finalNumberStr);
                     }
                 }
@@ -85,7 +99,21 @@ public class NumberDenicker {
                 nickName,
                 k -> new PotentialNick()
             );
-            if (isPlayerInGame(nickName) && !player.bedsChecked) {
+            if (
+                isPlayerInGame(nickName) &&
+                (!player.bedsChecked || !player.fuzzy_bedsChecked)
+            ) {
+                mc.addScheduledTask(() ->
+                    mc.thePlayer.addChatMessage(
+                        new ChatComponentText(
+                            "§4[ND] Attempting to denick " +
+                                nickName +
+                                " with " +
+                                bedNumber +
+                                " beds"
+                        )
+                    )
+                );
                 processNumbers("beds", nickName, bedNumber);
             }
         }
@@ -97,7 +125,7 @@ public class NumberDenicker {
 
         new Thread(() -> {
             try {
-                int[] rangeValues = { 100, 200, 500, 1000 };
+                int[] rangeValues = { 0, 50, 100, 200, 500, 1000 };
                 int[] maxValues = { 5, 10, 20 };
 
                 int rangeIndex = type.equals("finals")
@@ -120,6 +148,54 @@ public class NumberDenicker {
                     max,
                     config.auroraApiKey
                 );
+
+                if (!player.fuzzy_finalsChecked && type == "finals") {
+                    player.fuzzy_finalsChecked = true;
+                    String fuzzy_players = response.data
+                        .stream()
+                        .filter(p -> p.distance <= range)
+                        .map(
+                            p ->
+                                "§a" +
+                                p.name +
+                                " §7(distance: " +
+                                p.distance +
+                                ")"
+                        )
+                        .collect(Collectors.joining(", "));
+                    mc.addScheduledTask(() ->
+                        mc.thePlayer.addChatMessage(
+                            new ChatComponentText(
+                                "§4[ND] §aFound potential players: " +
+                                    fuzzy_players
+                            )
+                        )
+                    );
+                }
+
+                if (!player.fuzzy_bedsChecked && type == "beds") {
+                    player.fuzzy_bedsChecked = true;
+                    String fuzzy_players = response.data
+                        .stream()
+                        .filter(p -> p.distance <= range)
+                        .map(
+                            p ->
+                                "§a" +
+                                p.name +
+                                " §7(distance: " +
+                                p.distance +
+                                ")"
+                        )
+                        .collect(Collectors.joining(", "));
+                    mc.addScheduledTask(() ->
+                        mc.thePlayer.addChatMessage(
+                            new ChatComponentText(
+                                "§4[ND] §aFound potential players: " +
+                                    fuzzy_players
+                            )
+                        )
+                    );
+                }
 
                 if (response != null && response.success) {
                     List<String> matches = response.data
@@ -220,6 +296,9 @@ public class NumberDenicker {
         List<String> potentials = new ArrayList<>();
         boolean finalsChecked = false;
         boolean bedsChecked = false;
+
+        boolean fuzzy_finalsChecked = false;
+        boolean fuzzy_bedsChecked = false;
 
         void setPotentials(List<String> potentials) {
             this.potentials = potentials;

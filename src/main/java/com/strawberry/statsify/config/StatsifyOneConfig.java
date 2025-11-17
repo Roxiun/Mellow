@@ -79,17 +79,17 @@ public class StatsifyOneConfig extends Config {
 
     @Dropdown(
         name = "Finals Range",
-        options = { "100", "200", "500", "1000" },
+        options = { "0", "50", "100", "200", "500" },
         category = "Number Denicker"
     )
-    public int finalsRange = 1; // Index for 200
+    public int finalsRange = 3; // Index for 100
 
     @Dropdown(
         name = "Beds Range",
-        options = { "100", "200", "500", "1000" },
+        options = { "0", "50", "100", "200", "500" },
         category = "Number Denicker"
     )
-    public int bedsRange = 1; // Index for 200
+    public int bedsRange = 1; // Index for 50
 
     @Number(
         name = "Minimum Finals to Check",
