@@ -6,13 +6,14 @@ import com.strawberry.statsify.api.NadeshikoApi;
 import com.strawberry.statsify.api.UrchinApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.scoreboard.ScoreObjective;
-import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
@@ -27,17 +28,24 @@ public class PregameStats {
     private final NadeshikoApi nadeshikoApi;
     private final UrchinApi urchinApi;
     private final MojangApi mojangApi;
+
     public static final Logger LOGGER = LogManager.getLogger("Statsify");
 
-    public static boolean bedwars;
-
+    // runtime state
     private boolean inPregameLobby = false;
+    private boolean inBedwars = false;
 
-    private static final Pattern BEDWARS_PREGAME_LOBBY_JOIN_PATTERN =
-        Pattern.compile("^(\\w+) has joined \\((\\d+)/(\\d+)\\)!$");
+    // prevent multiple lookups
+    private final Set<String> alreadyLookedUp = ConcurrentHashMap.newKeySet();
 
-    private static final Pattern BEDWARS_PREGAME_LOBBY_CHAT_PATTERN =
-        Pattern.compile("^(?:\\[.*?\\]\\s*)*(\\w{3,16})(?::| ») (.*)$");
+    // patterns
+    private static final Pattern BEDWARS_JOIN_PATTERN = Pattern.compile(
+        "^(\\w+) has joined \\((\\d+)/(\\d+)\\)!$"
+    );
+
+    private static final Pattern BEDWARS_CHAT_PATTERN = Pattern.compile(
+        "^(?:\\[.*?\\]\\s*)*(\\w{3,16})(?::| ») (.*)$"
+    );
 
     public PregameStats(StatsifyOneConfig config) {
         this.config = config;
@@ -46,127 +54,122 @@ public class PregameStats {
         this.mojangApi = new MojangApi();
     }
 
+    /** called on world change */
     public void onWorldChange() {
-        this.inPregameLobby = false;
-    }
-
-    private boolean isBedwarsStartMessage(String message) {
-        return (
-            message.equals("Protect your bed and destroy the enemy beds.") ||
-            (message.equals("You will respawn because you still have a bed!") &&
-                !(message.contains(":")) &&
-                !(message.contains("SHOUT")))
-        );
+        inPregameLobby = false;
+        inBedwars = false;
+        alreadyLookedUp.clear();
     }
 
     public void onChat(ClientChatReceivedEvent event) {
+        // feature disabled
         if (!config.pregameStats && !config.pregameTags) return;
 
-        // only denick if bedwars - thanks awruff - https://github.com/awruff/TNTTime
-        bedwars = false;
-
-        // only on hyppixel
+        // only on hypixel
         if (!HypixelUtils.INSTANCE.isHypixel()) return;
 
-        WorldClient world = Minecraft.getMinecraft().theWorld;
-        if (world == null || world.getScoreboard() == null) {
-            return;
+        // detect bedwars once
+        if (!inBedwars) {
+            inBedwars = isBedwarsSidebar();
+            if (!inBedwars) return;
         }
 
-        bedwars = isBedwars(world.getScoreboard());
+        String raw = event.message.getUnformattedText();
+        String message = raw.replaceAll("§.", "").trim();
 
-        if (!bedwars) return;
-
-        String message = event.message.getUnformattedText().trim();
-        message = message.replaceAll("§.", "").trim();
-
-        if (isBedwarsStartMessage(message)) {
-            inPregameLobby = false;
-            return;
-        }
-
-        Matcher pregameJoinMatcher = BEDWARS_PREGAME_LOBBY_JOIN_PATTERN.matcher(
-            message
-        );
-        if (pregameJoinMatcher.find()) {
+        // detect join → enable pregame
+        Matcher joinMatch = BEDWARS_JOIN_PATTERN.matcher(message);
+        if (joinMatch.find()) {
             inPregameLobby = true;
             return;
         }
 
-        if (!inPregameLobby) {
+        // detect start → disable pregame
+        if (
+            message.contains("Protect your bed and destroy the enemy beds.") &&
+            !message.contains(":") &&
+            !message.contains("SHOUT")
+        ) {
+            inPregameLobby = false;
             return;
         }
 
-        Matcher pregameChatMatcher = BEDWARS_PREGAME_LOBBY_CHAT_PATTERN.matcher(
-            message
-        );
-        if (pregameChatMatcher.find()) {
-            String username = pregameChatMatcher.group(1);
-            LOGGER.info(
-                "FORGE: " +
-                    Minecraft.getMinecraft().thePlayer.getName() +
-                    " PARSED: " +
-                    username
-            );
-            if (username.equals(Minecraft.getMinecraft().thePlayer.getName())) {
-                return;
-            }
-            new Thread(() -> {
-                try {
-                    if (PartyManager.getInstance().inParty()) {
-                        UUID uuid = UUID.fromString(
-                            this.mojangApi.getUUIDFromName(username)
-                        );
-                        if (PartyManager.getInstance().isPartyMember(uuid)) {
-                            return;
-                        }
-                    }
-                } catch (Exception e) {
-                    // Player is probably nicked, continue.
-                }
+        if (!inPregameLobby) return;
 
-                if (config.pregameStats) {
-                    try {
-                        String stats = nadeshikoApi.fetchPlayerStats(username);
-                        Minecraft.getMinecraft().addScheduledTask(() ->
-                            Minecraft.getMinecraft().thePlayer.addChatMessage(
-                                new ChatComponentText("§r[§bF§r] " + stats)
-                            )
-                        );
-                    } catch (IOException e) {
-                        Minecraft.getMinecraft().addScheduledTask(() ->
-                            Minecraft.getMinecraft().thePlayer.addChatMessage(
-                                new ChatComponentText(
-                                    "§r[§bF§r] §cFailed to fetch stats for: §r" +
-                                        username +
-                                        ", they might be nicked"
-                                )
-                            )
-                        );
-                    }
+        // parse chat messages and detect players
+        Matcher chatMatch = BEDWARS_CHAT_PATTERN.matcher(message);
+        if (!chatMatch.find()) return;
+
+        String username = chatMatch.group(1);
+
+        // skip self
+        if (username.equalsIgnoreCase(mc.thePlayer.getName())) return;
+
+        // skip if already fetched
+        if (!alreadyLookedUp.add(username)) return;
+
+        // run async
+        new Thread(
+            () -> handlePlayer(username),
+            "Statsify-PregameThread"
+        ).start();
+    }
+
+    /** handles API calls for a single user */
+    private void handlePlayer(String username) {
+        // skip party members
+        try {
+            if (PartyManager.getInstance().inParty()) {
+                UUID uuid = UUID.fromString(
+                    mojangApi.getUUIDFromName(username)
+                );
+                if (PartyManager.getInstance().isPartyMember(uuid)) {
+                    return;
                 }
-                if (config.pregameTags) {
-                    checkUrchinTags(username);
-                }
-            })
-                .start();
+            }
+        } catch (Exception ignored) {}
+
+        if (config.pregameStats) {
+            try {
+                String stats = nadeshikoApi.fetchPlayerStats(username);
+                mc.addScheduledTask(() ->
+                    mc.thePlayer.addChatMessage(
+                        new ChatComponentText("§r[§bF§r] " + stats)
+                    )
+                );
+            } catch (IOException e) {
+                mc.addScheduledTask(() ->
+                    mc.thePlayer.addChatMessage(
+                        new ChatComponentText(
+                            "§r[§bF§r] §cFailed to fetch stats for: §r" +
+                                username +
+                                " (possibly nicked)"
+                        )
+                    )
+                );
+            }
+        }
+
+        if (config.pregameTags) {
+            fetchTags(username);
         }
     }
 
-    private void checkUrchinTags(String playerName) {
+    private void fetchTags(String username) {
         try {
             String tags = urchinApi
-                .fetchUrchinTags(playerName, config.urchinKey)
+                .fetchUrchinTags(username, config.urchinKey)
                 .replace("sniper", "§4§lSniper")
                 .replace("blatant_cheater", "§4§lBlatant Cheater")
                 .replace("closet_cheater", "§e§lCloset Cheater")
                 .replace("confirmed_cheater", "§4§lConfirmed Cheater");
+
             if (!tags.isEmpty()) {
                 mc.addScheduledTask(() ->
                     mc.thePlayer.addChatMessage(
                         new ChatComponentText(
-                            "§r[§bF§r] §c\u26a0 §r" +
-                                Utils.getTabDisplayName(playerName) +
+                            "§r[§bF§r] §c⚠ §r" +
+                                Utils.getTabDisplayName(username) +
                                 " §ris §ctagged§r for: " +
                                 tags
                         )
@@ -177,8 +180,8 @@ public class PregameStats {
             mc.addScheduledTask(() ->
                 mc.thePlayer.addChatMessage(
                     new ChatComponentText(
-                        "§r[§bF§r] Failed to fetch tags for: " +
-                            playerName +
+                        "§r[§bF§r] Failed to fetch tags for " +
+                            username +
                             " | " +
                             e.getMessage()
                     )
@@ -187,13 +190,16 @@ public class PregameStats {
         }
     }
 
-    private boolean isBedwars(Scoreboard scoreboard) {
-        ScoreObjective sidebarObjective = scoreboard.getObjectiveInDisplaySlot(
-            1
-        );
-        if (sidebarObjective == null) return false;
+    /** determine if the scoreboard shows a bedwars game */
+    private boolean isBedwarsSidebar() {
+        Scoreboard board = mc.theWorld.getScoreboard();
+        if (board == null) return false;
+
+        ScoreObjective obj = board.getObjectiveInDisplaySlot(1);
+        if (obj == null) return false;
+
         String name = EnumChatFormatting.getTextWithoutFormattingCodes(
-            sidebarObjective.getDisplayName()
+            obj.getDisplayName()
         );
         return name.contains("BED WARS");
     }
