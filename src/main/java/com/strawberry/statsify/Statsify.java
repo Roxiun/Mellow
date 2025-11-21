@@ -36,7 +36,7 @@ public class Statsify {
 
     public static final String MODID = "statsify";
     public static final String NAME = "Statsify";
-    public static final String VERSION = "4.1.1";
+    public static final String VERSION = "4.2.0";
 
     private final Minecraft mc = Minecraft.getMinecraft();
     public static StatsifyOneConfig config;
