@@ -17,8 +17,6 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -64,7 +62,20 @@ public class PregameStats {
     public void onChat(ClientChatReceivedEvent event) {
         if (!config.pregameStats && !config.pregameTags) return;
 
-        // only denick if bedwars
+        // only denick if bedwars - thanks awruff - https://github.com/awruff/TNTTime
+        bedwars = false;
+
+        if (!HypixelUtils.INSTANCE.isHypixel()) {
+            return;
+        }
+
+        WorldClient world = Minecraft.getMinecraft().theWorld;
+        if (world == null || world.getScoreboard() == null) {
+            return;
+        }
+
+        bedwars = isBedwars(world.getScoreboard());
+
         if (!bedwars) return;
 
         String message = event.message.getUnformattedText().trim();
@@ -177,23 +188,6 @@ public class PregameStats {
         }
     }
 
-    /// thanks awruff - https://github.com/awruff/TNTTime
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        bedwars = false;
-
-        if (!HypixelUtils.INSTANCE.isHypixel()) {
-            return;
-        }
-
-        WorldClient world = Minecraft.getMinecraft().theWorld;
-        if (world == null || world.getScoreboard() == null) {
-            return;
-        }
-
-        bedwars = isBedwars(world.getScoreboard());
-    }
-
     private boolean isBedwars(Scoreboard scoreboard) {
         ScoreObjective sidebarObjective = scoreboard.getObjectiveInDisplaySlot(
             1
@@ -202,6 +196,7 @@ public class PregameStats {
         String name = EnumChatFormatting.getTextWithoutFormattingCodes(
             sidebarObjective.getDisplayName()
         );
+        LOGGER.info("scoreboard: " + name);
         return name.contains("BED WARS");
     }
 }
