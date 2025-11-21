@@ -43,6 +43,17 @@ public class StatsifyOneConfig extends Config {
     )
     public String urchinKey = "";
 
+    @Switch(name = "Enable Polsu Ping", category = "Polsu")
+    public boolean polsuPing = false;
+
+    @Text(
+        name = "Polsu API Key",
+        category = "Polsu",
+        secure = true,
+        multiline = false
+    )
+    public String polsuApiKey = "";
+
     @Switch(name = "Auto /who")
     public boolean autoWho = true;
 

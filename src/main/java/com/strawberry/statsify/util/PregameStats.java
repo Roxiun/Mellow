@@ -65,9 +65,8 @@ public class PregameStats {
         // only denick if bedwars - thanks awruff - https://github.com/awruff/TNTTime
         bedwars = false;
 
-        if (!HypixelUtils.INSTANCE.isHypixel()) {
-            return;
-        }
+        // only on hyppixel
+        if (!HypixelUtils.INSTANCE.isHypixel()) return;
 
         WorldClient world = Minecraft.getMinecraft().theWorld;
         if (world == null || world.getScoreboard() == null) {
