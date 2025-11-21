@@ -46,6 +46,11 @@ public class StatsifyOneConfig extends Config {
     @Switch(name = "Enable Polsu Ping", category = "Polsu")
     public boolean polsuPing = false;
 
+    @Button(name = "", text = "API Key", category = "Polsu")
+    Runnable polsuLinkButton = () -> {
+        NetworkUtils.browseLink("https://polsu.xyz/api/apikey");
+    };
+
     @Text(
         name = "Polsu API Key",
         category = "Polsu",
@@ -90,7 +95,7 @@ public class StatsifyOneConfig extends Config {
         size = OptionSize.DUAL,
         category = "Number Denicker"
     )
-    Runnable runnable = () -> {
+    Runnable auroraLinkButton = () -> {
         NetworkUtils.browseLink(
             "https://discord.com/oauth2/authorize?client_id=1244205279697174539"
         );

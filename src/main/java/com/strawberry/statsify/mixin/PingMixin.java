@@ -1,5 +1,6 @@
 package com.strawberry.statsify.mixin;
 
+import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
 import com.strawberry.statsify.Statsify;
 import com.strawberry.statsify.api.PolsuApi;
 import java.util.concurrent.ExecutorService;
@@ -25,7 +26,12 @@ public class PingMixin {
     private void onGetResponseTime(CallbackInfoReturnable<Integer> cir) {
         int original = this.responseTime;
 
-        if (!Statsify.config.polsuPing) {
+        if (!Statsify.config.polsuPing || !HypixelUtils.INSTANCE.isHypixel()) {
+            cir.setReturnValue(original);
+            return;
+        }
+
+        if (original > 1 && original < 999) {
             cir.setReturnValue(original);
             return;
         }
