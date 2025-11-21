@@ -196,7 +196,6 @@ public class PregameStats {
         String name = EnumChatFormatting.getTextWithoutFormattingCodes(
             sidebarObjective.getDisplayName()
         );
-        LOGGER.info("scoreboard: " + name);
         return name.contains("BED WARS");
     }
 }
