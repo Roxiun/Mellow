@@ -19,10 +19,14 @@ public class BedwarsCommand extends CommandBase {
     private final WinstreakApi winstreakApi;
     private final StatsifyOneConfig config;
 
-    public BedwarsCommand(StatsifyOneConfig config) {
-        this.nadeshikoApi = new NadeshikoApi();
-        this.winstreakApi = new WinstreakApi(config);
+    public BedwarsCommand(
+        StatsifyOneConfig config,
+        NadeshikoApi nadeshikoApi,
+        WinstreakApi winstreakApi
+    ) {
         this.config = config;
+        this.nadeshikoApi = nadeshikoApi;
+        this.winstreakApi = winstreakApi;
     }
 
     @Override

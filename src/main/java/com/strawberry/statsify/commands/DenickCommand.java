@@ -3,7 +3,6 @@ package com.strawberry.statsify.commands;
 import com.strawberry.statsify.api.AuroraApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
@@ -17,9 +16,9 @@ public class DenickCommand extends CommandBase {
     private final StatsifyOneConfig config;
     private final AuroraApi auroraApi;
 
-    public DenickCommand(StatsifyOneConfig config) {
+    public DenickCommand(StatsifyOneConfig config, AuroraApi auroraApi) {
         this.config = config;
-        this.auroraApi = new AuroraApi();
+        this.auroraApi = auroraApi;
     }
 
     @Override
