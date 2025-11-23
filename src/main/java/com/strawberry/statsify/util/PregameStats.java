@@ -2,7 +2,7 @@ package com.strawberry.statsify.util;
 
 import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
 import com.strawberry.statsify.api.MojangApi;
-import com.strawberry.statsify.api.NadeshikoApi;
+import com.strawberry.statsify.api.StatsProvider;
 import com.strawberry.statsify.api.UrchinApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.util.PlayerUtils;
@@ -26,7 +26,7 @@ public class PregameStats {
 
     private final Minecraft mc = Minecraft.getMinecraft();
     private final StatsifyOneConfig config;
-    private final NadeshikoApi nadeshikoApi;
+    private final StatsProvider statsProvider;
     private final UrchinApi urchinApi;
     private final MojangApi mojangApi;
 
@@ -50,12 +50,12 @@ public class PregameStats {
 
     public PregameStats(
         StatsifyOneConfig config,
-        NadeshikoApi nadeshikoApi,
+        StatsProvider statsProvider,
         UrchinApi urchinApi,
         MojangApi mojangApi
     ) {
         this.config = config;
-        this.nadeshikoApi = nadeshikoApi;
+        this.statsProvider = statsProvider;
         this.urchinApi = urchinApi;
         this.mojangApi = mojangApi;
     }
@@ -125,7 +125,7 @@ public class PregameStats {
     private void handlePlayer(String username) {
         if (config.pregameStats) {
             try {
-                String stats = nadeshikoApi.fetchPlayerStats(username);
+                String stats = statsProvider.fetchPlayerStats(username);
                 mc.addScheduledTask(() ->
                     mc.thePlayer.addChatMessage(
                         new ChatComponentText("§r[§bF§r] " + stats)

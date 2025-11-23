@@ -20,6 +20,9 @@ public class StatsifyOneConfig extends Config {
     @Number(name = "Minimum FKDR", min = -1, max = 500, step = 1)
     public int minFkdr = -1;
 
+    @Dropdown(name = "Stats Provider", options = { "Nadeshiko", "Abyss" })
+    public int statsProvider = 0;
+
     @Switch(name = "Show Tags")
     public boolean tags = false;
 

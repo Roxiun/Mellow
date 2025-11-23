@@ -205,3 +205,32 @@ tasks {
     }
 }
 
+tasks.named("build") {
+    doLast {
+        // Path to the built JAR file after the build (from the build/libs directory)
+        val finalJar = file("build/libs/${mod_archives_name}-1.8.9-forge-${mod_version}.jar")
+
+        // Ensure the built JAR file exists before proceeding
+        if (finalJar.exists()) {
+            // Additional destination directory
+            val home = System.getProperty("user.home")
+            val additionalDestDir =
+                    file(
+                            "$home/Library/Application Support/PrismLauncher/instances/1.8.9/.minecraft/mods"
+                    )
+
+            // Ensure the destination directory exists
+            additionalDestDir.mkdirs()
+
+            // Copy the final JAR to the additional directory
+            copy {
+                from(finalJar)
+                into(additionalDestDir)
+            }
+
+            println("JAR file copied to: ${additionalDestDir.absolutePath}")
+        } else {
+            println("Built JAR file does not exist: ${finalJar.absolutePath}")
+        }
+    }
+}

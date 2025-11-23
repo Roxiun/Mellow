@@ -9,16 +9,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.text.DecimalFormat;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public class NadeshikoApi implements StatsProvider {
+public class AbyssApi implements StatsProvider {
 
     private final MojangApi mojangApi;
 
-    public NadeshikoApi(MojangApi mojangApi) {
+    public AbyssApi(MojangApi mojangApi) {
         this.mojangApi = mojangApi;
     }
 
@@ -27,16 +24,13 @@ public class NadeshikoApi implements StatsProvider {
         HttpURLConnection connection = null;
         try {
             String urlString =
-                "https://nadeshiko.io/player/" + uuid + "/network";
+                "http://api.abyssoverlay.com/player?uuid=" + uuid;
 
             URL url = new URL(urlString);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
-            connection.setRequestProperty(
-                "User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            );
+            connection.setRequestProperty("User-Agent", "Statsify");
             connection.setRequestProperty("Accept", "application/json");
             int responseCode = connection.getResponseCode();
 
@@ -51,16 +45,7 @@ public class NadeshikoApi implements StatsProvider {
                     response.append(inputLine);
                 }
                 in.close();
-                String responseString = response.toString();
-                Pattern pattern = Pattern.compile(
-                    "playerData = JSON.parse\\(decodeURIComponent\\(\"(.*?)\"\\)\\)"
-                );
-                Matcher matcher = pattern.matcher(responseString.toString());
-
-                if (matcher.find()) {
-                    String playerDataEncoded = matcher.group(1);
-                    return URLDecoder.decode(playerDataEncoded, "UTF-8");
-                }
+                return response.toString();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -94,17 +79,24 @@ public class NadeshikoApi implements StatsProvider {
             .parse(stjson)
             .getAsJsonObject();
 
-        JsonObject profile = rootObject.getAsJsonObject("profile");
-        String displayedName = profile.has("tagged_name")
-            ? profile.get("tagged_name").getAsString()
+        if (!rootObject.get("success").getAsBoolean()) {
+            return (
+                " §cFailed to get stats for " + playerName + " from Abyss API."
+            );
+        }
+
+        JsonObject player = rootObject.getAsJsonObject("player");
+        String displayedName = player.has("displayname")
+            ? "§r[" + player.get("displayname").getAsString() + "]"
             : "[]";
-        JsonObject ach = rootObject.getAsJsonObject("achievements");
-        String level = ach.has("bedwars_level")
-            ? ach.get("bedwars_level").getAsString()
+
+        JsonObject achievements = player.getAsJsonObject("achievements");
+        String level = achievements.has("bedwars_level")
+            ? achievements.get("bedwars_level").getAsString()
             : "0";
         level = FormattingUtils.formatStars(level);
 
-        JsonObject bedwarsStats = rootObject
+        JsonObject bedwarsStats = player
             .getAsJsonObject("stats")
             .getAsJsonObject("Bedwars");
         int finalKills = bedwarsStats.has("final_kills_bedwars")

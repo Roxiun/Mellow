@@ -1,10 +1,12 @@
 package com.strawberry.statsify;
 
+import com.strawberry.statsify.api.AbyssApi;
 import com.strawberry.statsify.api.AuroraApi;
 import com.strawberry.statsify.api.HypixelApi;
 import com.strawberry.statsify.api.MojangApi;
 import com.strawberry.statsify.api.NadeshikoApi;
 import com.strawberry.statsify.api.PlanckeApi;
+import com.strawberry.statsify.api.StatsProvider;
 import com.strawberry.statsify.api.UrchinApi;
 import com.strawberry.statsify.commands.BedwarsCommand;
 import com.strawberry.statsify.commands.ClearCacheCommand;
@@ -44,9 +46,14 @@ public class Statsify {
 
         // APIs
         MojangApi mojangApi = new MojangApi();
-        NadeshikoApi nadeshikoApi = new NadeshikoApi(mojangApi);
-        TagUtils tagUtils = new TagUtils(nadeshikoApi);
-        HypixelApi hypixelApi = new HypixelApi(nadeshikoApi, tagUtils);
+        StatsProvider statsProvider;
+        if (config.statsProvider == 1) {
+            statsProvider = new AbyssApi(mojangApi);
+        } else {
+            statsProvider = new NadeshikoApi(mojangApi);
+        }
+        TagUtils tagUtils = new TagUtils(statsProvider);
+        HypixelApi hypixelApi = new HypixelApi(statsProvider, tagUtils);
         UrchinApi urchinApi = new UrchinApi();
         PlanckeApi planckeApi = new PlanckeApi();
         AuroraApi auroraApi = new AuroraApi();
@@ -59,7 +66,7 @@ public class Statsify {
         );
         PregameStats pregameStats = new PregameStats(
             config,
-            nadeshikoApi,
+            statsProvider,
             urchinApi,
             mojangApi
         );
@@ -90,7 +97,7 @@ public class Statsify {
 
         // Commands
         ClientCommandHandler.instance.registerCommand(
-            new BedwarsCommand(config, nadeshikoApi, urchinApi)
+            new BedwarsCommand(config, statsProvider, urchinApi)
         );
         ClientCommandHandler.instance.registerCommand(new StatsifyCommand());
         ClientCommandHandler.instance.registerCommand(

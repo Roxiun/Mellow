@@ -13,11 +13,11 @@ import net.minecraft.util.EnumChatFormatting;
 
 public class HypixelApi {
 
-    private final NadeshikoApi nadeshikoApi;
+    private final StatsProvider statsProvider;
     private final TagUtils tagUtils;
 
-    public HypixelApi(NadeshikoApi nadeshikoApi, TagUtils tagUtils) {
-        this.nadeshikoApi = nadeshikoApi;
+    public HypixelApi(StatsProvider statsProvider, TagUtils tagUtils) {
+        this.statsProvider = statsProvider;
         this.tagUtils = tagUtils;
     }
 
@@ -38,7 +38,7 @@ public class HypixelApi {
                 );
             }
 
-            String stjson = nadeshikoApi.nadeshikoAPI(uuid);
+            String stjson = statsProvider.fetchPlayerData(uuid);
             if (stjson == null || stjson.isEmpty()) {
                 return (
                     "§cFailed to get stats for " +

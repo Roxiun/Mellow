@@ -1,7 +1,7 @@
 package com.strawberry.statsify.commands;
 
 import com.mojang.authlib.GameProfile;
-import com.strawberry.statsify.api.NadeshikoApi;
+import com.strawberry.statsify.api.StatsProvider;
 import com.strawberry.statsify.api.UrchinApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import java.io.IOException;
@@ -15,17 +15,17 @@ import net.minecraft.util.ChatComponentText;
 
 public class BedwarsCommand extends CommandBase {
 
-    private final NadeshikoApi nadeshikoApi;
+    private final StatsProvider statsProvider;
     private final UrchinApi urchinApi;
     private final StatsifyOneConfig config;
 
     public BedwarsCommand(
         StatsifyOneConfig config,
-        NadeshikoApi nadeshikoApi,
+        StatsProvider statsProvider,
         UrchinApi urchinApi
     ) {
         this.config = config;
-        this.nadeshikoApi = nadeshikoApi;
+        this.statsProvider = statsProvider;
         this.urchinApi = urchinApi;
     }
 
@@ -53,7 +53,7 @@ public class BedwarsCommand extends CommandBase {
         String username = args[0];
         new Thread(() -> {
             try {
-                String stats = nadeshikoApi.fetchPlayerStats(username);
+                String stats = statsProvider.fetchPlayerStats(username);
                 String finalStats = stats;
                 Minecraft.getMinecraft().addScheduledTask(() ->
                     Minecraft.getMinecraft().thePlayer.addChatMessage(

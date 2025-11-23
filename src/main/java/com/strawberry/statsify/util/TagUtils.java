@@ -1,6 +1,10 @@
 package com.strawberry.statsify.util;
 
+import com.strawberry.statsify.api.AbyssApi;
+import com.strawberry.statsify.api.AbyssApi;
 import com.strawberry.statsify.api.NadeshikoApi;
+import com.strawberry.statsify.api.StatsProvider;
+import com.strawberry.statsify.api.StatsProvider;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -15,10 +19,10 @@ import net.minecraft.util.EnumChatFormatting;
 
 public class TagUtils {
 
-    private final NadeshikoApi nadeshikoApi;
+    private final StatsProvider statsProvider;
 
-    public TagUtils(NadeshikoApi nadeshikoApi) {
-        this.nadeshikoApi = nadeshikoApi;
+    public TagUtils(StatsProvider statsProvider) {
+        this.statsProvider = statsProvider;
     }
 
     public String buildTags(
@@ -118,8 +122,19 @@ public class TagUtils {
             e.printStackTrace();
         }
 
-        String playerData = nadeshikoApi.nadeshikoAPI(uuid);
-        Pattern timestampPattern = Pattern.compile("\"first_login\":(\\d+),");
+        String playerData = statsProvider.fetchPlayerData(uuid);
+        Pattern timestampPattern;
+        if (statsProvider instanceof NadeshikoApi) {
+            timestampPattern = Pattern.compile(
+                "\"first_login\":(\\d+),",
+                Pattern.CASE_INSENSITIVE
+            );
+        } else {
+            timestampPattern = Pattern.compile(
+                "\"firstLogin\":(\\d+),",
+                Pattern.CASE_INSENSITIVE
+            );
+        }
         Matcher timestampMatcher = timestampPattern.matcher(playerData);
         if (timestampMatcher.find()) {
             long timestamp = Long.parseLong(timestampMatcher.group(1));
