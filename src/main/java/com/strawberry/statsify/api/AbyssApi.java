@@ -87,7 +87,7 @@ public class AbyssApi implements StatsProvider {
 
         JsonObject player = rootObject.getAsJsonObject("player");
         String displayedName = player.has("displayname")
-            ? "§r[" + player.get("displayname").getAsString() + "]"
+            ? "§r" + player.get("displayname").getAsString()
             : "[]";
 
         JsonObject achievements = player.getAsJsonObject("achievements");
@@ -118,7 +118,7 @@ public class AbyssApi implements StatsProvider {
         String formattedFkdr = df.format(fkdr);
         return (
             displayedName +
-            " [ABYSS] §r" +
+            " §r" +
             level +
             " FKDR: " +
             fkdrColor +
