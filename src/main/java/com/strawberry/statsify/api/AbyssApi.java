@@ -30,7 +30,7 @@ public class AbyssApi implements StatsProvider {
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
-            connection.setRequestProperty("User-Agent", "Statsify");
+            connection.setRequestProperty("User-Agent", "node-ao/2.0.3");
             connection.setRequestProperty("Accept", "application/json");
             int responseCode = connection.getResponseCode();
 
