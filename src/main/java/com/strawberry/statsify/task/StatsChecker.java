@@ -1,14 +1,14 @@
 package com.strawberry.statsify.task;
 
-import com.strawberry.statsify.api.BedwarsPlayer;
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
 import com.strawberry.statsify.cache.PlayerCache;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
 import com.strawberry.statsify.data.TabStats;
-import com.strawberry.statsify.util.FormattingUtils;
-import com.strawberry.statsify.util.NickUtils;
-import com.strawberry.statsify.util.PlayerUtils;
-import com.strawberry.statsify.util.TagUtils;
+import com.strawberry.statsify.util.formatting.FormattingUtils;
+import com.strawberry.statsify.util.nicks.NickUtils;
+import com.strawberry.statsify.util.player.PlayerUtils;
+import com.strawberry.statsify.util.tags.TagUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;

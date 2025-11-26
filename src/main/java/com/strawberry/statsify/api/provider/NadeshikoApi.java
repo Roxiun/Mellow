@@ -1,6 +1,9 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.provider;
 
-import com.strawberry.statsify.util.PlayerUtils;
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
+import com.strawberry.statsify.api.mojang.MojangApi;
+import com.strawberry.statsify.api.util.HypixelApiUtils;
+import com.strawberry.statsify.util.player.PlayerUtils;
 import java.io.IOException;
 
 public class NadeshikoApi implements StatsProvider {

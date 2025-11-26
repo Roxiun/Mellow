@@ -1,4 +1,4 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.mojang;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

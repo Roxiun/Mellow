@@ -1,13 +1,13 @@
 package com.strawberry.statsify.cache;
 
-import com.strawberry.statsify.api.BedwarsPlayer;
-import com.strawberry.statsify.api.MojangApi;
-import com.strawberry.statsify.api.StatsProvider;
-import com.strawberry.statsify.api.UrchinApi;
-import com.strawberry.statsify.api.UrchinTag;
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
+import com.strawberry.statsify.api.mojang.MojangApi;
+import com.strawberry.statsify.api.provider.StatsProvider;
+import com.strawberry.statsify.api.urchin.UrchinApi;
+import com.strawberry.statsify.api.urchin.UrchinTag;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
-import com.strawberry.statsify.util.PlayerUtils;
+import com.strawberry.statsify.util.player.PlayerUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

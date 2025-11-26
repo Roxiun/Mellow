@@ -1,4 +1,4 @@
-package com.strawberry.statsify.util;
+package com.strawberry.statsify.util.nicks;
 
 import java.util.Collection;
 import java.util.HashMap;

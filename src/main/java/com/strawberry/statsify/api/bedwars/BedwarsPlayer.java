@@ -1,4 +1,4 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.bedwars;
 
 import java.text.DecimalFormat;
 

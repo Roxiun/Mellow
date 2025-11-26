@@ -1,8 +1,9 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.util;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.strawberry.statsify.util.FormattingUtils;
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
+import com.strawberry.statsify.util.formatting.FormattingUtils;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;

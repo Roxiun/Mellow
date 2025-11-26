@@ -1,6 +1,6 @@
 package com.strawberry.statsify.commands;
 
-import com.strawberry.statsify.util.SkinUtils;
+import com.strawberry.statsify.util.skins.SkinUtils;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;

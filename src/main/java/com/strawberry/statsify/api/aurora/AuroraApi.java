@@ -1,4 +1,4 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.aurora;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;

@@ -1,8 +1,8 @@
-package com.strawberry.statsify.util;
+package com.strawberry.statsify.util.tags;
 
 import com.strawberry.statsify.Statsify;
-import com.strawberry.statsify.api.NadeshikoApi;
-import com.strawberry.statsify.api.StatsProvider;
+import com.strawberry.statsify.api.provider.NadeshikoApi;
+import com.strawberry.statsify.api.provider.StatsProvider;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;

@@ -1,8 +1,8 @@
 package com.strawberry.statsify.events;
 
-import com.strawberry.statsify.util.NickUtils;
-import com.strawberry.statsify.util.NumberDenicker;
-import com.strawberry.statsify.util.PregameStats;
+import com.strawberry.statsify.util.nicks.NickUtils;
+import com.strawberry.statsify.util.nicks.NumberDenicker;
+import com.strawberry.statsify.util.player.PregameStats;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 

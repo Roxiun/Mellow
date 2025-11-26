@@ -2,7 +2,7 @@ package com.strawberry.statsify.mixin;
 
 import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
 import com.strawberry.statsify.Statsify;
-import com.strawberry.statsify.api.PolsuApi;
+import com.strawberry.statsify.api.ping.PolsuApi;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import net.minecraft.client.network.NetworkPlayerInfo;

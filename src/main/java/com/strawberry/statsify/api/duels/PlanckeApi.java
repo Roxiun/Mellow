@@ -1,6 +1,6 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.duels;
 
-import com.strawberry.statsify.util.FormattingUtils;
+import com.strawberry.statsify.util.formatting.FormattingUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

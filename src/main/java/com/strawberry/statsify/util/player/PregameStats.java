@@ -1,11 +1,12 @@
-package com.strawberry.statsify.util;
+package com.strawberry.statsify.util.player;
 
 import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
-import com.strawberry.statsify.api.BedwarsPlayer;
-import com.strawberry.statsify.api.UrchinTag;
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
+import com.strawberry.statsify.api.urchin.UrchinTag;
 import com.strawberry.statsify.cache.PlayerCache;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
+import com.strawberry.statsify.util.formatting.FormattingUtils;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;

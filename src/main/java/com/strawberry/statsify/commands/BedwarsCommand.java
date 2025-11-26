@@ -1,12 +1,12 @@
 package com.strawberry.statsify.commands;
 
 import com.mojang.authlib.GameProfile;
-import com.strawberry.statsify.api.BedwarsPlayer;
-import com.strawberry.statsify.api.UrchinTag;
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
+import com.strawberry.statsify.api.urchin.UrchinTag;
 import com.strawberry.statsify.cache.PlayerCache;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
-import com.strawberry.statsify.util.FormattingUtils;
+import com.strawberry.statsify.util.formatting.FormattingUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;

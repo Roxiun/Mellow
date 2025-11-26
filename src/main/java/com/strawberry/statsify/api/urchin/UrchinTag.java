@@ -1,6 +1,7 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.urchin;
 
 public class UrchinTag {
+
     private final String type;
     private final String reason;
 

@@ -1,5 +1,6 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.provider;
 
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
 import java.io.IOException;
 
 public interface StatsProvider {

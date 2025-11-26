@@ -1,6 +1,6 @@
-package com.strawberry.statsify.util;
+package com.strawberry.statsify.util.nicks;
 
-import com.strawberry.statsify.api.AuroraApi;
+import com.strawberry.statsify.api.aurora.AuroraApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import java.io.IOException;
 import java.util.ArrayList;

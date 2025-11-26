@@ -2,7 +2,7 @@ package com.strawberry.statsify.mixin;
 
 import com.strawberry.statsify.Statsify;
 import com.strawberry.statsify.data.TabStats;
-import com.strawberry.statsify.util.PlayerUtils;
+import com.strawberry.statsify.util.player.PlayerUtils;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.scoreboard.ScorePlayerTeam;

@@ -1,12 +1,12 @@
 package com.strawberry.statsify.events;
 
-import com.strawberry.statsify.api.PlanckeApi;
+import com.strawberry.statsify.api.duels.PlanckeApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.task.StatsChecker;
-import com.strawberry.statsify.util.NickUtils;
-import com.strawberry.statsify.util.NumberDenicker;
-import com.strawberry.statsify.util.PregameStats;
 import com.strawberry.statsify.util.StringUtils;
+import com.strawberry.statsify.util.nicks.NickUtils;
+import com.strawberry.statsify.util.nicks.NumberDenicker;
+import com.strawberry.statsify.util.player.PregameStats;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

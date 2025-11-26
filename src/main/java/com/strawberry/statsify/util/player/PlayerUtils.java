@@ -1,4 +1,4 @@
-package com.strawberry.statsify.util;
+package com.strawberry.statsify.util.player;
 
 import java.util.Collection;
 import net.minecraft.client.Minecraft;

@@ -1,9 +1,10 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.bedwars;
 
 import com.strawberry.statsify.Statsify;
-import com.strawberry.statsify.util.FormattingUtils;
-import com.strawberry.statsify.util.PlayerUtils;
-import com.strawberry.statsify.util.TagUtils;
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
+import com.strawberry.statsify.util.formatting.FormattingUtils;
+import com.strawberry.statsify.util.player.PlayerUtils;
+import com.strawberry.statsify.util.tags.TagUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,9 +1,10 @@
-package com.strawberry.statsify.api;
+package com.strawberry.statsify.api.urchin;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.strawberry.statsify.api.mojang.MojangApi;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;

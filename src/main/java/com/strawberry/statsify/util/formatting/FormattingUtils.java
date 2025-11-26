@@ -1,6 +1,6 @@
-package com.strawberry.statsify.util;
+package com.strawberry.statsify.util.formatting;
 
-import com.strawberry.statsify.api.UrchinTag;
+import com.strawberry.statsify.api.urchin.UrchinTag;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;

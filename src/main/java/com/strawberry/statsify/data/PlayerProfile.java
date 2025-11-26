@@ -1,8 +1,7 @@
 package com.strawberry.statsify.data;
 
-import com.strawberry.statsify.api.BedwarsPlayer;
-import com.strawberry.statsify.api.UrchinTag;
-
+import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
+import com.strawberry.statsify.api.urchin.UrchinTag;
 import java.util.List;
 
 public class PlayerProfile {
@@ -13,7 +12,12 @@ public class PlayerProfile {
     private final List<UrchinTag> urchinTags;
     private final long lastUpdated;
 
-    public PlayerProfile(String uuid, String name, BedwarsPlayer bedwarsPlayer, List<UrchinTag> urchinTags) {
+    public PlayerProfile(
+        String uuid,
+        String name,
+        BedwarsPlayer bedwarsPlayer,
+        List<UrchinTag> urchinTags
+    ) {
         this.uuid = uuid;
         this.name = name;
         this.bedwarsPlayer = bedwarsPlayer;
