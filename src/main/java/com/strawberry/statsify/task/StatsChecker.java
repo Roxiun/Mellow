@@ -6,7 +6,6 @@ import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.util.NickUtils;
 import com.strawberry.statsify.util.PlayerUtils;
 import com.strawberry.statsify.util.UrchinUtils;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -62,29 +61,17 @@ public class StatsChecker {
         for (String playerName : onlinePlayers) {
             if (nickUtils.isNicked(playerName)) continue;
             executor.submit(() -> {
-                try {
-                    String stats = hypixelApi.fetchBedwarsStats(
-                        playerName,
-                        config.minFkdr,
-                        config.tags,
-                        config.tabStats,
-                        playerSuffixes
-                    );
-                    if (!stats.isEmpty() && config.printStats) {
-                        mc.addScheduledTask(() ->
-                            mc.thePlayer.addChatMessage(
-                                new ChatComponentText("§r[§bF§r] " + stats)
-                            )
-                        );
-                    }
-                } catch (IOException e) {
+                String stats = hypixelApi.fetchBedwarsStats(
+                    playerName,
+                    config.minFkdr,
+                    config.tags,
+                    config.tabStats,
+                    playerSuffixes
+                );
+                if (!stats.isEmpty() && config.printStats) {
                     mc.addScheduledTask(() ->
                         mc.thePlayer.addChatMessage(
-                            new ChatComponentText(
-                                "§r[§bF§r] Failed to fetch stats for: " +
-                                    playerName +
-                                    " | [UpstreamCSR] "
-                            )
+                            new ChatComponentText("§r[§bF§r] " + stats)
                         )
                     );
                 }
