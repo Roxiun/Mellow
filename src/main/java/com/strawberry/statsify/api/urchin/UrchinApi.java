@@ -168,6 +168,10 @@ public class UrchinApi {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setRequestProperty(
+                "Referer",
+                "https://coral.urchin.ws/player/" + uuid
+            );
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
 
