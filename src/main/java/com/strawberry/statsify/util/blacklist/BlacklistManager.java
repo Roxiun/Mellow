@@ -20,7 +20,10 @@ public class BlacklistManager {
     private Map<UUID, BlacklistedPlayer> blacklist = new ConcurrentHashMap<>();
 
     public BlacklistManager() {
-        File configDir = new File(Minecraft.getMinecraft().mcDataDir, "config/statsify");
+        File configDir = new File(
+            Minecraft.getMinecraft().mcDataDir,
+            "config/statsify"
+        );
         if (!configDir.exists()) {
             configDir.mkdirs();
         }
@@ -31,7 +34,9 @@ public class BlacklistManager {
     public void loadBlacklist() {
         if (blacklistFile.exists()) {
             try (FileReader reader = new FileReader(blacklistFile)) {
-                Type type = new TypeToken<ConcurrentHashMap<UUID, BlacklistedPlayer>>() {}.getType();
+                Type type = new TypeToken<
+                    ConcurrentHashMap<UUID, BlacklistedPlayer>
+                >() {}.getType();
                 blacklist = gson.fromJson(reader, type);
                 if (blacklist == null) {
                     blacklist = new ConcurrentHashMap<>();
@@ -67,5 +72,9 @@ public class BlacklistManager {
 
     public BlacklistedPlayer getBlacklistedPlayer(UUID uuid) {
         return blacklist.get(uuid);
+    }
+
+    public Map<UUID, BlacklistedPlayer> getBlacklist() {
+        return blacklist;
     }
 }
