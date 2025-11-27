@@ -1,4 +1,4 @@
-<h1 align="center">Statsify</h1>
+<h1 align="center">Mellow</h1>
 <p align="center">
 <img width="1920" height="392" src="https://i.ibb.co/hRmQV02D/Ads-z.png">
 </p>
@@ -53,7 +53,7 @@ Go to the releases tab and download.
 
 ## Description
 
-Statsify is an internal Forge 1.8.9 mod for Hypixel Bedwars, allows its users to check the stats of the players in their game, without having to bother with an external overlay, proxy, or an API key.
+Mellow is an internal Forge 1.8.9 mod for Hypixel Bedwars, allows its users to check the stats of the players in their game, without having to bother with an external overlay, proxy, or an API key.
 
 ## Usage
 

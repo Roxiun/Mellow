@@ -30,9 +30,9 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 @Mod(modid = Statsify.MODID, name = Statsify.NAME, version = Statsify.VERSION)
 public class Statsify {
 
-    public static final String MODID = "statsify";
-    public static final String NAME = "Statsify";
-    public static final String VERSION = "4.3.0";
+    public static final String MODID = "mellow";
+    public static final String NAME = "Mellow";
+    public static final String VERSION = "5.0.0";
 
     public static StatsifyOneConfig config;
     public static final Map<String, TabStats> tabStats = new HashMap<>();
