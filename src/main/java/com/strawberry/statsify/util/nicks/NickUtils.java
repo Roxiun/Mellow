@@ -1,5 +1,6 @@
 package com.strawberry.statsify.util.nicks;
 
+import com.strawberry.statsify.util.ChatUtils;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,7 +9,6 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraft.util.ChatComponentText;
 
 public class NickUtils {
 
@@ -37,11 +37,7 @@ public class NickUtils {
                 UUID uuid = playerToUuid.get(player);
                 if (uuid != null && uuid.version() == 1) {
                     if (nickedPlayers.add(player)) {
-                        mc.thePlayer.addChatMessage(
-                            new ChatComponentText(
-                                "§r[§bF§r] §c" + player + " is nicked."
-                            )
-                        );
+                        ChatUtils.sendMessage("§c" + player + " is nicked.");
                     }
                 }
             }

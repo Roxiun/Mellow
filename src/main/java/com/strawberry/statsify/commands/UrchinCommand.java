@@ -5,6 +5,7 @@ import com.strawberry.statsify.api.mojang.MojangApi;
 import com.strawberry.statsify.api.urchin.UrchinApi;
 import com.strawberry.statsify.api.urchin.UrchinTag;
 import com.strawberry.statsify.config.StatsifyOneConfig;
+import com.strawberry.statsify.util.ChatUtils;
 import com.strawberry.statsify.util.formatting.FormattingUtils;
 import java.io.IOException;
 import java.util.List;
@@ -13,7 +14,6 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
 
 public class UrchinCommand extends CommandBase {
 
@@ -21,7 +21,11 @@ public class UrchinCommand extends CommandBase {
     private final MojangApi mojangApi;
     private final StatsifyOneConfig config;
 
-    public UrchinCommand(UrchinApi urchinApi, MojangApi mojangApi, StatsifyOneConfig config) {
+    public UrchinCommand(
+        UrchinApi urchinApi,
+        MojangApi mojangApi,
+        StatsifyOneConfig config
+    ) {
         this.urchinApi = urchinApi;
         this.mojangApi = mojangApi;
         this.config = config;
@@ -40,10 +44,9 @@ public class UrchinCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length != 1) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    "§r[§bStatsify§r]§c Invalid usage! Use /urchin <username>"
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cInvalid usage! Use /urchin <username>"
             );
             return;
         }
@@ -54,46 +57,44 @@ public class UrchinCommand extends CommandBase {
                 String uuid = mojangApi.fetchUUID(username);
                 if (uuid == null || uuid.isEmpty()) {
                     Minecraft.getMinecraft().addScheduledTask(() ->
-                        sender.addChatMessage(
-                            new ChatComponentText(
-                                "§r[§bStatsify§r] §cCould not find UUID for: §r" +
-                                    username
-                            )
+                        ChatUtils.sendCommandMessage(
+                            sender,
+                            "§cCould not find UUID for: §r" + username
                         )
                     );
                     return;
                 }
 
-                List<UrchinTag> tags = urchinApi.fetchUrchinTags(uuid, username, config.urchinKey);
+                List<UrchinTag> tags = urchinApi.fetchUrchinTags(
+                    uuid,
+                    username,
+                    config.urchinKey
+                );
 
                 if (tags == null || tags.isEmpty()) {
                     Minecraft.getMinecraft().addScheduledTask(() ->
-                        sender.addChatMessage(
-                            new ChatComponentText(
-                                "§r[§bStatsify§r] §aNo Urchin tags found for: §r" +
-                                    username
-                            )
+                        ChatUtils.sendCommandMessage(
+                            sender,
+                            "§aNo Urchin tags found for: §r" + username
                         )
                     );
                 } else {
-                    String formattedTags = FormattingUtils.formatUrchinTags(tags);
+                    String formattedTags = FormattingUtils.formatUrchinTags(
+                        tags
+                    );
                     String urchinMessage =
-                        "§r[§bStatsify§r] §c" +
-                            username +
-                            " is tagged for: " +
-                            formattedTags;
+                        "§c" + username + " is tagged for: " + formattedTags;
                     Minecraft.getMinecraft().addScheduledTask(() ->
-                        sender.addChatMessage(new ChatComponentText(urchinMessage))
+                        ChatUtils.sendCommandMessage(sender, urchinMessage)
                     );
                 }
             } catch (IOException e) {
                 Minecraft.getMinecraft().addScheduledTask(() ->
-                    sender.addChatMessage(
-                        new ChatComponentText(
-                            "§r[§bStatsify§r] §cAn error occurred while fetching Urchin tags for " +
-                                username +
-                                "."
-                        )
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§cAn error occurred while fetching Urchin tags for " +
+                            username +
+                            "."
                     )
                 );
             }

@@ -18,43 +18,42 @@ public class StatsifyCommand extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
-        sender.addChatMessage(
-            new ChatComponentText("§r§b§lstat§9§tsi§3§lfy§r")
-        );
+        sender.addChatMessage(new ChatComponentText("§r§5§l ⋆˙⟡ mellow ✧˚ §r"));
+        sender.addChatMessage(new ChatComponentText("§r§d     by roxiun"));
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§boriginal made by§e melissalmao§r updated by§e roxiun§r"
+                "§r§7original made by§d melissalmao,§r§7 fontaine by§d xanning, §r§7name by §dzifro"
             )
         );
         sender.addChatMessage(new ChatComponentText(""));
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§3/bw <username>:§b Manually check bedwars stats of a player.§r"
+                "§r§5/bw <username>:§d Manually check bedwars stats of a player.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§3/blacklist <add | remove | list> <player> <reason>:§b Add a player to your local blacklist.§r"
+                "§r§5/blacklist <add | remove | list> <player> <reason>:§d Add a player to your local blacklist.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§3/denick <finals | beds> <number>:§b Manually denick a player based on finals or beds.§r"
+                "§r§5/denick <finals | beds> <number>:§d Manually denick a player based on finals or beds.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§3/skindenick <username>:§b Manually denick a player based on their skin.§r"
+                "§r§5/skindenick <username>:§d Manually denick a player based on their skin.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§3/cleartabcache:§b Clear stats cache of players if you're having issues.§r"
+                "§r§5/cleartabcache:§d Clear stats cache of players if you're having issues.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§3/who:§b Check and print the stats of the players in your lobby.§r"
+                "§r§5/who:§d Check and print the stats of the players in your lobby.§r"
             )
         );
         sender.addChatMessage(new ChatComponentText(""));

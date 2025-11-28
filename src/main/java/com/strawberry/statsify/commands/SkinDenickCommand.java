@@ -1,13 +1,12 @@
 package com.strawberry.statsify.commands;
 
+import com.strawberry.statsify.util.ChatUtils;
 import com.strawberry.statsify.util.skins.SkinUtils;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.EnumChatFormatting;
 
 public class SkinDenickCommand extends CommandBase {
 
@@ -24,10 +23,9 @@ public class SkinDenickCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length != 1) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.RED + "Usage: " + getCommandUsage(sender)
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cUsage: " + getCommandUsage(sender)
             );
             return;
         }
@@ -45,10 +43,9 @@ public class SkinDenickCommand extends CommandBase {
         }
 
         if (playerInfo == null) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.RED + "Player not found: " + playerName
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cPlayer not found: " + playerName
             );
             return;
         }
@@ -56,23 +53,16 @@ public class SkinDenickCommand extends CommandBase {
         String realName = SkinUtils.getRealName(playerInfo);
 
         if (realName != null) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GREEN +
-                        "The real name of " +
-                        playerName +
-                        " is " +
-                        realName
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§aThe real name of " + playerName + " is " + realName
             );
         } else {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.RED +
-                        "Could not retrieve the real name for " +
-                        playerName +
-                        ". They might be using a default skin."
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cCould not retrieve the real name for " +
+                    playerName +
+                    ". They might be using a default skin."
             );
         }
     }

@@ -1,6 +1,7 @@
 package com.strawberry.statsify.commands;
 
 import com.strawberry.statsify.api.mojang.MojangApi;
+import com.strawberry.statsify.util.ChatUtils;
 import com.strawberry.statsify.util.blacklist.BlacklistManager;
 import com.strawberry.statsify.util.blacklist.BlacklistedPlayer;
 import java.util.Arrays;
@@ -44,11 +45,9 @@ public class BlacklistCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length < 1) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    "§r[§bStatsify§r]§c Invalid usage! Use " +
-                        getCommandUsage(sender)
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cInvalid usage! Use " + getCommandUsage(sender)
             );
             return;
         }
@@ -59,17 +58,14 @@ public class BlacklistCommand extends CommandBase {
             Map<UUID, BlacklistedPlayer> blacklist =
                 blacklistManager.getBlacklist();
             if (blacklist.isEmpty()) {
-                sender.addChatMessage(
-                    new ChatComponentText(
-                        "§r[§bStatsify§r]§a The blacklist is empty."
-                    )
+                ChatUtils.sendCommandMessage(
+                    sender,
+                    "§aThe blacklist is empty."
                 );
                 return;
             }
 
-            sender.addChatMessage(
-                new ChatComponentText("§r[§bStatsify§r]§a Blacklisted players:")
-            );
+            ChatUtils.sendCommandMessage(sender, "§aBlacklisted players:");
             for (BlacklistedPlayer player : blacklist.values()) {
                 sender.addChatMessage(
                     new ChatComponentText(
@@ -81,11 +77,9 @@ public class BlacklistCommand extends CommandBase {
         }
 
         if (args.length < 2) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    "§r[§bStatsify§r]§c Invalid usage! Use " +
-                        getCommandUsage(sender)
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cInvalid usage! Use " + getCommandUsage(sender)
             );
             return;
         }
@@ -100,11 +94,9 @@ public class BlacklistCommand extends CommandBase {
 
             if (uuidString == null || uuidString.equals("ERROR")) {
                 Minecraft.getMinecraft().addScheduledTask(() ->
-                    sender.addChatMessage(
-                        new ChatComponentText(
-                            "§r[§bStatsify§r]§c Could not find player: " +
-                                playerName
-                        )
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§cCould not find player: " + playerName
                     )
                 );
                 return;
@@ -123,10 +115,9 @@ public class BlacklistCommand extends CommandBase {
             if ("add".equalsIgnoreCase(subCommand)) {
                 if (args.length < 3) {
                     Minecraft.getMinecraft().addScheduledTask(() ->
-                        sender.addChatMessage(
-                            new ChatComponentText(
-                                "§r[§bStatsify§r]§c Invalid usage! Use /blacklist add <player> <reason>"
-                            )
+                        ChatUtils.sendCommandMessage(
+                            sender,
+                            "§cInvalid usage! Use /blacklist add <player> <reason>"
                         )
                     );
                     return;
@@ -137,31 +128,24 @@ public class BlacklistCommand extends CommandBase {
                 );
                 blacklistManager.addPlayer(uuid, playerName, reason);
                 Minecraft.getMinecraft().addScheduledTask(() ->
-                    sender.addChatMessage(
-                        new ChatComponentText(
-                            "§r[§bStatsify§r]§a Added " +
-                                playerName +
-                                " to the blacklist."
-                        )
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§aAdded " + playerName + " to the blacklist."
                     )
                 );
             } else if ("remove".equalsIgnoreCase(subCommand)) {
                 blacklistManager.removePlayer(uuid);
                 Minecraft.getMinecraft().addScheduledTask(() ->
-                    sender.addChatMessage(
-                        new ChatComponentText(
-                            "§r[§bStatsify§r]§a Removed " +
-                                playerName +
-                                " from the blacklist."
-                        )
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§aRemoved " + playerName + " from the blacklist."
                     )
                 );
             } else {
                 Minecraft.getMinecraft().addScheduledTask(() ->
-                    sender.addChatMessage(
-                        new ChatComponentText(
-                            "§r[§bStatsify§r]§c Invalid subcommand! Use 'add', 'remove', or 'list'."
-                        )
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§cInvalid subcommand! Use 'add', 'remove', or 'list'."
                     )
                 );
             }

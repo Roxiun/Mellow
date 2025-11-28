@@ -2,10 +2,10 @@ package com.strawberry.statsify.commands;
 
 import com.strawberry.statsify.cache.PlayerCache;
 import com.strawberry.statsify.data.TabStats;
+import com.strawberry.statsify.util.ChatUtils;
 import java.util.Map;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.util.ChatComponentText;
 
 public class ClearCacheCommand extends CommandBase {
 
@@ -34,11 +34,7 @@ public class ClearCacheCommand extends CommandBase {
     public void processCommand(ICommandSender sender, String[] args) {
         playerCache.clearCache();
         tabStats.clear();
-        sender.addChatMessage(
-            new ChatComponentText(
-                "§r[§bStatsify§r] §aAll caches have been cleared."
-            )
-        );
+        ChatUtils.sendCommandMessage(sender, "§aAll caches have been cleared.");
     }
 
     @Override

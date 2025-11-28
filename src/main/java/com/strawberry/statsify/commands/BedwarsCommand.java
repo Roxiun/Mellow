@@ -2,19 +2,17 @@ package com.strawberry.statsify.commands;
 
 import com.mojang.authlib.GameProfile;
 import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
-import com.strawberry.statsify.api.urchin.UrchinTag;
 import com.strawberry.statsify.cache.PlayerCache;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
+import com.strawberry.statsify.util.ChatUtils;
 import com.strawberry.statsify.util.formatting.FormattingUtils;
 import java.util.List;
-import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
 
 public class BedwarsCommand extends CommandBase {
 
@@ -39,10 +37,9 @@ public class BedwarsCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length != 1) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    "§r[§bStatsify§r]§c Invalid usage! Use /bw <username>"
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cInvalid usage! Use /bw <username>"
             );
             return;
         }
@@ -53,11 +50,9 @@ public class BedwarsCommand extends CommandBase {
 
             if (profile == null || profile.getBedwarsPlayer() == null) {
                 Minecraft.getMinecraft().addScheduledTask(() ->
-                    sender.addChatMessage(
-                        new ChatComponentText(
-                            "§r[§bStatsify§r] §cFailed to fetch stats for: §r" +
-                                username
-                        )
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§cFailed to fetch stats for: §r" + username
                     )
                 );
                 return;
@@ -65,7 +60,6 @@ public class BedwarsCommand extends CommandBase {
 
             BedwarsPlayer player = profile.getBedwarsPlayer();
             String statsMessage =
-                "§r[§bStatsify§r] " +
                 player.getName() +
                 " §r" +
                 player.getStars() +
@@ -74,7 +68,7 @@ public class BedwarsCommand extends CommandBase {
                 player.getFormattedFkdr();
 
             Minecraft.getMinecraft().addScheduledTask(() ->
-                sender.addChatMessage(new ChatComponentText(statsMessage))
+                ChatUtils.sendCommandMessage(sender, statsMessage)
             );
 
             if (config.urchin && profile.isUrchinTagged()) {
@@ -82,12 +76,9 @@ public class BedwarsCommand extends CommandBase {
                     profile.getUrchinTags()
                 );
                 String urchinMessage =
-                    "§r[§bStatsify§r] §c" +
-                    username +
-                    " is tagged for: " +
-                    tags;
+                    "§c" + username + " is tagged for: " + tags;
                 Minecraft.getMinecraft().addScheduledTask(() ->
-                    sender.addChatMessage(new ChatComponentText(urchinMessage))
+                    ChatUtils.sendCommandMessage(sender, urchinMessage)
                 );
             }
         })

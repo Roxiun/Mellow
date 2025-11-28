@@ -5,6 +5,7 @@ import com.strawberry.statsify.cache.PlayerCache;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
 import com.strawberry.statsify.data.TabStats;
+import com.strawberry.statsify.util.ChatUtils;
 import com.strawberry.statsify.util.formatting.FormattingUtils;
 import com.strawberry.statsify.util.nicks.NickUtils;
 import com.strawberry.statsify.util.player.PlayerUtils;
@@ -13,9 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ChatComponentText;
 
 public class StatsChecker {
 
@@ -86,11 +85,7 @@ public class StatsChecker {
                     String chatMessage = formatChatStats(profile);
                     if (!chatMessage.isEmpty()) {
                         mc.addScheduledTask(() ->
-                            mc.thePlayer.addChatMessage(
-                                new ChatComponentText(
-                                    "§r[§bStatsify§r] " + chatMessage
-                                )
-                            )
+                            ChatUtils.sendMessage(chatMessage)
                         );
                     }
                 }
@@ -101,14 +96,9 @@ public class StatsChecker {
                         profile.getUrchinTags()
                     );
                     String urchinMessage =
-                        "§r[§bStatsify§r] §c" +
-                        profile.getName() +
-                        " is tagged for: " +
-                        tags;
+                        "§c" + profile.getName() + " is tagged for: " + tags;
                     mc.addScheduledTask(() ->
-                        mc.thePlayer.addChatMessage(
-                            new ChatComponentText(urchinMessage)
-                        )
+                        ChatUtils.sendMessage(urchinMessage)
                     );
                 }
             });

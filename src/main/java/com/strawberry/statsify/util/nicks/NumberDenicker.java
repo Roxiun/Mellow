@@ -2,6 +2,7 @@ package com.strawberry.statsify.util.nicks;
 
 import com.strawberry.statsify.api.aurora.AuroraApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
+import com.strawberry.statsify.util.ChatUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,14 +82,12 @@ public class NumberDenicker {
                             player.fuzzy_finals_potentials == null)
                     ) {
                         mc.addScheduledTask(() ->
-                            mc.thePlayer.addChatMessage(
-                                new ChatComponentText(
-                                    "§4[ND] Attempting to denick " +
-                                        nickName +
-                                        " with " +
-                                        finalNumberStr +
-                                        " finals"
-                                )
+                            ChatUtils.sendMessage(
+                                "§aAttempting to denick " +
+                                    nickName +
+                                    " with " +
+                                    finalNumberStr +
+                                    " finals"
                             )
                         );
                         processNumbers("finals", nickName, finalNumberStr);
@@ -114,14 +113,12 @@ public class NumberDenicker {
                 (!player.bedsChecked || player.fuzzy_beds_potentials == null)
             ) {
                 mc.addScheduledTask(() ->
-                    mc.thePlayer.addChatMessage(
-                        new ChatComponentText(
-                            "§4[ND] Attempting to denick " +
-                                nickName +
-                                " with " +
-                                bedNumber +
-                                " beds"
-                        )
+                    ChatUtils.sendMessage(
+                        "§aAttempting to denick " +
+                            nickName +
+                            " with " +
+                            bedNumber +
+                            " beds"
                     )
                 );
                 processNumbers("beds", nickName, bedNumber);
@@ -182,13 +179,11 @@ public class NumberDenicker {
 
                     if (config.numberDenickerFuzzy) {
                         mc.addScheduledTask(() ->
-                            mc.thePlayer.addChatMessage(
-                                new ChatComponentText(
-                                    "§4[ND] §aFound potential " +
-                                        type +
-                                        " players: " +
-                                        fuzzy_players_log
-                                )
+                            ChatUtils.sendMessage(
+                                "§aFound potential " +
+                                    type +
+                                    " players: " +
+                                    fuzzy_players_log
                             )
                         );
                     }
@@ -210,22 +205,17 @@ public class NumberDenicker {
 
                         if (intersection.isEmpty()) {
                             mc.addScheduledTask(() ->
-                                mc.thePlayer.addChatMessage(
-                                    new ChatComponentText(
-                                        "§4[ND] §cNo fuzzy match found for " +
-                                            nickName
-                                    )
+                                ChatUtils.sendMessage(
+                                    "§cNo fuzzy match found for " + nickName
                                 )
                             );
                         } else {
                             mc.addScheduledTask(() ->
-                                mc.thePlayer.addChatMessage(
-                                    new ChatComponentText(
-                                        "§4[ND] §aFound fuzzy matches for " +
-                                            nickName +
-                                            ": " +
-                                            String.join(", ", intersection)
-                                    )
+                                ChatUtils.sendMessage(
+                                    "§aFound fuzzy matches for " +
+                                        nickName +
+                                        ": " +
+                                        String.join(", ", intersection)
                                 )
                             );
                         }
@@ -266,11 +256,8 @@ public class NumberDenicker {
                             });
                         } else {
                             mc.addScheduledTask(() ->
-                                mc.thePlayer.addChatMessage(
-                                    new ChatComponentText(
-                                        "§4[ND] §cNo definitive name found for " +
-                                            nickName
-                                    )
+                                ChatUtils.sendMessage(
+                                    "§cNo definitive name found for " + nickName
                                 )
                             );
                         }
@@ -279,10 +266,8 @@ public class NumberDenicker {
             } catch (IOException e) {
                 e.printStackTrace();
                 mc.addScheduledTask(() ->
-                    mc.thePlayer.addChatMessage(
-                        new ChatComponentText(
-                            "§4[ND] §cError fetching data from Aurora API."
-                        )
+                    ChatUtils.sendMessage(
+                        "§cError fetching data from Aurora API."
                     )
                 );
             }
@@ -293,9 +278,7 @@ public class NumberDenicker {
     private void sendAlert(String playerName, String realName) {
         String alertMsg =
             "§6" + realName + "§7 might be nicked as " + playerName + "§7.";
-        mc.thePlayer.addChatMessage(
-            new ChatComponentText("§4[ND] " + alertMsg)
-        );
+        ChatUtils.sendMessage(alertMsg);
         mc.thePlayer.playSound("note.pling", 1.0f, 1.0f);
     }
 

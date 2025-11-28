@@ -2,10 +2,10 @@ package com.strawberry.statsify.util.player;
 
 import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
 import com.strawberry.statsify.api.bedwars.BedwarsPlayer;
-import com.strawberry.statsify.api.urchin.UrchinTag;
 import com.strawberry.statsify.cache.PlayerCache;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
+import com.strawberry.statsify.util.ChatUtils;
 import com.strawberry.statsify.util.blacklist.BlacklistManager;
 import com.strawberry.statsify.util.formatting.FormattingUtils;
 import java.util.Set;
@@ -13,11 +13,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 
@@ -105,13 +103,7 @@ public class PregameStats {
         if (profile == null || profile.getBedwarsPlayer() == null) {
             if (config.pregameStats) {
                 mc.addScheduledTask(() ->
-                    mc.thePlayer.addChatMessage(
-                        new ChatComponentText(
-                            "§r[§bStatsify§r] §cFailed to fetch stats for: §r" +
-                                username +
-                                " (possibly nicked)"
-                        )
-                    )
+                    ChatUtils.sendMessage("§cFailed to fetch stats for: §r" + username + " (possibly nicked)")
                 );
             }
             return;
@@ -131,14 +123,7 @@ public class PregameStats {
                 .getBlacklistedPlayer(uuid)
                 .getReason();
             mc.addScheduledTask(() ->
-                mc.thePlayer.addChatMessage(
-                    new ChatComponentText(
-                        "§r[§bStatsify§r] §c" +
-                            username +
-                            " is on your blacklist: " +
-                            reason
-                    )
-                )
+                ChatUtils.sendMessage("§c" + username + " is on your blacklist: " + reason)
             );
         }
 
@@ -146,15 +131,13 @@ public class PregameStats {
             BedwarsPlayer player = profile.getBedwarsPlayer();
             String stats =
                 player.getName() +
-                " §r" +
-                player.getStars() +
+                " §r"
+                + player.getStars() +
                 " §7|§r FKDR: " +
                 player.getFkdrColor() +
                 player.getFormattedFkdr();
             mc.addScheduledTask(() ->
-                mc.thePlayer.addChatMessage(
-                    new ChatComponentText("§r[§bStatsify§r] " + stats)
-                )
+                ChatUtils.sendMessage(stats)
             );
         }
 
@@ -162,12 +145,9 @@ public class PregameStats {
             String tags = FormattingUtils.formatUrchinTags(
                 profile.getUrchinTags()
             );
-            String urchinMessage =
-                "§r[§bStatsify§r] §c" + username + " is tagged for: " + tags;
+            String urchinMessage = "§c" + username + " is tagged for: " + tags;
             mc.addScheduledTask(() ->
-                mc.thePlayer.addChatMessage(
-                    new ChatComponentText(urchinMessage)
-                )
+                ChatUtils.sendMessage(urchinMessage)
             );
         }
     }

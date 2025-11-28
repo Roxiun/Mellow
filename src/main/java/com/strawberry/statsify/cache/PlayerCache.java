@@ -7,14 +7,13 @@ import com.strawberry.statsify.api.urchin.UrchinApi;
 import com.strawberry.statsify.api.urchin.UrchinTag;
 import com.strawberry.statsify.config.StatsifyOneConfig;
 import com.strawberry.statsify.data.PlayerProfile;
+import com.strawberry.statsify.util.ChatUtils;
 import com.strawberry.statsify.util.player.PlayerUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ChatComponentText;
 
 public class PlayerCache {
 
@@ -74,12 +73,10 @@ public class PlayerCache {
                     );
                 } catch (IOException e) {
                     Minecraft.getMinecraft().addScheduledTask(() ->
-                        Minecraft.getMinecraft().thePlayer.addChatMessage(
-                            new ChatComponentText(
-                                "§r[§bStatsify§r] §cFailed to fetch Urchin tags for " +
-                                    playerName +
-                                    "."
-                            )
+                        ChatUtils.sendMessage(
+                            "§cFailed to fetch Urchin tags for " +
+                                playerName +
+                                "."
                         )
                     );
                 }

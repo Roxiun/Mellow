@@ -2,6 +2,7 @@ package com.strawberry.statsify.commands;
 
 import com.strawberry.statsify.api.aurora.AuroraApi;
 import com.strawberry.statsify.config.StatsifyOneConfig;
+import com.strawberry.statsify.util.ChatUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,7 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
 
 public class DenickCommand extends CommandBase {
 
@@ -34,10 +34,9 @@ public class DenickCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length != 2) {
-            sender.addChatMessage(
-                new ChatComponentText(
-                    "§4[ND] §cInvalid usage. Use: " + getCommandUsage(sender)
-                )
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cInvalid usage. Use: " + getCommandUsage(sender)
             );
             return;
         }
@@ -46,8 +45,9 @@ public class DenickCommand extends CommandBase {
         if (
             !type.equalsIgnoreCase("finals") && !type.equalsIgnoreCase("beds")
         ) {
-            sender.addChatMessage(
-                new ChatComponentText("§cInvalid type. Use 'finals' or 'beds'.")
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cInvalid type. Use 'finals' or 'beds'."
             );
             return;
         }
@@ -56,15 +56,14 @@ public class DenickCommand extends CommandBase {
         try {
             Integer.parseInt(numberStr.replace(",", ""));
         } catch (NumberFormatException e) {
-            sender.addChatMessage(
-                new ChatComponentText("§4[ND] §cInvalid number: " + numberStr)
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§cInvalid number: " + numberStr
             );
             return;
         }
 
-        sender.addChatMessage(
-            new ChatComponentText("§4[ND] §aSearching for players...")
-        );
+        ChatUtils.sendCommandMessage(sender, "§aSearching for players...");
 
         new Thread(() -> {
             try {
@@ -95,10 +94,9 @@ public class DenickCommand extends CommandBase {
                 Minecraft.getMinecraft().addScheduledTask(() -> {
                     if (response != null && response.success) {
                         if (response.data.isEmpty()) {
-                            sender.addChatMessage(
-                                new ChatComponentText(
-                                    "§4[ND] §cNo players found."
-                                )
+                            ChatUtils.sendCommandMessage(
+                                sender,
+                                "§cNo players found."
                             );
                         } else {
                             String players = response.data
@@ -112,26 +110,23 @@ public class DenickCommand extends CommandBase {
                                         ")"
                                 )
                                 .collect(Collectors.joining(", "));
-                            sender.addChatMessage(
-                                new ChatComponentText(
-                                    "§4[ND] §aFound players: " + players
-                                )
+                            ChatUtils.sendCommandMessage(
+                                sender,
+                                "§aFound players: " + players
                             );
                         }
                     } else {
-                        sender.addChatMessage(
-                            new ChatComponentText(
-                                "§4[ND] §cError fetching data from Aurora API."
-                            )
+                        ChatUtils.sendCommandMessage(
+                            sender,
+                            "§cError fetching data from Aurora API."
                         );
                     }
                 });
             } catch (IOException e) {
                 Minecraft.getMinecraft().addScheduledTask(() -> {
-                    sender.addChatMessage(
-                        new ChatComponentText(
-                            "§4[ND] §cAn error occurred while fetching data."
-                        )
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§cAn error occurred while fetching data."
                     );
                 });
                 e.printStackTrace();
