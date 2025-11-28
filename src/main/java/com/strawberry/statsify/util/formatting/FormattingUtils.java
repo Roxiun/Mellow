@@ -27,43 +27,43 @@ public class FormattingUtils {
 
         starColors.put(
             1000,
-            new String[] { "§6", "§e", "§a", "§b", "§d", "\u272a" }
+            new String[] { "§6", "§e", "§a", "§b", "§d", "✫" }
         );
         starColors.put(
             1100,
-            new String[] { "§f", "§f", "§f", "§f", "§f", "\u272a" }
+            new String[] { "§f", "§f", "§f", "§f", "§f", "✫" }
         );
         starColors.put(
             1200,
-            new String[] { "§e", "§e", "§e", "§e", "§6", "\u272a" }
+            new String[] { "§e", "§e", "§e", "§e", "§6", "✫" }
         );
         starColors.put(
             1300,
-            new String[] { "§b", "§b", "§b", "§b", "§3", "\u272a" }
+            new String[] { "§b", "§b", "§b", "§b", "§3", "✫" }
         );
         starColors.put(
             1400,
-            new String[] { "§a", "§a", "§a", "§a", "§2", "\u272a" }
+            new String[] { "§a", "§a", "§a", "§a", "§2", "✫" }
         );
         starColors.put(
             1500,
-            new String[] { "§3", "§3", "§3", "§3", "§9", "\u272a" }
+            new String[] { "§3", "§3", "§3", "§3", "§9", "✫" }
         );
         starColors.put(
             1600,
-            new String[] { "§c", "§c", "§c", "§c", "§4", "\u272a" }
+            new String[] { "§c", "§c", "§c", "§c", "§4", "✫" }
         );
         starColors.put(
             1700,
-            new String[] { "§d", "§d", "§d", "§d", "§5", "\u272a" }
+            new String[] { "§d", "§d", "§d", "§d", "§5", "✫" }
         );
         starColors.put(
             1800,
-            new String[] { "§9", "§9", "§9", "§9", "§1", "\u272a" }
+            new String[] { "§9", "§9", "§9", "§9", "§1", "✫" }
         );
         starColors.put(
             1900,
-            new String[] { "§5", "§5", "§5", "§5", "§8", "\u272a" }
+            new String[] { "§5", "§5", "§5", "§5", "§8", "✫" }
         );
 
         starColors.put(
