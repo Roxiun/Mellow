@@ -53,6 +53,7 @@ public class NickUtils {
                         ChatUtils.sendMessage(
                             nickedPlayerDisplay + " §dis a nicked player!"
                         );
+
                         if (config.autoSkinDenick) {
                             String realName = SkinUtils.getRealName(playerInfo);
                             if (
