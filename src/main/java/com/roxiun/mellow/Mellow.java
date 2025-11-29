@@ -36,7 +36,7 @@ public class Mellow {
 
     public static MellowOneConfig config;
     public static final Map<String, TabStats> tabStats = new HashMap<>();
-    public static final NickUtils nickUtils = new NickUtils();
+    public static NickUtils nickUtils;
 
     public static MojangApi mojangApi;
     public static UrchinApi urchinApi;
@@ -70,6 +70,8 @@ public class Mellow {
             config.urchinKey,
             config
         );
+
+        nickUtils = new NickUtils(playerCache, config);
 
         // Utils
         TagUtils tagUtils = new TagUtils(this, blacklistManager);
