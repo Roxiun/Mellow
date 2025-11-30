@@ -47,10 +47,14 @@ jobs:
             - name: Build
               run: ./gradlew build --no-daemon
 
+            - name: Get short SHA
+              id: vars
+              run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
             - name: Upload Build Artifacts
               uses: actions/upload-artifact@v4
               if: success()
               with:
-                  name: Mellow-BleedingEdge-${{ github.sha }}
+                  name: Mellow-BleedingEdge-${{ steps.vars.outputs.sha_short }}
                   path: versions/*/build/libs/*.jar
                   retention-days: 30
