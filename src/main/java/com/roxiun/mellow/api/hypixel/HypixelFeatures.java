@@ -14,10 +14,14 @@ public class HypixelFeatures {
     private int timeSinceGameStart = 0; // In ticks
     private int secondsSinceGameStart = 0; // In seconds
     private int timeUntilEmerald = -1;
-    private int spawnCount = 0;
+    private int emeraldSpawnCount = 0;
+    private int timeUntilDiamond = -1;
+    private int diamondSpawnCount = 0;
     private String mode = "";
-    private int stage = 1;
+    private int emeraldStage = 1;
+    private int diamondStage = 1;
     private String emeraldCounterTimeText = "";
+    private String diamondCounterTimeText = "";
     private int tickCounter = 0; // Counter to track ticks for second conversion
 
     public static HypixelFeatures getInstance() {
@@ -61,33 +65,33 @@ public class HypixelFeatures {
         }
 
         if (secondsSinceGameStart == 1) {
-            stage = 1;
+            emeraldStage = 1;
             timeUntilEmerald = 30;
         } else if (secondsSinceGameStart == 36) {
             // 36 seconds = 720 ticks
-            stage = 2;
+            emeraldStage = 2;
             timeUntilEmerald = 0;
         } else if (secondsSinceGameStart == 72) {
             // 72 seconds = 1440 ticks
-            stage = 3;
+            emeraldStage = 3;
             timeUntilEmerald = 0;
         }
 
         if (timeUntilEmerald == 0) {
-            spawnCount++;
-            if (stage == 1) {
+            emeraldSpawnCount++;
+            if (emeraldStage == 1) {
                 if ("doubles".equals(mode)) {
                     timeUntilEmerald = 65;
                 } else if ("fours".equals(mode)) {
                     timeUntilEmerald = 55;
                 }
-            } else if (stage == 2) {
+            } else if (emeraldStage == 2) {
                 if ("doubles".equals(mode)) {
                     timeUntilEmerald = 50;
                 } else if ("fours".equals(mode)) {
                     timeUntilEmerald = 40;
                 }
-            } else if (stage == 3) {
+            } else if (emeraldStage == 3) {
                 if ("doubles".equals(mode)) {
                     timeUntilEmerald = 35;
                 } else if ("fours".equals(mode)) {
@@ -96,12 +100,46 @@ public class HypixelFeatures {
             }
         }
 
+        // Update diamond timer logic - diamonds start after 16 seconds (common timing for diamond generation)
+        if (secondsSinceGameStart == 16) {
+            diamondStage = 1;
+            timeUntilDiamond = 30; // Diamond tier 1: 30 seconds (same for doubles/fours)
+        } else if (secondsSinceGameStart == 46) {
+            // 16 + 30 = 46 (after first diamond spawn)
+            if (diamondStage == 1) {
+                diamondStage = 2;
+                timeUntilDiamond = 23; // Diamond tier 2: 23 seconds
+            }
+        } else if (secondsSinceGameStart == 69) {
+            // 46 + 23 = 69 (after second diamond spawn)
+            if (diamondStage == 2) {
+                diamondStage = 3;
+                timeUntilDiamond = 12; // Diamond tier 3: 12 seconds
+            }
+        }
+
+        // Check if diamond should spawn
+        if (timeUntilDiamond == 0) {
+            diamondSpawnCount++;
+            if (diamondStage == 1) {
+                timeUntilDiamond = 30; // T1: 30 seconds
+            } else if (diamondStage == 2) {
+                timeUntilDiamond = 23; // T2: 23 seconds
+            } else if (diamondStage == 3) {
+                timeUntilDiamond = 12; // T3: 12 seconds
+            }
+        }
+
         // Update the text for display
         emeraldCounterTimeText = getFormattedEmeraldCountText();
+        diamondCounterTimeText = getFormattedDiamondCountText();
 
         // Only decrease the timer if it's greater than 0 to avoid negative values
         if (timeUntilEmerald > 0) {
             timeUntilEmerald--;
+        }
+        if (timeUntilDiamond > 0) {
+            timeUntilDiamond--;
         }
 
         // Increment seconds counter after all processing, matching JS behavior
@@ -116,10 +154,14 @@ public class HypixelFeatures {
         timeSinceGameStart = 0;
         secondsSinceGameStart = 0;
         timeUntilEmerald = -1;
-        spawnCount = 0;
+        emeraldSpawnCount = 0;
+        timeUntilDiamond = -1;
+        diamondSpawnCount = 0;
         mode = "";
-        stage = 1;
+        emeraldStage = 1;
+        diamondStage = 1;
         emeraldCounterTimeText = "";
+        diamondCounterTimeText = "";
         tickCounter = 0;
     }
 
@@ -139,12 +181,16 @@ public class HypixelFeatures {
         return timeUntilEmerald;
     }
 
-    public int getSpawnCount() {
-        return spawnCount;
+    public int getEmeraldSpawnCount() {
+        return emeraldSpawnCount;
     }
 
     public String getEmeraldCounterText() {
         return emeraldCounterTimeText;
+    }
+
+    public String getDiamondCounterText() {
+        return diamondCounterTimeText;
     }
 
     private String getFormattedEmeraldCountText() {
@@ -155,6 +201,17 @@ public class HypixelFeatures {
             timeString = String.valueOf(timeUntilEmerald);
         }
 
-        return "(§f" + spawnCount + "§a): §7" + timeString + "s";
+        return "(§f" + emeraldSpawnCount + "§a): §7" + timeString + "s";
+    }
+
+    private String getFormattedDiamondCountText() {
+        String timeString;
+        if (timeUntilDiamond <= 0) {
+            timeString = "0";
+        } else {
+            timeString = String.valueOf(timeUntilDiamond);
+        }
+
+        return "(§f" + diamondSpawnCount + "§b): §7" + timeString + "s";
     }
 }

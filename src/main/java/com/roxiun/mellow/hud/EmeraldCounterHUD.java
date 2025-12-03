@@ -8,7 +8,7 @@ public class EmeraldCounterHUD extends SingleTextHud {
 
     public EmeraldCounterHUD() {
         super(
-            "§aEmeralds", // title is actually useful now
+            "§2Emeralds", // title is actually useful now
             true, // enabled obviously
             5, // x
             25, // y
@@ -35,7 +35,7 @@ public class EmeraldCounterHUD extends SingleTextHud {
 
     @Override
     protected String getText(boolean example) {
-        if (example) return "(§f2§a): §715s";
+        if (example) return "(§f2§2): §715s";
         else {
             return HypixelFeatures.getInstance().getEmeraldCounterText();
         }
