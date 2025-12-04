@@ -67,11 +67,11 @@ public class HypixelFeatures {
         if (secondsSinceGameStart == 1) {
             emeraldStage = 1;
             timeUntilEmerald = 30;
-        } else if (secondsSinceGameStart == 36) {
+        } else if (secondsSinceGameStart == 720) {
             // 36 seconds = 720 ticks
             emeraldStage = 2;
             timeUntilEmerald = 0;
-        } else if (secondsSinceGameStart == 72) {
+        } else if (secondsSinceGameStart == 1440) {
             // 72 seconds = 1440 ticks
             emeraldStage = 3;
             timeUntilEmerald = 0;
@@ -101,16 +101,16 @@ public class HypixelFeatures {
         }
 
         // Update diamond timer logic - diamonds start after 16 seconds (common timing for diamond generation)
-        if (secondsSinceGameStart == 16) {
+        if (secondsSinceGameStart == 1) {
             diamondStage = 1;
             timeUntilDiamond = 30; // Diamond tier 1: 30 seconds (same for doubles/fours)
-        } else if (secondsSinceGameStart == 46) {
+        } else if (secondsSinceGameStart == 360) {
             // 16 + 30 = 46 (after first diamond spawn)
             if (diamondStage == 1) {
                 diamondStage = 2;
                 timeUntilDiamond = 23; // Diamond tier 2: 23 seconds
             }
-        } else if (secondsSinceGameStart == 69) {
+        } else if (secondsSinceGameStart == 1080) {
             // 46 + 23 = 69 (after second diamond spawn)
             if (diamondStage == 2) {
                 diamondStage = 3;
