@@ -14,6 +14,7 @@ import cc.polyfrost.oneconfig.config.data.ModType;
 import cc.polyfrost.oneconfig.config.data.OptionSize;
 import cc.polyfrost.oneconfig.utils.NetworkUtils;
 import com.roxiun.mellow.Mellow;
+import com.roxiun.mellow.hud.BedwarsUpgradesTrapsHUD;
 import com.roxiun.mellow.hud.DiamondCounterHUD;
 import com.roxiun.mellow.hud.EmeraldCounterHUD;
 
@@ -36,6 +37,10 @@ public class MellowOneConfig extends Config {
 
     @HUD(name = "Diamond Counter HUD", category = "HUD")
     public DiamondCounterHUD diamondCounterHUD = new DiamondCounterHUD();
+
+    @HUD(name = "Upgrades & Traps HUD", category = "HUD")
+    public BedwarsUpgradesTrapsHUD upgradesTrapsHUD =
+        new BedwarsUpgradesTrapsHUD();
 
     @Number(
         name = "Minimum FKDR to show",

@@ -8,6 +8,7 @@ import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.task.StatsChecker;
 import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.StringUtils;
+import com.roxiun.mellow.util.bedwars.BedwarsUpgradesTrapsManager;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.nicks.NickUtils;
 import com.roxiun.mellow.util.nicks.NumberDenicker;
@@ -59,6 +60,9 @@ public class ChatHandler {
         pregameStats.onChat(event);
         String message = event.message.getUnformattedText();
 
+        // Process purchases and traps before other logic
+        processBedwarsUpgradesAndTraps(event);
+
         // Check for Bedwars game start messages
         if (
             message.contains("Protect your bed and destroy the enemy beds.") &&
@@ -70,6 +74,8 @@ public class ChatHandler {
                 try {
                     Thread.sleep(1000); // Wait 1 second like in the JS version
                     startBedwarsGame();
+                    // Reset upgrades and traps when game starts
+                    BedwarsUpgradesTrapsManager.getInstance().resetUpgradesAndTraps();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -94,6 +100,8 @@ public class ChatHandler {
                 try {
                     Thread.sleep(1000); // Wait 1 second like in the JS version
                     startBedwarsGame();
+                    // Reset upgrades and traps when game starts
+                    BedwarsUpgradesTrapsManager.getInstance().resetUpgradesAndTraps();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -124,6 +132,37 @@ public class ChatHandler {
                 }
             })
                 .start();
+        }
+
+        // Check for pregame start message to reset upgrades and traps
+        if (
+            message.startsWith("The game starts in ") &&
+            message.contains(" seconds!")
+        ) {
+            BedwarsUpgradesTrapsManager.getInstance().resetUpgradesAndTraps();
+        }
+    }
+
+    private void processBedwarsUpgradesAndTraps(ClientChatReceivedEvent event) {
+        String message = event.message.getUnformattedText();
+
+        // Check for purchase messages
+        if (message.toLowerCase().contains("purchased")) {
+            BedwarsUpgradesTrapsManager.getInstance().processPurchaseMessage(
+                message
+            );
+        }
+
+        // Check for trap triggered and removed messages
+        if (
+            message.toLowerCase().contains("trap was set off!") ||
+            message.toLowerCase().contains("reveal trap set off") ||
+            (message.toLowerCase().contains("removed") &&
+                message.toLowerCase().contains("trap from the queue"))
+        ) {
+            BedwarsUpgradesTrapsManager.getInstance().processTrapTriggeredMessage(
+                message
+            );
         }
     }
 
