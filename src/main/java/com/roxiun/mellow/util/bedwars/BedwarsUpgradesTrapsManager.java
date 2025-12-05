@@ -203,13 +203,13 @@ public class BedwarsUpgradesTrapsManager {
         return getDisplayLinesWithFormatting(
             false,
             false,
-            221,
-            0,
+            221, // original purple red value for heading (close to light purple)
+            0, // original purple green value for heading
+            255, // original purple blue value for heading
             255,
-            255,
-            255,
-            255,
-            255,
+            255, // white red value for text
+            255, // white green value for text
+            255, // white blue value for text
             255
         );
     }
@@ -328,16 +328,37 @@ public class BedwarsUpgradesTrapsManager {
     private String formatColorCode(int red, int green, int blue, int alpha) {
         // Convert RGB to Minecraft color code
         // We'll use the closest matching color code based on the RGB values
-        if (red == 221 && green == 0 && blue == 255 && alpha == 255) return "d"; // &d (purple)
-        if (
-            red == 255 && green == 255 && blue == 255 && alpha == 255
-        ) return "f"; // &f (white)
-        if (
-            red == 127 && green == 127 && blue == 127 && alpha == 255
-        ) return "7"; // &7 (gray)
+        // Minecraft color codes: 0-black, 1-darkblue, 2-darkgreen, 3-darkaqua, 4-darkred, 5-darkpurple, 6-gold, 7-gray, 8-darkgray, 9-blue, a-green, b-aqua, c-red, d-lightpurple, e-yellow, f-white
 
-        // If not one of the common ones, return white as default
-        return "d";
+        // Check for exact or near matches to common Minecraft colors
+        if (isCloseTo(red, green, blue, 0, 0, 0)) return "0"; // black
+        if (isCloseTo(red, green, blue, 0, 0, 170)) return "1"; // dark blue
+        if (isCloseTo(red, green, blue, 0, 170, 0)) return "2"; // dark green
+        if (isCloseTo(red, green, blue, 0, 170, 170)) return "3"; // dark aqua
+        if (isCloseTo(red, green, blue, 170, 0, 0)) return "4"; // dark red
+        if (isCloseTo(red, green, blue, 170, 0, 170)) return "5"; // dark purple
+        if (isCloseTo(red, green, blue, 255, 170, 0)) return "6"; // gold
+        if (isCloseTo(red, green, blue, 170, 170, 170)) return "7"; // gray
+        if (isCloseTo(red, green, blue, 85, 85, 85)) return "8"; // dark gray
+        if (isCloseTo(red, green, blue, 85, 85, 255)) return "9"; // blue
+        if (isCloseTo(red, green, blue, 85, 255, 85)) return "a"; // green
+        if (isCloseTo(red, green, blue, 85, 255, 255)) return "b"; // aqua
+        if (isCloseTo(red, green, blue, 255, 85, 85)) return "c"; // red
+        if (isCloseTo(red, green, blue, 255, 85, 255)) return "d"; // light purple
+        if (isCloseTo(red, green, blue, 255, 255, 85)) return "e"; // yellow
+        if (isCloseTo(red, green, blue, 255, 255, 255)) return "f"; // white
+
+        // If no close match found, default to white
+        return "f";
+    }
+
+    private boolean isCloseTo(int r1, int g1, int b1, int r2, int g2, int b2) {
+        // Check if the colors are close (within a tolerance of 20 for each component)
+        return (
+            Math.abs(r1 - r2) <= 20 &&
+            Math.abs(g1 - g2) <= 20 &&
+            Math.abs(b1 - b2) <= 20
+        );
     }
 
     private String getShortName(String fullName) {

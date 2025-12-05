@@ -1,10 +1,11 @@
 package com.roxiun.mellow.hud;
 
-import cc.polyfrost.oneconfig.config.annotations.Color;
+import cc.polyfrost.oneconfig.config.annotations.Dropdown;
 import cc.polyfrost.oneconfig.config.annotations.Switch;
 import cc.polyfrost.oneconfig.config.core.OneColor;
 import cc.polyfrost.oneconfig.hud.TextHud;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
+import com.roxiun.mellow.util.MinecraftColor;
 import com.roxiun.mellow.util.bedwars.BedwarsUpgradesTrapsManager;
 import java.util.List;
 
@@ -22,17 +23,53 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
     )
     public boolean romanNumerals = false;
 
-    @Color(
+    @Dropdown(
         name = "Heading Color",
-        description = "Color for section headings (Upgrades/Traps)"
+        description = "Color for section headings (Upgrades/Traps)",
+        options = {
+            "Black",
+            "Dark Blue",
+            "Dark Green",
+            "Dark Aqua",
+            "Dark Red",
+            "Dark Purple",
+            "Gold",
+            "Gray",
+            "Dark Gray",
+            "Blue",
+            "Green",
+            "Aqua",
+            "Red",
+            "Light Purple",
+            "Yellow",
+            "White",
+        }
     )
-    public OneColor headingColor = new OneColor(221, 0, 255, 255); // &d (purple)
+    public int headingColorIndex = 13; // Index for Light Purple (matches original purple &d)
 
-    @Color(
+    @Dropdown(
         name = "Text Color",
-        description = "Color for upgrade and trap names"
+        description = "Color for upgrade and trap names",
+        options = {
+            "Black",
+            "Dark Blue",
+            "Dark Green",
+            "Dark Aqua",
+            "Dark Red",
+            "Dark Purple",
+            "Gold",
+            "Gray",
+            "Dark Gray",
+            "Blue",
+            "Green",
+            "Aqua",
+            "Red",
+            "Light Purple",
+            "Yellow",
+            "White",
+        }
     )
-    public OneColor textColor = new OneColor(255, 255, 255, 255); // &f (white)
+    public int textColorIndex = 15; // Index for White (matches original white &f)
 
     public BedwarsUpgradesTrapsHUD() {
         super(
@@ -73,6 +110,11 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
             lines.add("§fIt's a Trap! Trap");
         } else {
             lines.clear();
+            MinecraftColor headingColor = MinecraftColor.fromIndex(
+                headingColorIndex
+            );
+            MinecraftColor textColor = MinecraftColor.fromIndex(textColorIndex);
+
             lines.addAll(
                 BedwarsUpgradesTrapsManager.getInstance().getDisplayLinesWithFormatting(
                     shortNames,
@@ -80,11 +122,11 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
                     headingColor.getRed(),
                     headingColor.getGreen(),
                     headingColor.getBlue(),
-                    headingColor.getAlpha(),
+                    255, // alpha is always 255 for Minecraft colors
                     textColor.getRed(),
                     textColor.getGreen(),
                     textColor.getBlue(),
-                    textColor.getAlpha()
+                    255 // alpha is always 255 for Minecraft colors
                 )
             );
         }
