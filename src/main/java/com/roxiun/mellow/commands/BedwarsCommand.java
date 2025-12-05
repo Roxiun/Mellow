@@ -7,6 +7,7 @@ import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.PlayerProfile;
 import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
+import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -64,26 +65,18 @@ public class BedwarsCommand extends CommandBase {
             }
 
             BedwarsPlayer player = profile.getBedwarsPlayer();
-            String statsMessage =
-                player.getName() +
-                " §r" +
-                player.getStars() +
-                " §7|§r FKDR: " +
-                player.getFkdrColor() +
-                player.getFormattedFkdr() +
-                " §7|§r WLR: " +
-                player.getFormattedWLRWithColor() +
-                " §7|§r BBLR: " +
-                player.getFormattedBBLRWithColor() +
-                " §7|§r Wins: " +
-                player.getFormattedWinsWithColor() +
-                " §7|§r Beds: " +
-                player.getFormattedBedsWithColor() +
-                " §7|§r Finals: " +
-                player.getFormattedFinalsWithColor();
+            List<String> statsLines = Arrays.asList(
+                player.getName() + " §r" + player.getStars(),
+                "§rFKDR: " + player.getFkdrColor() + player.getFormattedFkdr(),
+                "§rWLR: " + player.getFormattedWLRWithColor(),
+                "§rBBLR: " + player.getFormattedBBLRWithColor(),
+                "§rWins: " + player.getFormattedWinsWithColor(),
+                "§rBeds: " + player.getFormattedBedsWithColor(),
+                "§rFinals: " + player.getFormattedFinalsWithColor()
+            );
 
             Minecraft.getMinecraft().addScheduledTask(() ->
-                ChatUtils.sendCommandMessage(sender, statsMessage)
+                ChatUtils.sendMultilineCommandMessage(sender, statsLines)
             );
 
             if (config.urchin && profile.isUrchinTagged()) {

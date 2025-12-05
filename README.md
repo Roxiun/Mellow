@@ -95,3 +95,7 @@ Original Creator: `melissalmao` - Melissa (fwrina)
 Mellow (Fork): `Roxiun`
 
 [Lucid](https://github.com/afterlikeorg/Lucid): Many anticheat checks were adopted from Lucid, and wouldn't be possible without them
+
+### Features:
+Name & Upgrade HUD: `zifro`
+Original Emerald Counter: `jqsie`

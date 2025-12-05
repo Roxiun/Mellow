@@ -29,7 +29,13 @@ public class MellowCommand extends CommandBase {
         sender.addChatMessage(new ChatComponentText("§r§d     by roxiun"));
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§7original made by§d melissalmao,§r§7 fontaine by§d xanning, §r§7name by §dzifro"
+                "§r§7original made by§d melissalmao,§r§7 fontaine by§d xanning"
+            )
+        );
+        sender.addChatMessage(new ChatComponentText(""));
+        sender.addChatMessage(
+            new ChatComponentText(
+                "§r§dzifro §7for name & upgrades hud, §r§djqsie §7for original emerald counter "
             )
         );
         sender.addChatMessage(new ChatComponentText(""));
