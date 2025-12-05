@@ -346,17 +346,6 @@ public class MellowOneConfig extends Config {
     @Switch(name = "Auto Skin Denicker", subcategory = "Denicker")
     public boolean autoSkinDenick = true;
 
-    @Dropdown(
-        name = "Tab Format",
-        options = {
-            "[Star] Name • FKDR • WS",
-            "Star • Name • FKDR • WS",
-            "Name • FKDR • WS",
-        },
-        subcategory = "Stats"
-    )
-    public int tabFormat = 0;
-
     // Urchin Configs
     @Info(
         text = "Urchin is a community blacklist, allowing you to see potential cheaters in your game",
