@@ -36,7 +36,7 @@ public class Mellow {
 
     public static final String MODID = "mellow";
     public static final String NAME = "Mellow";
-    public static final String VERSION = "5.1.0";
+    public static final String VERSION = "5.2.0";
 
     public static MellowOneConfig config;
     public static final Map<String, TabStats> tabStats = new HashMap<>();
