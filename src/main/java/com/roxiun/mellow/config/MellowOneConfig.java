@@ -21,8 +21,14 @@ import com.roxiun.mellow.hud.EmeraldCounterHUD;
 
 public class MellowOneConfig extends Config {
 
+    @Switch(name = "Mod Enabled", subcategory = "General", description = "Master toggle to enable or disable the entire mod.")
+    public boolean modEnabled = true;
+
     @Switch(name = "Auto /who", subcategory = "General")
     public boolean autoWho = false;
+
+    @Switch(name = "Hide Auto /who Response", subcategory = "General", description = "Hides the ONLINE: player list response when auto /who is triggered.")
+    public boolean hideAutoWhoResponse = true;
 
     @Switch(name = "Show Tab Stats", subcategory = "General")
     public boolean tabStats = true;

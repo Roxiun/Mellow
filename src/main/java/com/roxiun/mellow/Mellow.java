@@ -284,6 +284,14 @@ public class Mellow {
         return providerManager.getSelectedProvider(config);
     }
 
+    /**
+     * Central mod-enabled check. All features, event handlers, mixins,
+     * and HUD elements should gate on this before doing any work.
+     */
+    public static boolean isEnabled() {
+        return config != null && config.modEnabled;
+    }
+
     public static AnticheatManager getAnticheatManager() {
         return anticheatManager;
     }

@@ -35,6 +35,9 @@ public abstract class RenderGlobalHitboxColorMixin {
         int alpha,
         CallbackInfo ci
     ) {
+        if (!Mellow.isEnabled()) {
+            return;
+        }
         MellowOneConfig config = Mellow.config;
         if (
             config == null ||

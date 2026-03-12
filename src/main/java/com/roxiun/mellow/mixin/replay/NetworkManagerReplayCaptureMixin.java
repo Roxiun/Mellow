@@ -1,5 +1,6 @@
 package com.roxiun.mellow.mixin.replay;
 
+import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.feature.replay.ReplayManager;
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.network.NetworkManager;
@@ -18,7 +19,9 @@ public class NetworkManagerReplayCaptureMixin {
         Packet<?> packet,
         CallbackInfo ci
     ) {
-        ReplayManager.getInstance().onInboundPacket(packet);
+        if (Mellow.isEnabled()) {
+            ReplayManager.getInstance().onInboundPacket(packet);
+        }
     }
 
     @Inject(method = "sendPacket(Lnet/minecraft/network/Packet;)V", at = @At("HEAD"))
@@ -26,6 +29,8 @@ public class NetworkManagerReplayCaptureMixin {
         Packet<?> packet,
         CallbackInfo ci
     ) {
-        ReplayManager.getInstance().onOutboundPacket(packet);
+        if (Mellow.isEnabled()) {
+            ReplayManager.getInstance().onOutboundPacket(packet);
+        }
     }
 }

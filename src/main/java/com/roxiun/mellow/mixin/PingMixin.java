@@ -20,6 +20,10 @@ public class PingMixin {
 
     @Inject(method = "getResponseTime", at = @At("HEAD"), cancellable = true)
     private void onGetResponseTime(CallbackInfoReturnable<Integer> cir) {
+        if (!Mellow.isEnabled()) {
+            return;
+        }
+
         int original = this.responseTime;
         NetworkPlayerInfo info = (NetworkPlayerInfo) (Object) this;
 

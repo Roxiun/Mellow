@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.stats;
 
+import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.feature.nicks.NickUtils;
@@ -47,6 +48,13 @@ public class InGameTabStatsSyncService {
 
     public synchronized void onSnapshotUpdate(GameSnapshot snapshot) {
         currentSnapshot = snapshot;
+        if (!Mellow.isEnabled()) {
+            if (inSupportedMatch) {
+                tabStats.clear();
+            }
+            resetTracking();
+            return;
+        }
         boolean supportedNow = isSupportedMatch(snapshot);
         if (!supportedNow) {
             if (inSupportedMatch) {

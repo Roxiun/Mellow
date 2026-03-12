@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.replay;
 
+import com.roxiun.mellow.Mellow;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -15,6 +16,9 @@ public class ReplayInputRouter {
 
     @SubscribeEvent
     public void onMouse(MouseEvent event) {
+        if (!Mellow.isEnabled()) {
+            return;
+        }
         if (event.dwheel != 0 || !event.buttonstate) {
             return;
         }

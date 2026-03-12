@@ -28,7 +28,7 @@ public class AnticheatListener {
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!Mellow.config.anticheatEnabled) return;
+        if (!Mellow.isEnabled() || !Mellow.config.anticheatEnabled) return;
 
         if (event.phase == TickEvent.Phase.START) {
             ACPlayerData data = manager.getPlayerData(event.player);
@@ -114,7 +114,7 @@ public class AnticheatListener {
 
     @SubscribeEvent
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
-        if (!Mellow.config.anticheatEnabled) return;
+        if (!Mellow.isEnabled() || !Mellow.config.anticheatEnabled) return;
         if (event.entity instanceof EntityPlayer) {
             manager.registerPlayer((EntityPlayer) event.entity);
         }
