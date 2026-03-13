@@ -24,7 +24,11 @@ public class NetworkManagerReplayCaptureMixin {
         }
     }
 
-    @Inject(method = "sendPacket(Lnet/minecraft/network/Packet;)V", at = @At("HEAD"))
+    @Inject(
+        method = "sendPacket(Lnet/minecraft/network/Packet;)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
     private void mellow$captureOutboundPacket(
         Packet<?> packet,
         CallbackInfo ci

@@ -222,23 +222,17 @@ tasks.named("build") {
 
         // Ensure the built JAR file exists before proceeding
         if (finalJar.exists()) {
-            // Additional destination directory
             val home = System.getProperty("user.home")
-            val additionalDestDir =
+            val modrinthDestDir =
                     file(
-                            "$home/Library/Application Support/PrismLauncher/instances/1.8.9/.minecraft/mods"
+                            "$home/Library/Application Support/ModrinthApp/profiles/1.8.9/mods"
                     )
-
-            // Ensure the destination directory exists
-            additionalDestDir.mkdirs()
-
-            // Copy the final JAR to the additional directory
+            modrinthDestDir.mkdirs()
             copy {
                 from(finalJar)
-                into(additionalDestDir)
+                into(modrinthDestDir)
             }
-
-            println("JAR file copied to: ${additionalDestDir.absolutePath}")
+            println("JAR file copied to: ${modrinthDestDir.absolutePath}")
         } else {
             println("Built JAR file does not exist: ${finalJar.absolutePath}")
         }

@@ -48,6 +48,7 @@ import com.roxiun.mellow.util.tagignore.TagIgnoreManager;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.command.ICommand;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.common.MinecraftForge;
@@ -224,57 +225,25 @@ public class Mellow {
             new TabOverlayInputRouter(tabOverlayRouter)
         );
 
-        ClientCommandHandler.instance.registerCommand(
-            new BedwarsCommand(playerCache, config)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new SkywarsCommand(playerCache, config)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new PVCommand(playerCache, config)
-        );
-        ClientCommandHandler.instance.registerCommand(new MellowCommand());
-        ClientCommandHandler.instance.registerCommand(new DebugStateCommand());
-        ClientCommandHandler.instance.registerCommand(
-            new ClearCacheCommand(playerCache, tabStats)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new RefreshCommand(inGameTabStatsSyncService)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new DenickCommand(config, auroraApi)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new SkinDenickCommand(playerCache)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new BlacklistCommand(blacklistManager, mojangApi)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new AnnoylistCommand(annoylistManager, mojangApi)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new TagIgnoreCommand(tagIgnoreManager, mojangApi)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new UrchinCommand(urchinApi, mojangApi, config)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new SeraphCommand(seraphApi, mojangApi, config)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new StatusCommand(mojangApi, config)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new NameHistoryCommand(mojangApi)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new ClientCommand(seraphApi, mojangApi, config)
-        );
-        ClientCommandHandler.instance.registerCommand(
-            new WinstreakCommand(playerCache, config)
-        );
-        ClientCommandHandler.instance.registerCommand(new ReplayCommand(replayManager));
+        registerCommand(new BedwarsCommand(playerCache, config));
+        registerCommand(new SkywarsCommand(playerCache, config));
+        registerCommand(new PVCommand(playerCache, config));
+        registerCommand(new MellowCommand());
+        registerCommand(new DebugStateCommand());
+        registerCommand(new ClearCacheCommand(playerCache, tabStats));
+        registerCommand(new RefreshCommand(inGameTabStatsSyncService));
+        registerCommand(new DenickCommand(config, auroraApi));
+        registerCommand(new SkinDenickCommand(playerCache));
+        registerCommand(new BlacklistCommand(blacklistManager, mojangApi));
+        registerCommand(new AnnoylistCommand(annoylistManager, mojangApi));
+        registerCommand(new TagIgnoreCommand(tagIgnoreManager, mojangApi));
+        registerCommand(new UrchinCommand(urchinApi, mojangApi, config));
+        registerCommand(new SeraphCommand(seraphApi, mojangApi, config));
+        registerCommand(new StatusCommand(mojangApi, config));
+        registerCommand(new NameHistoryCommand(mojangApi));
+        registerCommand(new ClientCommand(seraphApi, mojangApi, config));
+        registerCommand(new WinstreakCommand(playerCache, config));
+        registerCommand(new ReplayCommand(replayManager));
     }
 
     public StatsProvider getStatsProvider() {
@@ -294,5 +263,11 @@ public class Mellow {
 
     public static AnticheatManager getAnticheatManager() {
         return anticheatManager;
+    }
+
+    private void registerCommand(ICommand command) {
+        ClientCommandHandler
+            .instance
+            .registerCommand(CommandToggleWrapper.wrap(command));
     }
 }

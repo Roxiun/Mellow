@@ -15,13 +15,19 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class ChatEventRouter {
 
+    private static final String AUTO_WHO_RESPONSE_PREFIX = "ONLINE: ";
+    private static final int AUTO_WHO_RESPONSE_PREFIX_LENGTH =
+        AUTO_WHO_RESPONSE_PREFIX.length();
+    // Few chat lines immediately follow the server-side /who response.
+    private static final int AUTO_WHO_RESPONSE_WATCH_LIMIT = 6;
+
     private final Minecraft mc = Minecraft.getMinecraft();
     private final MellowOneConfig config;
     private final NumberDenicker numberDenicker;
     private final PregameStats pregameStats;
     private final RequestPopupService requestPopupService;
 
-    private boolean awaitingAutoWhoResponse;
+    private int autoWhoResponseWatchRemaining;
 
     public ChatEventRouter(
         MellowOneConfig config,
@@ -44,16 +50,31 @@ public class ChatEventRouter {
         ReplayManager.getInstance().onChatReceived(event.message, event.type);
 
         if (!Mellow.isEnabled()) {
+            autoWhoResponseWatchRemaining = 0;
             return;
         }
 
-        // Hide the ONLINE: response from auto /who
-        if (awaitingAutoWhoResponse && message.startsWith("ONLINE: ")) {
-            awaitingAutoWhoResponse = false;
-            if (config.hideAutoWhoResponse) {
+        boolean autoWhoEnabled = config.autoWho;
+        boolean hideAutoWhoResponse =
+            autoWhoEnabled && config.hideAutoWhoResponse;
+
+        if (!hideAutoWhoResponse) {
+            autoWhoResponseWatchRemaining = 0;
+        } else if (autoWhoResponseWatchRemaining > 0) {
+            if (
+                message.length() >= AUTO_WHO_RESPONSE_PREFIX_LENGTH &&
+                message.regionMatches(
+                    0,
+                    AUTO_WHO_RESPONSE_PREFIX,
+                    0,
+                    AUTO_WHO_RESPONSE_PREFIX_LENGTH
+                )
+            ) {
+                autoWhoResponseWatchRemaining = 0;
                 event.setCanceled(true);
                 return;
             }
+            autoWhoResponseWatchRemaining--;
         }
 
         numberDenicker.onChat(event);
@@ -64,13 +85,13 @@ public class ChatEventRouter {
         }
 
         if (
-            BedwarsChatSignalParser.isBedwarsStartMessage(message) ||
-            BedwarsChatSignalParser.isBedwarsRespawnMessage(message)
+            autoWhoEnabled &&
+            (BedwarsChatSignalParser.isBedwarsStartMessage(message) ||
+                BedwarsChatSignalParser.isBedwarsRespawnMessage(message))
         ) {
-            if (config.autoWho) {
-                awaitingAutoWhoResponse = true;
-                mc.thePlayer.sendChatMessage("/who");
-            }
+            autoWhoResponseWatchRemaining =
+                hideAutoWhoResponse ? AUTO_WHO_RESPONSE_WATCH_LIMIT : 0;
+            mc.thePlayer.sendChatMessage("/who");
         }
     }
 }
