@@ -4,6 +4,7 @@ import com.roxiun.mellow.api.aurora.AuroraApi;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.util.ChatUtils;
+import com.roxiun.mellow.util.localdenick.LocalDenickManager;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ public class NumberDenicker {
     private final MellowOneConfig config;
     private final AuroraApi auroraApi;
     private final NickUtils nickUtils;
+    private final LocalDenickManager localDenickManager;
 
     private boolean gameStarted = false;
     private final Map<String, PotentialNick> nickToPotentials = new HashMap<>();
@@ -37,11 +39,13 @@ public class NumberDenicker {
     public NumberDenicker(
         MellowOneConfig config,
         NickUtils nickUtils,
-        AuroraApi auroraApi
+        AuroraApi auroraApi,
+        LocalDenickManager localDenickManager
     ) {
         this.config = config;
         this.auroraApi = auroraApi;
         this.nickUtils = nickUtils;
+        this.localDenickManager = localDenickManager;
     }
 
     public void onWorldChange() {
@@ -79,6 +83,7 @@ public class NumberDenicker {
                     if (
                         isPlayerInGame(nickName) &&
                         nickUtils.isNicked(nickName) &&
+                        !shouldSkipLookup(nickName, localDenickManager) &&
                         (!player.finalsChecked ||
                             player.fuzzy_finals_potentials == null)
                     ) {
@@ -111,6 +116,7 @@ public class NumberDenicker {
             if (
                 isPlayerInGame(nickName) &&
                 nickUtils.isNicked(nickName) &&
+                !shouldSkipLookup(nickName, localDenickManager) &&
                 (!player.bedsChecked || player.fuzzy_beds_potentials == null)
             ) {
                 mc.addScheduledTask(() ->
@@ -273,6 +279,16 @@ public class NumberDenicker {
                 );
             }
         });
+    }
+
+    static boolean shouldSkipLookup(
+        String nickName,
+        LocalDenickManager localDenickManager
+    ) {
+        return (
+            localDenickManager != null &&
+            localDenickManager.isNickBlocked(nickName)
+        );
     }
 
     private void sendAlert(String playerName, String realName) {
