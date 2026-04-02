@@ -79,6 +79,16 @@ public class LocalDenickManager {
         }
     }
 
+    public int clearAllPlayers() {
+        int removedCount = localDenickList.size();
+        if (removedCount == 0) {
+            return 0;
+        }
+        localDenickList.clear();
+        saveLocalDenicks();
+        return removedCount;
+    }
+
     public LocalDenickedPlayer getLocalDenickedPlayer(UUID uuid) {
         return localDenickList.get(uuid);
     }

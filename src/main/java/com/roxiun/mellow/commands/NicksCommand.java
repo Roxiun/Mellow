@@ -48,7 +48,7 @@ public class NicksCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/" + BASE_COMMAND + " <add | remove | list>";
+        return "/" + BASE_COMMAND + " <add | remove | list | self | clear>";
     }
 
     @Override
@@ -141,6 +141,55 @@ public class NicksCommand extends CommandBase {
             return;
         }
 
+        if ("clear".equalsIgnoreCase(subCommand)) {
+            int removedCount = localDenickManager.clearAllPlayers();
+            if (removedCount == 0) {
+                ChatUtils.sendCommandMessage(sender, "§aThe nicks list is already empty.");
+                return;
+            }
+
+            ChatUtils.sendCommandMessage(
+                sender,
+                "§aCleared " +
+                removedCount +
+                " entr" +
+                (removedCount == 1 ? "y" : "ies") +
+                " from the nicks list."
+            );
+            return;
+        }
+
+        if ("self".equalsIgnoreCase(subCommand)) {
+            if (args.length < 2) {
+                ChatUtils.sendCommandMessage(
+                    sender,
+                    "§cUsage: /" + BASE_COMMAND + " self <nick>"
+                );
+                return;
+            }
+
+            String selfName = sender == null ? null : sender.getName();
+            if (selfName == null || selfName.trim().isEmpty()) {
+                ChatUtils.sendCommandMessage(sender, "§cCould not resolve your username.");
+                return;
+            }
+
+            String nick = String.join(
+                " ",
+                Arrays.copyOfRange(args, 1, args.length)
+            ).trim();
+            if (nick.isEmpty()) {
+                ChatUtils.sendCommandMessage(
+                    sender,
+                    "§cUsage: /" + BASE_COMMAND + " self <nick>"
+                );
+                return;
+            }
+
+            addPlayerByName(sender, selfName, nick);
+            return;
+        }
+
         if ("add".equalsIgnoreCase(subCommand) && args.length < 3) {
             ChatUtils.sendCommandMessage(
                 sender,
@@ -155,7 +204,7 @@ public class NicksCommand extends CommandBase {
         ) {
             ChatUtils.sendCommandMessage(
                 sender,
-                "§cInvalid subcommand! Use 'add', 'remove', or 'list'."
+                "§cInvalid subcommand! Use 'add', 'remove', 'list', 'self', or 'clear'."
             );
             return;
         }
@@ -169,6 +218,22 @@ public class NicksCommand extends CommandBase {
         }
 
         String playerName = args[1];
+
+        if ("add".equalsIgnoreCase(subCommand)) {
+            String nick = String.join(
+                " ",
+                Arrays.copyOfRange(args, 2, args.length)
+            ).trim();
+            if (nick.isEmpty()) {
+                ChatUtils.sendCommandMessage(
+                    sender,
+                    "§cUsage: /" + BASE_COMMAND + " add <player> <nick>"
+                );
+                return;
+            }
+            addPlayerByName(sender, playerName, nick);
+            return;
+        }
 
         AsyncExecutor.getInstance().command(() -> {
             String uuidString = mojangApi.getUUIDFromName(playerName);
@@ -188,62 +253,62 @@ public class NicksCommand extends CommandBase {
 
             UUID uuid = UUIDUtils.fromString(uuidString);
 
-            if ("add".equalsIgnoreCase(subCommand)) {
-                String nick = String.join(
-                    " ",
-                    Arrays.copyOfRange(args, 2, args.length)
-                ).trim();
-                if (nick.isEmpty()) {
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendCommandMessage(
-                            sender,
-                            "§cUsage: /" + BASE_COMMAND + " add <player> <nick>"
-                        )
-                    );
-                    return;
-                }
+            localDenickManager.removePlayer(uuid);
+            MainThreadDispatcher.run(() ->
+                ChatUtils.sendCommandMessage(
+                    sender,
+                    "§aRemoved " + playerName + " from the nicks list."
+                )
+            );
+        });
+    }
 
-                boolean playerAdded = localDenickManager.addPlayer(
-                    uuid,
-                    playerName,
-                    nick
-                );
-                if (playerAdded) {
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendCommandMessage(
-                            sender,
-                            "§aAdded " +
-                            playerName +
-                            " with blocked nick " +
-                            nick +
-                            " to the nicks list."
-                        )
-                    );
-                    if (nickUtils != null) {
-                        MainThreadDispatcher.run(() ->
-                            nickUtils.refreshLocalNickIfVisible(nick)
-                        );
-                    }
-                } else {
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendCommandMessage(
-                            sender,
-                            "§c" +
-                            playerName +
-                            " is already on the nicks list with nick: " +
-                            localDenickManager.getLocalDenickedPlayer(uuid).getNick()
-                        )
-                    );
-                }
-            } else {
-                localDenickManager.removePlayer(uuid);
+    private void addPlayerByName(ICommandSender sender, String playerName, String nick) {
+        AsyncExecutor.getInstance().command(() -> {
+            String uuidString = mojangApi.getUUIDFromName(playerName);
+            if (uuidString == null) {
+                uuidString = mojangApi.fetchUUID(playerName);
+            }
+
+            if (uuidString == null || uuidString.equals("ERROR")) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
                         sender,
-                        "§aRemoved " + playerName + " from the nicks list."
+                        "§cCould not find player: " + playerName
                     )
                 );
+                return;
             }
+
+            UUID uuid = UUIDUtils.fromString(uuidString);
+
+            boolean playerAdded = localDenickManager.addPlayer(uuid, playerName, nick);
+            if (playerAdded) {
+                MainThreadDispatcher.run(() ->
+                    ChatUtils.sendCommandMessage(
+                        sender,
+                        "§aAdded " +
+                        playerName +
+                        " with blocked nick " +
+                        nick +
+                        " to the nicks list."
+                    )
+                );
+                if (nickUtils != null) {
+                    MainThreadDispatcher.run(() -> nickUtils.refreshLocalNickIfVisible(nick));
+                }
+                return;
+            }
+
+            MainThreadDispatcher.run(() ->
+                ChatUtils.sendCommandMessage(
+                    sender,
+                    "§c" +
+                    playerName +
+                    " is already on the nicks list with nick: " +
+                    localDenickManager.getLocalDenickedPlayer(uuid).getNick()
+                )
+            );
         });
     }
 
@@ -254,7 +319,14 @@ public class NicksCommand extends CommandBase {
         BlockPos pos
     ) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "add", "remove", "list");
+            return getListOfStringsMatchingLastWord(
+                args,
+                "add",
+                "remove",
+                "list",
+                "self",
+                "clear"
+            );
         }
 
         if (args.length == 2 && "list".equalsIgnoreCase(args[0])) {
