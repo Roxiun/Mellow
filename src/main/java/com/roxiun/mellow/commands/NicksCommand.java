@@ -3,6 +3,7 @@ package com.roxiun.mellow.commands;
 import com.roxiun.mellow.api.mojang.MojangApi;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
+import com.roxiun.mellow.feature.nicks.NickUtils;
 import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.UUIDUtils;
 import com.roxiun.mellow.util.localdenick.LocalDenickManager;
@@ -20,14 +21,24 @@ public class NicksCommand extends CommandBase {
 
     private final LocalDenickManager localDenickManager;
     private final MojangApi mojangApi;
+    private final NickUtils nickUtils;
     private static final String BASE_COMMAND = "nicks";
+
+    public NicksCommand(
+        LocalDenickManager localDenickManager,
+        MojangApi mojangApi,
+        NickUtils nickUtils
+    ) {
+        this.localDenickManager = localDenickManager;
+        this.mojangApi = mojangApi;
+        this.nickUtils = nickUtils;
+    }
 
     public NicksCommand(
         LocalDenickManager localDenickManager,
         MojangApi mojangApi
     ) {
-        this.localDenickManager = localDenickManager;
-        this.mojangApi = mojangApi;
+        this(localDenickManager, mojangApi, null);
     }
 
     @Override
@@ -208,6 +219,11 @@ public class NicksCommand extends CommandBase {
                             " to the nicks list."
                         )
                     );
+                    if (nickUtils != null) {
+                        MainThreadDispatcher.run(() ->
+                            nickUtils.refreshLocalNickIfVisible(nick)
+                        );
+                    }
                 } else {
                     MainThreadDispatcher.run(() ->
                         ChatUtils.sendCommandMessage(

@@ -3,6 +3,7 @@ package com.roxiun.mellow.feature.nicks;
 import com.roxiun.mellow.util.localdenick.LocalDenickManager;
 import java.io.File;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -46,5 +47,31 @@ public class NickUtilsLocalDenickTest {
     public void localDenickShouldNotPrintStatsMessage() {
         Assert.assertFalse(NickUtils.shouldPrintDenickStats(false));
         Assert.assertTrue(NickUtils.shouldPrintDenickStats(true));
+    }
+
+    @Test
+    public void shouldMatchVisibleNickIgnoringCase() {
+        Assert.assertTrue(
+            NickUtils.isNickVisibleInTabList(
+                "NickedName",
+                Arrays.asList("nickedname", "OtherPlayer")
+            )
+        );
+        Assert.assertFalse(
+            NickUtils.isNickVisibleInTabList(
+                "MissingNick",
+                Arrays.asList("nickedname", "OtherPlayer")
+            )
+        );
+    }
+
+    @Test
+    public void shouldRefreshLocalNickOnlyWhenRealNameDiffers() {
+        Assert.assertTrue(NickUtils.shouldRefreshLocalNick("NickedName", "RealPlayer"));
+        Assert.assertFalse(
+            NickUtils.shouldRefreshLocalNick("NickedName", "NickedName")
+        );
+        Assert.assertFalse(NickUtils.shouldRefreshLocalNick("", "RealPlayer"));
+        Assert.assertFalse(NickUtils.shouldRefreshLocalNick("NickedName", ""));
     }
 }

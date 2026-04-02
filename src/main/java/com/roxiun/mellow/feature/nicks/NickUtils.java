@@ -223,6 +223,72 @@ public class NickUtils {
         return includeStatsMessage;
     }
 
+    static boolean shouldRefreshLocalNick(String nickName, String realName) {
+        if (nickName == null || realName == null) {
+            return false;
+        }
+
+        String trimmedNick = nickName.trim();
+        String trimmedRealName = realName.trim();
+        if (trimmedNick.isEmpty() || trimmedRealName.isEmpty()) {
+            return false;
+        }
+
+        return !trimmedNick.equalsIgnoreCase(trimmedRealName);
+    }
+
+    static boolean isNickVisibleInTabList(
+        String nickName,
+        Collection<String> tabNames
+    ) {
+        if (nickName == null || tabNames == null || tabNames.isEmpty()) {
+            return false;
+        }
+
+        String trimmedNick = nickName.trim();
+        if (trimmedNick.isEmpty()) {
+            return false;
+        }
+
+        for (String tabName : tabNames) {
+            if (tabName != null && trimmedNick.equalsIgnoreCase(tabName.trim())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void refreshLocalNickIfVisible(String nickName) {
+        String realName = resolveLocalDenickName(nickName, localDenickManager);
+        if (!shouldRefreshLocalNick(nickName, realName)) {
+            return;
+        }
+
+        if (mc.getNetHandler() == null || mc.getNetHandler().getPlayerInfoMap() == null) {
+            return;
+        }
+
+        Set<String> tabNames = new HashSet<>();
+        for (NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
+            if (info == null || info.getGameProfile() == null) {
+                continue;
+            }
+
+            String tabName = info.getGameProfile().getName();
+            if (tabName == null || tabName.trim().isEmpty()) {
+                continue;
+            }
+            tabNames.add(tabName);
+        }
+
+        if (!isNickVisibleInTabList(nickName, tabNames)) {
+            return;
+        }
+
+        resolveNickByRealName(nickName, realName, false);
+    }
+
     public boolean isNicked(String playerName) {
         return nickedPlayers.contains(playerName);
     }

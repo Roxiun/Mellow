@@ -261,7 +261,7 @@ public class Mellow {
             new TagIgnoreCommand(tagIgnoreManager, mojangApi)
         );
         ClientCommandHandler.instance.registerCommand(
-            new NicksCommand(localDenickManager, mojangApi)
+            new NicksCommand(localDenickManager, mojangApi, nickUtils)
         );
         ClientCommandHandler.instance.registerCommand(
             new UrchinCommand(urchinApi, mojangApi, config)
