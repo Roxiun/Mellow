@@ -70,7 +70,7 @@ public class NicksCommandTest {
         Assert.assertTrue(
             messages
                 .stream()
-                .anyMatch(m -> m.contains("Cleared 1 entry from the nicks list."))
+                .anyMatch(m -> m.contains("Cleared 1 entry from the local nicks list."))
         );
     }
 
@@ -88,7 +88,7 @@ public class NicksCommandTest {
         Assert.assertTrue(
             messages
                 .stream()
-                .anyMatch(m -> m.contains("The nicks list is already empty."))
+                .anyMatch(m -> m.contains("The local nicks list is already empty."))
         );
     }
 

@@ -67,7 +67,7 @@ public class NicksCommand extends CommandBase {
             Map<UUID, LocalDenickedPlayer> localDenickList =
                 localDenickManager.getLocalDenickList();
             if (localDenickList.isEmpty()) {
-                ChatUtils.sendCommandMessage(sender, "§aThe nicks list is empty.");
+                ChatUtils.sendCommandMessage(sender, "§aThe local nicks list is empty.");
                 return;
             }
 
@@ -99,7 +99,7 @@ public class NicksCommand extends CommandBase {
                 if (totalPages == 0) {
                     ChatUtils.sendCommandMessage(
                         sender,
-                        "§aThe nicks list is empty."
+                        "§aThe local nicks list is empty."
                     );
                     return;
                 }
@@ -110,7 +110,7 @@ public class NicksCommand extends CommandBase {
 
             ChatUtils.sendCommandMessage(
                 sender,
-                "§aPlayers on your nicks list (Page " +
+                "§aPlayers on your local nicks list (Page " +
                 page +
                 "/" +
                 totalPages +
@@ -144,7 +144,10 @@ public class NicksCommand extends CommandBase {
         if ("clear".equalsIgnoreCase(subCommand)) {
             int removedCount = localDenickManager.clearAllPlayers();
             if (removedCount == 0) {
-                ChatUtils.sendCommandMessage(sender, "§aThe nicks list is already empty.");
+                ChatUtils.sendCommandMessage(
+                    sender,
+                    "§aThe local nicks list is already empty."
+                );
                 return;
             }
 
@@ -154,7 +157,7 @@ public class NicksCommand extends CommandBase {
                 removedCount +
                 " entr" +
                 (removedCount == 1 ? "y" : "ies") +
-                " from the nicks list."
+                " from the local nicks list."
             );
             return;
         }
@@ -257,7 +260,7 @@ public class NicksCommand extends CommandBase {
             MainThreadDispatcher.run(() ->
                 ChatUtils.sendCommandMessage(
                     sender,
-                    "§aRemoved " + playerName + " from the nicks list."
+                    "§aRemoved " + playerName + " from the local nicks list."
                 )
             );
         });
@@ -289,9 +292,9 @@ public class NicksCommand extends CommandBase {
                         sender,
                         "§aAdded " +
                         playerName +
-                        " with blocked nick " +
+                        " with local nick " +
                         nick +
-                        " to the nicks list."
+                        " to the local nicks list."
                     )
                 );
                 if (nickUtils != null) {
@@ -305,7 +308,7 @@ public class NicksCommand extends CommandBase {
                     sender,
                     "§c" +
                     playerName +
-                    " is already on the nicks list with nick: " +
+                    " is already on the local nicks list with local nick: " +
                     localDenickManager.getLocalDenickedPlayer(uuid).getNick()
                 )
             );
