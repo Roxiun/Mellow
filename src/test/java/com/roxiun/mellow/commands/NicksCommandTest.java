@@ -147,6 +147,34 @@ public class NicksCommandTest {
         Assert.assertEquals("my nick", manager.getLocalDenickedPlayer(uuid).getNick());
     }
 
+    @Test
+    public void addSubcommandStoresCanonicalMojangName() {
+        File tempDir = createTempDir();
+        LocalDenickManager manager = LocalDenickManager.createForTests(tempDir);
+        NicksCommand command = new NicksCommand(
+            manager,
+            new StubMojangApi(
+                null,
+                "00000000-0000-0000-0000-000000000014",
+                "RealSuper"
+            )
+        );
+        ICommandSender sender = createSender("Tester", new ArrayList<>());
+
+        command.processCommand(
+            sender,
+            new String[] { "add", "realsuper", "nick" }
+        );
+
+        UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000014");
+        waitFor(() -> manager.getLocalDenickedPlayer(uuid) != null, 1000L);
+
+        Assert.assertEquals(
+            "RealSuper",
+            manager.getLocalDenickedPlayer(uuid).getName()
+        );
+    }
+
     private static void waitFor(Check condition, long timeoutMillis) {
         long deadline = System.currentTimeMillis() + timeoutMillis;
         while (System.currentTimeMillis() < deadline) {
@@ -170,20 +198,36 @@ public class NicksCommandTest {
 
     private static class StubMojangApi extends MojangApi {
 
-        private final String uuid;
+        private final String tabUuid;
+        private final String fetchedUuid;
+        private final String fetchedName;
 
         private StubMojangApi(String uuid) {
-            this.uuid = uuid;
+            this(uuid, uuid, null);
+        }
+
+        private StubMojangApi(String tabUuid, String fetchedUuid, String fetchedName) {
+            this.tabUuid = tabUuid;
+            this.fetchedUuid = fetchedUuid;
+            this.fetchedName = fetchedName;
         }
 
         @Override
         public String getUUIDFromName(String playerName) {
-            return uuid;
+            return tabUuid;
         }
 
         @Override
         public String fetchUUID(String username) {
-            return uuid;
+            return fetchedUuid;
+        }
+
+        @Override
+        public MojangApi.ProfileLookup fetchProfileByName(String username) {
+            if (fetchedUuid == null) {
+                return null;
+            }
+            return new MojangApi.ProfileLookup(fetchedUuid, fetchedName);
         }
     }
 

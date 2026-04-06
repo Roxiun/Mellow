@@ -268,9 +268,21 @@ public class NicksCommand extends CommandBase {
 
     private void addPlayerByName(ICommandSender sender, String playerName, String nick) {
         AsyncExecutor.getInstance().command(() -> {
+            String resolvedPlayerName = playerName;
             String uuidString = mojangApi.getUUIDFromName(playerName);
             if (uuidString == null) {
-                uuidString = mojangApi.fetchUUID(playerName);
+                MojangApi.ProfileLookup profileLookup = mojangApi.fetchProfileByName(
+                    playerName
+                );
+                if (profileLookup != null) {
+                    uuidString = profileLookup.getUuid();
+                    if (
+                        profileLookup.getName() != null &&
+                        !profileLookup.getName().trim().isEmpty()
+                    ) {
+                        resolvedPlayerName = profileLookup.getName().trim();
+                    }
+                }
             }
 
             if (uuidString == null || uuidString.equals("ERROR")) {
@@ -284,14 +296,19 @@ public class NicksCommand extends CommandBase {
             }
 
             UUID uuid = UUIDUtils.fromString(uuidString);
+            final String finalResolvedPlayerName = resolvedPlayerName;
 
-            boolean playerAdded = localDenickManager.addPlayer(uuid, playerName, nick);
+            boolean playerAdded = localDenickManager.addPlayer(
+                uuid,
+                finalResolvedPlayerName,
+                nick
+            );
             if (playerAdded) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
                         sender,
                         "§aAdded " +
-                        playerName +
+                        finalResolvedPlayerName +
                         " with local nick " +
                         nick +
                         " to the local nicks list."
@@ -307,7 +324,7 @@ public class NicksCommand extends CommandBase {
                 ChatUtils.sendCommandMessage(
                     sender,
                     "§c" +
-                    playerName +
+                    finalResolvedPlayerName +
                     " is already on the local nicks list with local nick: " +
                     localDenickManager.getLocalDenickedPlayer(uuid).getNick()
                 )

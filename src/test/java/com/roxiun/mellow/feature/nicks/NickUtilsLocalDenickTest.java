@@ -74,4 +74,11 @@ public class NickUtilsLocalDenickTest {
         Assert.assertFalse(NickUtils.shouldRefreshLocalNick("", "RealPlayer"));
         Assert.assertFalse(NickUtils.shouldRefreshLocalNick("NickedName", ""));
     }
+
+    @Test
+    public void normalizeNickKeyTrimsAndLowercases() {
+        Assert.assertEquals("nickedname", NickUtils.normalizeNickKey(" NickedName "));
+        Assert.assertEquals("", NickUtils.normalizeNickKey("   "));
+        Assert.assertEquals("", NickUtils.normalizeNickKey(null));
+    }
 }

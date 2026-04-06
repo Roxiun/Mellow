@@ -18,6 +18,7 @@ import com.roxiun.mellow.util.skins.SkinUtils;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -169,7 +170,7 @@ public class NickUtils {
             }
 
             resolvedNickProfiles.put(
-                nickName,
+                normalizeNickKey(nickName),
                 new ResolvedNickProfile(finalRealName, profile)
             );
 
@@ -298,7 +299,9 @@ public class NickUtils {
             return null;
         }
 
-        ResolvedNickProfile resolved = resolvedNickProfiles.get(nickName);
+        ResolvedNickProfile resolved = resolvedNickProfiles.get(
+            normalizeNickKey(nickName)
+        );
         if (resolved == null || resolved.profile == null) {
             return null;
         }
@@ -311,8 +314,17 @@ public class NickUtils {
             return null;
         }
 
-        ResolvedNickProfile resolved = resolvedNickProfiles.get(nickName);
+        ResolvedNickProfile resolved = resolvedNickProfiles.get(
+            normalizeNickKey(nickName)
+        );
         return resolved == null ? null : resolved.realName;
+    }
+
+    static String normalizeNickKey(String nickName) {
+        if (nickName == null) {
+            return "";
+        }
+        return nickName.trim().toLowerCase(Locale.ROOT);
     }
 
     public void clearNicks() {
