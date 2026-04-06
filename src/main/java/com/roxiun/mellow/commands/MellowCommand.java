@@ -82,7 +82,7 @@ public class MellowCommand extends CommandBase {
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/nicks <add | remove | list | self | clear>:§d Manage local denick entries and skip denick API lookups for blocked nicks.§r"
+                "§r§5/mnick <add | remove | list | self | clear>:§d Manage local denick entries and skip denick API lookups for blocked nicks.§r"
             )
         );
         sender.addChatMessage(

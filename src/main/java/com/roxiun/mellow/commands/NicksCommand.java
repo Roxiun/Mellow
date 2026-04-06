@@ -22,7 +22,7 @@ public class NicksCommand extends CommandBase {
     private final LocalDenickManager localDenickManager;
     private final MojangApi mojangApi;
     private final NickUtils nickUtils;
-    private static final String BASE_COMMAND = "nicks";
+    private static final String BASE_COMMAND = "mnick";
 
     public NicksCommand(
         LocalDenickManager localDenickManager,

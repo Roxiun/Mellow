@@ -26,7 +26,7 @@ public class NicksCommandTest {
         );
 
         Assert.assertEquals(
-            "/nicks <add | remove | list | self | clear>",
+            "/mnick <add | remove | list | self | clear>",
             command.getCommandUsage(null)
         );
     }
@@ -124,7 +124,7 @@ public class NicksCommandTest {
         Assert.assertTrue(
             messages
                 .stream()
-                .anyMatch(m -> m.contains("Usage: /nicks self <nick>"))
+                .anyMatch(m -> m.contains("Usage: /mnick self <nick>"))
         );
     }
 
