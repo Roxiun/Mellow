@@ -298,22 +298,25 @@ public class NicksCommand extends CommandBase {
             UUID uuid = UUIDUtils.fromString(uuidString);
             final String finalResolvedPlayerName = resolvedPlayerName;
 
+            // Check if player already exists
+            LocalDenickedPlayer existingPlayer = localDenickManager.getLocalDenickedPlayer(uuid);
+            if (existingPlayer != null) {
+                // Remove the old entry to override it
+                localDenickManager.removePlayer(uuid);
+            }
+
             boolean playerAdded = localDenickManager.addPlayer(
                 uuid,
                 finalResolvedPlayerName,
                 nick
             );
             if (playerAdded) {
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendCommandMessage(
-                        sender,
-                        "§aAdded " +
-                        finalResolvedPlayerName +
-                        " with local nick " +
-                        nick +
-                        " to the local nicks list."
-                    )
-                );
+                MainThreadDispatcher.run(() -> {
+                    String message = existingPlayer != null ?
+                        "§aUpdated " + finalResolvedPlayerName + "'s local nick to " + nick + "." :
+                        "§aAdded " + finalResolvedPlayerName + " with local nick " + nick + " to the local nicks list.";
+                    ChatUtils.sendCommandMessage(sender, message);
+                });
                 if (nickUtils != null) {
                     MainThreadDispatcher.run(() -> nickUtils.refreshLocalNickIfVisible(nick));
                 }
@@ -323,10 +326,7 @@ public class NicksCommand extends CommandBase {
             MainThreadDispatcher.run(() ->
                 ChatUtils.sendCommandMessage(
                     sender,
-                    "§c" +
-                    finalResolvedPlayerName +
-                    " is already on the local nicks list with local nick: " +
-                    localDenickManager.getLocalDenickedPlayer(uuid).getNick()
+                    "§cFailed to add " + finalResolvedPlayerName + " to the local nicks list."
                 )
             );
         });
