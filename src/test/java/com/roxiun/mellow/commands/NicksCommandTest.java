@@ -18,7 +18,7 @@ import org.junit.Test;
 public class NicksCommandTest {
 
     @Test
-    public void usageContainsExpectedAddOrdering() {
+    public void usageContainsExpectedSetOrdering() {
         File tempDir = createTempDir();
         NicksCommand command = new NicksCommand(
             LocalDenickManager.createForTests(tempDir),
@@ -26,7 +26,7 @@ public class NicksCommandTest {
         );
 
         Assert.assertEquals(
-            "/mnick <add | remove | list | self | clear>",
+            "/mnick <set | remove | list | self | clear>",
             command.getCommandUsage(null)
         );
     }
@@ -108,6 +108,7 @@ public class NicksCommandTest {
 
         Assert.assertTrue(completions.contains("self"));
         Assert.assertTrue(completions.contains("clear"));
+        Assert.assertTrue(completions.contains("set"));
     }
 
     @Test
@@ -148,7 +149,7 @@ public class NicksCommandTest {
     }
 
     @Test
-    public void addSubcommandStoresCanonicalMojangName() {
+    public void setSubcommandStoresCanonicalMojangName() {
         File tempDir = createTempDir();
         LocalDenickManager manager = LocalDenickManager.createForTests(tempDir);
         NicksCommand command = new NicksCommand(
@@ -163,7 +164,7 @@ public class NicksCommandTest {
 
         command.processCommand(
             sender,
-            new String[] { "add", "realsuper", "nick" }
+            new String[] { "set", "realsuper", "nick" }
         );
 
         UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000014");

@@ -48,7 +48,7 @@ public class NicksCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/" + BASE_COMMAND + " <add | remove | list | self | clear>";
+        return "/" + BASE_COMMAND + " <set | remove | list | self | clear>";
     }
 
     @Override
@@ -193,21 +193,21 @@ public class NicksCommand extends CommandBase {
             return;
         }
 
-        if ("add".equalsIgnoreCase(subCommand) && args.length < 3) {
+        if ("set".equalsIgnoreCase(subCommand) && args.length < 3) {
             ChatUtils.sendCommandMessage(
                 sender,
-                "§cUsage: /" + BASE_COMMAND + " add <player> <nick>"
+                "§cUsage: /" + BASE_COMMAND + " set <player> <nick>"
             );
             return;
         }
 
         if (
-            !"add".equalsIgnoreCase(subCommand) &&
+            !"set".equalsIgnoreCase(subCommand) &&
             !"remove".equalsIgnoreCase(subCommand)
         ) {
             ChatUtils.sendCommandMessage(
                 sender,
-                "§cInvalid subcommand! Use 'add', 'remove', 'list', 'self', or 'clear'."
+                "§cInvalid subcommand! Use 'set', 'remove', 'list', 'self', or 'clear'."
             );
             return;
         }
@@ -222,7 +222,7 @@ public class NicksCommand extends CommandBase {
 
         String playerName = args[1];
 
-        if ("add".equalsIgnoreCase(subCommand)) {
+        if ("set".equalsIgnoreCase(subCommand)) {
             String nick = String.join(
                 " ",
                 Arrays.copyOfRange(args, 2, args.length)
@@ -230,7 +230,7 @@ public class NicksCommand extends CommandBase {
             if (nick.isEmpty()) {
                 ChatUtils.sendCommandMessage(
                     sender,
-                    "§cUsage: /" + BASE_COMMAND + " add <player> <nick>"
+                    "§cUsage: /" + BASE_COMMAND + " set <player> <nick>"
                 );
                 return;
             }
@@ -341,7 +341,7 @@ public class NicksCommand extends CommandBase {
         if (args.length == 1) {
             return getListOfStringsMatchingLastWord(
                 args,
-                "add",
+                "set",
                 "remove",
                 "list",
                 "self",
