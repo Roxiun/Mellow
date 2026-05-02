@@ -1338,6 +1338,16 @@ public class MellowOneConfig extends Config {
     )
     public int minFinalsForDenick = 15000;
 
+    @Number(
+            name = "Minimum Beds to Check",
+            category = "Number Denicker",
+            subcategory = "General",
+            min = 0,
+            max = 500000,
+            step = 1000
+    )
+    public int minBedsForDenick = 5000;
+
     @Button(
             name = "Run /generate-key on the bot to get your key. You will need to be whitelisted for it.",
             text = "Discord Server",

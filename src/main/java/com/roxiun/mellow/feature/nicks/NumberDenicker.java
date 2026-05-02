@@ -124,41 +124,49 @@ public class NumberDenicker {
         Matcher bedMatcher = BED_DESTRUCTION_PATTERN.matcher(message);
         if (bedMatcher.find()) {
             String nickName = bedMatcher.group(3);
-            String bedNumber = bedMatcher.group(2).replace(",", "");
-            PotentialNick player = nickToPotentials.computeIfAbsent(
-                nickName,
-                k -> new PotentialNick()
-            );
-            if (
-                isPlayerInGame(nickName) &&
-                nickUtils.isNicked(nickName)
-            ) {
-                if (useFrosty) {
-                    // For Frosty, accumulate until we have both stats
-                    player.bedsNumber = Integer.parseInt(bedNumber);
-                    player.currentType = "beds";
-                    // Process if we have finals number too
-                    if (player.finalsNumber != -1) {
-                        processNumbers("both", nickName, null);
-                        // Reset for next detection
-                        player.finalsNumber = -1;
-                        player.bedsNumber = -1;
-                    }
-                } else {
-                    // Aurora API processes each stat independently
-                    if (!player.bedsChecked) {
-                        mc.addScheduledTask(() ->
-                            ChatUtils.sendMessage(
-                                "§aAttempting to denick " +
-                                    nickName +
-                                    " with " +
-                                    bedNumber +
-                                    " beds"
-                            )
-                        );
-                        processNumbers("beds", nickName, bedNumber);
+            String bedNumberStr = bedMatcher.group(2).replace(",", "");
+
+            try {
+                int bedNumber = Integer.parseInt(bedNumberStr);
+                if (bedNumber >= config.minBedsForDenick) {
+                    PotentialNick player = nickToPotentials.computeIfAbsent(
+                        nickName,
+                        k -> new PotentialNick()
+                    );
+                    if (
+                        isPlayerInGame(nickName) &&
+                        nickUtils.isNicked(nickName)
+                    ) {
+                        if (useFrosty) {
+                            // For Frosty, accumulate until we have both stats
+                            player.bedsNumber = bedNumber;
+                            player.currentType = "beds";
+                            // Process if we have finals number too
+                            if (player.finalsNumber != -1) {
+                                processNumbers("both", nickName, null);
+                                // Reset for next detection
+                                player.finalsNumber = -1;
+                                player.bedsNumber = -1;
+                            }
+                        } else {
+                            // Aurora API processes each stat independently
+                            if (!player.bedsChecked) {
+                                mc.addScheduledTask(() ->
+                                    ChatUtils.sendMessage(
+                                        "§aAttempting to denick " +
+                                            nickName +
+                                            " with " +
+                                            bedNumberStr +
+                                            " beds"
+                                    )
+                                );
+                                processNumbers("beds", nickName, bedNumberStr);
+                            }
+                        }
                     }
                 }
+            } catch (NumberFormatException e) {
+                // Ignore if the number is invalid
             }
         }
     }
