@@ -138,7 +138,8 @@ public class Mellow {
         NumberDenicker numberDenicker = new NumberDenicker(
             config,
             nickUtils,
-            auroraApi
+            auroraApi,
+            frostyApi
         );
         PregameStats pregameStats = new PregameStats(
             playerCache,
