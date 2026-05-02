@@ -82,10 +82,13 @@ You can **import** your own **tag ignore list** by doing, type `/tagignore impor
 
 To **skin denick** type `/skindenick <username>`
 
-To use the **number denicker** add your Aurora API key
+To use the **number denicker**, select your provider in **Settings > Number Denicker** and add the matching API key
 
 - You can obtain one [here](https://discord.com/oauth2/authorize?client_id=1244205279697174539)
-- After setup, denicking happens automatically during games, but you can also manually run: `/denick <finals | beds> <number>`
+- After setup, denicking happens automatically during games, but you can also manually run `/denick`.
+- `/denick` uses the provider selected in **Settings > Number Denicker**:
+  - **Aurora**: `/denick <finals | beds> <number>`
+  - **Frosty**: `/denick <finals_count> <beds_count>`
 
 ## Known issues
 

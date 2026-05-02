@@ -246,6 +246,9 @@ public class Mellow {
             new RefreshCommand(inGameTabStatsSyncService)
         );
         ClientCommandHandler.instance.registerCommand(
+            new DenickCommand(config, auroraApi, frostyApi)
+        );
+        ClientCommandHandler.instance.registerCommand(
             new AuroraDenickCommand(config, auroraApi)
         );
         ClientCommandHandler.instance.registerCommand(
