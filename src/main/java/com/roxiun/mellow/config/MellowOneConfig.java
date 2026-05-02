@@ -1317,6 +1317,9 @@ public class MellowOneConfig extends Config {
     )
     public static boolean ignoredNumberDenickerInfo;
 
+    @Switch(name = "Enable Number Denicker", category = "Number Denicker", subcategory = "General")
+    public boolean numberDenicker = false;
+
     @Dropdown(
         name = "Provider",
         options = { "Aurora", "Frosty" },
@@ -1324,9 +1327,6 @@ public class MellowOneConfig extends Config {
         subcategory = "General"
     )
     public int numberDenickerProvider = 0; // 0 = Aurora, 1 = Frosty
-
-    @Switch(name = "Enable Number Denicker", category = "Number Denicker", subcategory = "General")
-    public boolean numberDenicker = false;
 
     @Number(
         name = "Minimum Finals to Check",
@@ -1337,6 +1337,19 @@ public class MellowOneConfig extends Config {
         step = 1000
     )
     public int minFinalsForDenick = 15000;
+
+    @Button(
+            name = "Run /generate-key on the bot to get your key. You will need to be whitelisted for it.",
+            text = "Discord Server",
+            size = OptionSize.DUAL,
+            category = "Number Denicker",
+            subcategory = "Frosty"
+    )
+    Runnable frostyLinkButton = () -> {
+        NetworkUtils.browseLink(
+                "https://discord.gg/JwvA3GeDtA"
+        );
+    };
 
     @Button(
         name = "Run /api view on the bot to get your key",
