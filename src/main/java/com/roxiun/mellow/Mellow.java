@@ -44,6 +44,7 @@ import com.roxiun.mellow.feature.stats.StatsChecker;
 import com.roxiun.mellow.feature.tags.TagUtils;
 import com.roxiun.mellow.util.annoylist.AnnoylistManager;
 import com.roxiun.mellow.util.blacklist.BlacklistManager;
+import com.roxiun.mellow.util.localdenick.LocalDenickManager;
 import com.roxiun.mellow.util.tagignore.TagIgnoreManager;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,6 +80,7 @@ public class Mellow {
     public static BlacklistManager blacklistManager;
     public static AnnoylistManager annoylistManager;
     public static TagIgnoreManager tagIgnoreManager;
+    public static LocalDenickManager localDenickManager;
     private static AnticheatManager anticheatManager;
 
     private ProviderManager providerManager;
@@ -95,6 +97,7 @@ public class Mellow {
         blacklistManager = new BlacklistManager();
         annoylistManager = new AnnoylistManager();
         tagIgnoreManager = new TagIgnoreManager();
+        localDenickManager = new LocalDenickManager();
 
         auroraPingService = new AuroraPingService();
         auroraWinstreakService = new AuroraWinstreakService();
@@ -129,13 +132,14 @@ public class Mellow {
             .getInstance()
             .addGameStateListener(partyBlacklistWarningService::onSnapshotUpdate);
 
-        nickUtils = new NickUtils(playerCache, config);
+        nickUtils = new NickUtils(playerCache, config, localDenickManager);
 
         TagUtils tagUtils = new TagUtils(this, blacklistManager);
         NumberDenicker numberDenicker = new NumberDenicker(
             config,
             nickUtils,
-            auroraApi
+            auroraApi,
+            localDenickManager
         );
         PregameStats pregameStats = new PregameStats(
             playerCache,
@@ -255,6 +259,9 @@ public class Mellow {
         );
         ClientCommandHandler.instance.registerCommand(
             new TagIgnoreCommand(tagIgnoreManager, mojangApi)
+        );
+        ClientCommandHandler.instance.registerCommand(
+            new NicksCommand(localDenickManager, mojangApi, nickUtils)
         );
         ClientCommandHandler.instance.registerCommand(
             new UrchinCommand(urchinApi, mojangApi, config)

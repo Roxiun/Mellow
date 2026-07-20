@@ -15,15 +15,47 @@ public class MojangApi {
 
     private final TimedValueCache<String, String> uuidCache =
         new TimedValueCache<>(UUID_CACHE_TTL_MS);
+    private final TimedValueCache<String, String> nameCache =
+        new TimedValueCache<>(UUID_CACHE_TTL_MS);
+
+    public static class ProfileLookup {
+
+        private final String uuid;
+        private final String name;
+
+        public ProfileLookup(String uuid, String name) {
+            this.uuid = uuid;
+            this.name = name;
+        }
+
+        public String getUuid() {
+            return uuid;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
 
     public String fetchUUID(String username) {
+        ProfileLookup profile = fetchProfileByName(username);
+        if (profile == null || profile.getUuid() == null || profile.getUuid().isEmpty()) {
+            return "ERROR";
+        }
+        return profile.getUuid();
+    }
+
+    public ProfileLookup fetchProfileByName(String username) {
         String cacheKey = normalizeUsername(username);
         if (cacheKey.isEmpty()) {
-            return "ERROR";
+            return null;
         }
         if (uuidCache.containsFresh(cacheKey)) {
             String cached = uuidCache.get(cacheKey);
-            return cached == null ? "ERROR" : cached;
+            if (cached == null || "ERROR".equals(cached)) {
+                return null;
+            }
+            return new ProfileLookup(cached, nameCache.get(cacheKey));
         }
 
         HttpURLConnection connection = null;
@@ -45,15 +77,18 @@ public class MojangApi {
                 String line;
                 while ((line = in.readLine()) != null) response.append(line);
                 in.close();
-                String uuid = extractUUID(response.toString());
-                if (uuid != null && !"ERROR".equals(uuid)) {
-                    return cacheUuid(cacheKey, uuid);
+                ProfileLookup profile = extractProfile(response.toString());
+                if (profile != null && profile.getUuid() != null) {
+                    cacheProfile(cacheKey, profile.getUuid(), profile.getName());
+                    return profile;
                 }
-                return "ERROR";
+                cacheProfile(cacheKey, "ERROR", null);
+                return null;
             }
 
             if (responseCode == 404) {
-                return cacheUuid(cacheKey, "ERROR");
+                cacheProfile(cacheKey, "ERROR", null);
+                return null;
             }
 
             if (responseCode == 429) {
@@ -81,13 +116,16 @@ public class MojangApi {
                     if (
                         response.toString().contains("\"id\": null")
                     ) {
-                        return cacheUuid(cacheKey, "ERROR");
+                        cacheProfile(cacheKey, "ERROR", null);
+                        return null;
                     }
                     String[] parts = response.toString().split("\"id\":\"");
                     if (parts.length > 1) {
-                        return cacheUuid(cacheKey, parts[1].split("\"")[0]);
+                        String uuid = parts[1].split("\"")[0];
+                        cacheProfile(cacheKey, uuid, null);
+                        return new ProfileLookup(uuid, null);
                     } else {
-                        return "ERROR";
+                        return null;
                     }
                 } finally {
                     if (minetoolsConnection != null) {
@@ -101,20 +139,46 @@ public class MojangApi {
             }
         }
 
-        return "ERROR";
+        return null;
     }
 
-    private String extractUUID(String response) {
-        String[] parts = response.split("\"");
+    private ProfileLookup extractProfile(String response) {
         if (response.contains("Couldn't")) {
-            return "ERROR";
+            return null;
         }
 
-        if (parts.length >= 5) {
-            return parts[3];
+        String uuid = extractJsonValue(response, "id");
+        if (uuid == null || uuid.isEmpty()) {
+            return null;
         }
 
-        return null;
+        String name = extractJsonValue(response, "name");
+        return new ProfileLookup(uuid, name);
+    }
+
+    private String extractJsonValue(String json, String key) {
+        String token = "\"" + key + "\"";
+        int keyIndex = json.indexOf(token);
+        if (keyIndex < 0) {
+            return null;
+        }
+
+        int colonIndex = json.indexOf(':', keyIndex + token.length());
+        if (colonIndex < 0) {
+            return null;
+        }
+
+        int firstQuote = json.indexOf('"', colonIndex + 1);
+        if (firstQuote < 0) {
+            return null;
+        }
+
+        int secondQuote = json.indexOf('"', firstQuote + 1);
+        if (secondQuote < 0) {
+            return null;
+        }
+
+        return json.substring(firstQuote + 1, secondQuote);
     }
 
     public String getUUIDFromName(String playerName) {
@@ -130,6 +194,7 @@ public class MojangApi {
 
     public void clearCache() {
         uuidCache.clear();
+        nameCache.clear();
     }
 
     public void clearPlayer(String username) {
@@ -138,11 +203,17 @@ public class MojangApi {
             return;
         }
         uuidCache.remove(cacheKey);
+        nameCache.remove(cacheKey);
     }
 
-    private String cacheUuid(String cacheKey, String uuid) {
+    private String cacheProfile(String cacheKey, String uuid, String name) {
         String resolved = uuid == null || uuid.isEmpty() ? "ERROR" : uuid;
         uuidCache.put(cacheKey, resolved);
+        if (name == null || name.trim().isEmpty()) {
+            nameCache.remove(cacheKey);
+        } else {
+            nameCache.put(cacheKey, name.trim());
+        }
         return resolved;
     }
 
