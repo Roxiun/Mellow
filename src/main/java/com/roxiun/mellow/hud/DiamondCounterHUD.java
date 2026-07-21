@@ -2,6 +2,7 @@ package com.roxiun.mellow.hud;
 
 import cc.polyfrost.oneconfig.config.core.OneColor;
 import cc.polyfrost.oneconfig.hud.SingleTextHud;
+import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 
 public class DiamondCounterHUD extends SingleTextHud {
@@ -29,6 +30,7 @@ public class DiamondCounterHUD extends SingleTextHud {
     @Override
     public boolean shouldShow() {
         return (
+            Mellow.isEnabled() &&
             super.shouldShow() && HypixelFeatures.getInstance().isInBedwars()
         );
     }

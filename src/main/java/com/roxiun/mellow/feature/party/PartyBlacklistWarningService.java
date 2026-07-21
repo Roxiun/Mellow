@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.party;
 
+import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
@@ -94,7 +95,7 @@ public class PartyBlacklistWarningService {
     }
 
     public synchronized void onSnapshotUpdate(GameSnapshot snapshot) {
-        if (config == null || !config.partyBlacklistWarning) {
+        if (!Mellow.isEnabled() || config == null || !config.partyBlacklistWarning) {
             resetState();
             return;
         }

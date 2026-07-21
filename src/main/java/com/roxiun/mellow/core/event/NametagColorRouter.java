@@ -25,7 +25,7 @@ public class NametagColorRouter {
     ) {
         NametagRenderContext.clear();
 
-        if (config == null) {
+        if (!Mellow.isEnabled()) {
             return;
         }
 

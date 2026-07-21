@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.replay;
 
+import com.roxiun.mellow.Mellow;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
@@ -16,7 +17,7 @@ public class ReplayHudRouter {
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Text event) {
-        if (!replayManager.isPlaybackActive()) {
+        if (!Mellow.isEnabled() || !replayManager.isPlaybackActive()) {
             return;
         }
 

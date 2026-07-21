@@ -31,7 +31,7 @@ public class GuiPlayerTabOverlayMixin {
         NetworkPlayerInfo networkPlayerInfoIn,
         CallbackInfoReturnable<String> cir
     ) {
-        if (Mellow.config == null || !Mellow.config.tabStats) {
+        if (!Mellow.isEnabled() || !Mellow.config.tabStats) {
             return;
         }
 

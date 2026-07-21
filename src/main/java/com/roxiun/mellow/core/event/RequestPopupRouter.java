@@ -1,5 +1,6 @@
 package com.roxiun.mellow.core.event;
 
+import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.feature.requestpopup.RequestPopupManager;
 import com.roxiun.mellow.feature.requestpopup.RequestPopupPosition;
@@ -51,6 +52,9 @@ public class RequestPopupRouter {
         if (mc == null || mc.fontRendererObj == null || popupManager == null) {
             return;
         }
+        if (!Mellow.isEnabled()) {
+            return;
+        }
 
         RequestPopupManager.ActiveRequest activeRequest = popupManager.getActiveRequest();
         if (activeRequest == null) {
@@ -65,6 +69,7 @@ public class RequestPopupRouter {
         if (
             config == null ||
             popupManager == null ||
+            !Mellow.isEnabled() ||
             !config.requestPopupsEnabled ||
             !Keyboard.getEventKeyState() ||
             mc == null

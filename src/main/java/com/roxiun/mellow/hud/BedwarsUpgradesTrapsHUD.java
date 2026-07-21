@@ -4,6 +4,7 @@ import cc.polyfrost.oneconfig.config.annotations.Dropdown;
 import cc.polyfrost.oneconfig.config.annotations.Switch;
 import cc.polyfrost.oneconfig.config.core.OneColor;
 import cc.polyfrost.oneconfig.hud.TextHud;
+import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.util.MinecraftColor;
 import java.util.List;
@@ -92,6 +93,7 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
     @Override
     public boolean shouldShow() {
         return (
+            Mellow.isEnabled() &&
             super.shouldShow() && HypixelFeatures.getInstance().isInBedwars()
         );
     }

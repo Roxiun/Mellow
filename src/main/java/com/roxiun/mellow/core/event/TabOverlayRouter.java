@@ -1,5 +1,6 @@
 package com.roxiun.mellow.core.event;
 
+import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.provider.model.StatScope;
 import com.roxiun.mellow.config.MellowOneConfig;
@@ -147,7 +148,7 @@ public class TabOverlayRouter {
 
     private boolean isExtendedModeActive(StatScope scope) {
         return (
-            config != null &&
+            Mellow.isEnabled() &&
             config.tabStats &&
             config.extendedTabStatsView &&
             scope != null &&
