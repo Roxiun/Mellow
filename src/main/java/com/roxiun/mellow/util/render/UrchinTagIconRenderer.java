@@ -16,27 +16,30 @@ public final class UrchinTagIconRenderer {
     private static final ResourceLocation BLATANT_CHEATER = new ResourceLocation(
         "mellow", "textures/tags/urchin/blatant_cheater.png"
     );
-    private static final ResourceLocation CONFIRMED_CHEATER = new ResourceLocation(
-        "mellow", "textures/tags/urchin/confirmed_cheater.png"
-    );
     private static final ResourceLocation CLOSET_CHEATER = new ResourceLocation(
         "mellow", "textures/tags/urchin/closet_cheater.png"
     );
-    private static final ResourceLocation POSSIBLE_SNIPER = new ResourceLocation(
-        "mellow", "textures/tags/urchin/potential_sniper.png"
+    private static final ResourceLocation CONFIRMED_CHEATER = new ResourceLocation(
+            "mellow", "textures/tags/urchin/confirmed_cheater.png"
     );
-    private static final ResourceLocation LEGIT_SNIPER = new ResourceLocation(
-        "mellow", "textures/tags/urchin/legit_sniper.png"
+    private static final ResourceLocation REPLAYS_NEEDED = new ResourceLocation(
+            "mellow", "textures/tags/urchin/replays_needed.png"
     );
     private static final ResourceLocation CAUTION = new ResourceLocation(
-        "mellow", "textures/tags/urchin/caution.png"
+            "mellow", "textures/tags/urchin/caution.png"
     );
-    private static final ResourceLocation ACCOUNT = new ResourceLocation(
-        "mellow", "textures/tags/urchin/account.png"
-    );
-    private static final ResourceLocation INFO = new ResourceLocation(
-        "mellow", "textures/tags/urchin/info.png"
-    );
+//    private static final ResourceLocation POSSIBLE_SNIPER = new ResourceLocation(
+//        "mellow", "textures/tags/urchin/potential_sniper.png"
+//    );
+//    private static final ResourceLocation LEGIT_SNIPER = new ResourceLocation(
+//        "mellow", "textures/tags/urchin/legit_sniper.png"
+//    );
+//    private static final ResourceLocation ACCOUNT = new ResourceLocation(
+//        "mellow", "textures/tags/urchin/account.png"
+//    );
+//    private static final ResourceLocation INFO = new ResourceLocation(
+//        "mellow", "textures/tags/urchin/info.png"
+//    );
 
     private UrchinTagIconRenderer() {}
 
@@ -121,20 +124,22 @@ public final class UrchinTagIconRenderer {
                 return SNIPER;
             case "blatant_cheater":
                 return BLATANT_CHEATER;
-            case "confirmed_cheater":
-                return CONFIRMED_CHEATER;
             case "closet_cheater":
                 return CLOSET_CHEATER;
-            case "possible_sniper":
-                return POSSIBLE_SNIPER;
-            case "legit_sniper":
-                return LEGIT_SNIPER;
+            case "confirmed_cheater":
+                return CONFIRMED_CHEATER;
+            case "replays_needed":
+                return REPLAYS_NEEDED;
             case "caution":
                 return CAUTION;
-            case "account":
-                return ACCOUNT;
-            case "info":
-                return INFO;
+//            case "possible_sniper":
+//                return POSSIBLE_SNIPER;
+//            case "legit_sniper":
+//                return LEGIT_SNIPER;
+//            case "account":
+//                return ACCOUNT;
+//            case "info":
+//                return INFO;
             default:
                 return null;
         }
