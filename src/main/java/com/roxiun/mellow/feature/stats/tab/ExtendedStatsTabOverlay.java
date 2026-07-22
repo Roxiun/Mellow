@@ -12,8 +12,7 @@ import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.player.PlayerUtils;
-import com.roxiun.mellow.util.render.SeraphClientIconRenderer;
-import com.roxiun.mellow.util.render.SeraphTagIconRenderer;
+import com.roxiun.mellow.util.render.SeraphIconRenderer;
 import com.roxiun.mellow.util.render.UrchinTagIconRenderer;
 import java.util.ArrayList;
 import java.util.List;
@@ -1477,7 +1476,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             return 0;
         }
 
-        return SeraphTagIconRenderer.measureTags(
+        return SeraphIconRenderer.measureTags(
             stats.getSeraphTags(),
             TAG_ICON_SIZE,
             TAG_ICON_GAP
@@ -1494,7 +1493,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             return;
         }
 
-        SeraphTagIconRenderer.drawTags(
+        SeraphIconRenderer.drawTags(
             stats.getSeraphTags(),
             x,
             y,
@@ -1644,7 +1643,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         int iconX = columnX + (columnWidth - CLIENT_ICON_SIZE) / 2;
         int rowY = baselineY - (ENTRY_HEIGHT - mc.fontRendererObj.FONT_HEIGHT) / 2;
         int iconY = rowY + (ENTRY_HEIGHT - CLIENT_ICON_SIZE) / 2;
-        SeraphClientIconRenderer.drawIcon(clientType, iconX, iconY, CLIENT_ICON_SIZE);
+        SeraphIconRenderer.drawClientIcon(clientType, iconX, iconY, CLIENT_ICON_SIZE);
     }
 
     private boolean shouldKeepTagsInName(StatScope scope) {

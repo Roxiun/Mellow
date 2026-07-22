@@ -1,5 +1,6 @@
 package com.roxiun.mellow.util.render;
 
+import com.roxiun.mellow.api.seraph.SeraphClientType;
 import com.roxiun.mellow.api.seraph.SeraphTag;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -7,7 +8,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
-public final class SeraphTagIconRenderer {
+public final class SeraphIconRenderer {
 
     private static final int SOURCE_SIZE = 56;
     private static final ResourceLocation SNIPER = new ResourceLocation(
@@ -38,7 +39,53 @@ public final class SeraphTagIconRenderer {
         "mellow", "textures/tags/seraph/potential_sniper.png"
     );
 
-    private SeraphTagIconRenderer() {}
+    private SeraphIconRenderer() {}
+
+    public static void drawClientIcon(
+        SeraphClientType clientType,
+        int x,
+        int y,
+        int size
+    ) {
+        drawClientIcon(clientType, x, y, size, 1.0F);
+    }
+
+    public static void drawClientIcon(
+        SeraphClientType clientType,
+        int x,
+        int y,
+        int size,
+        float alpha
+    ) {
+        if (clientType == null || size <= 0) {
+            return;
+        }
+
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.getTextureManager() == null) {
+            return;
+        }
+
+        int textureSize = Math.round(clientType.getTextureSize());
+        mc.getTextureManager().bindTexture(clientType.getTexture());
+        GlStateManager.color(1.0F, 1.0F, 1.0F, clamp(alpha));
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        Gui.drawScaledCustomSizeModalRect(
+            x,
+            y,
+            0.0F,
+            0.0F,
+            textureSize,
+            textureSize,
+            size,
+            size,
+            textureSize,
+            textureSize
+        );
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+    }
 
     public static int drawTags(List<SeraphTag> tags, int x, int y, int size, int gap) {
         if (tags == null || tags.isEmpty() || size <= 0) {
@@ -51,12 +98,12 @@ public final class SeraphTagIconRenderer {
             if (tag == null) {
                 continue;
             }
-            ResourceLocation texture = getTexture(tag.getTagName());
+            ResourceLocation texture = getTagTexture(tag.getTagName());
             if (texture == null) {
                 continue;
             }
 
-            drawIcon(texture, drawX, y, size);
+            drawTagIcon(texture, drawX, y, size);
             drawX += size + gap;
             drawn += size + gap;
         }
@@ -71,7 +118,7 @@ public final class SeraphTagIconRenderer {
 
         int count = 0;
         for (SeraphTag tag : tags) {
-            if (tag != null && getTexture(tag.getTagName()) != null) {
+            if (tag != null && getTagTexture(tag.getTagName()) != null) {
                 count++;
             }
         }
@@ -81,7 +128,7 @@ public final class SeraphTagIconRenderer {
         return (count * size) + ((count - 1) * gap);
     }
 
-    private static void drawIcon(ResourceLocation texture, int x, int y, int size) {
+    private static void drawTagIcon(ResourceLocation texture, int x, int y, int size) {
         if (texture == null || size <= 0) {
             return;
         }
@@ -111,7 +158,7 @@ public final class SeraphTagIconRenderer {
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
-    private static ResourceLocation getTexture(String tagName) {
+    private static ResourceLocation getTagTexture(String tagName) {
         if (tagName == null || tagName.trim().isEmpty()) {
             return null;
         }
@@ -140,5 +187,14 @@ public final class SeraphTagIconRenderer {
                 return null;
         }
     }
-}
 
+    private static float clamp(float alpha) {
+        if (alpha < 0.0F) {
+            return 0.0F;
+        }
+        if (alpha > 1.0F) {
+            return 1.0F;
+        }
+        return alpha;
+    }
+}
