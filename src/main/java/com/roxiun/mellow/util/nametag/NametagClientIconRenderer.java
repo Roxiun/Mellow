@@ -1,7 +1,7 @@
 package com.roxiun.mellow.util.nametag;
 
 import com.roxiun.mellow.api.seraph.SeraphClientType;
-import com.roxiun.mellow.util.render.SeraphClientIconRenderer;
+import com.roxiun.mellow.util.render.SeraphIconRenderer;
 import net.minecraft.client.gui.FontRenderer;
 
 public final class NametagClientIconRenderer {
@@ -58,7 +58,7 @@ public final class NametagClientIconRenderer {
         float iconX = NametagRenderContext.isClientIconLeft()
             ? textX - getReservedWidth()
             : textX + textWidth + ICON_GAP;
-        SeraphClientIconRenderer.drawIcon(
+        SeraphIconRenderer.drawClientIcon(
             clientType,
             Math.round(iconX),
             Math.round(y),

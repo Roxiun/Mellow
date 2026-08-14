@@ -8,12 +8,12 @@ import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.provider.model.StatScope;
 import com.roxiun.mellow.api.seraph.SeraphClientType;
 import com.roxiun.mellow.api.seraph.SeraphTag;
-import com.roxiun.mellow.api.urchin.UrchinTag;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.player.PlayerUtils;
-import com.roxiun.mellow.util.render.SeraphClientIconRenderer;
+import com.roxiun.mellow.util.render.SeraphIconRenderer;
+import com.roxiun.mellow.util.render.UrchinTagIconRenderer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +50,9 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
     private static final int HEAD_TEXT_GAP = 2;
     private static final int TEAM_COLLAPSED_GAP = 1;
     private static final int CLIENT_ICON_SIZE = ENTRY_HEIGHT - 1;
+    private static final int TAG_ICON_SIZE = 8;
+    private static final int TAG_ICON_GAP = 1;
+    private static final int TAG_TEXT_GAP = 2;
 
     private final Minecraft mc;
     private final MellowOneConfig config;
@@ -396,6 +399,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             int width = columnWidths.get(i);
             int textStartX = x + CELL_PADDING_X;
             int reservedLeft = CELL_PADDING_X * 2;
+            TabStats stats = getStatsForInfo(info, scope);
 
             if (column == 2 && shouldShowHeadsInExtendedView()) {
                 int headX = x + CELL_PADDING_X;
@@ -404,8 +408,6 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
                 textStartX += HEAD_ICON_SIZE + HEAD_TEXT_GAP;
                 reservedLeft += HEAD_ICON_SIZE + HEAD_TEXT_GAP;
             }
-
-            int maxTextWidth = Math.max(1, width - reservedLeft);
 
             if (ExtendedTabStatsColumns.isClientColumn(scope, column)) {
                 drawClientIcon(info, x, width, baselineY);
@@ -416,11 +418,86 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
                 continue;
             }
 
+            if (ExtendedTabStatsColumns.isTagsColumn(scope, column)) {
+                int urchinIconWidth = getUrchinTagIconWidth(stats);
+                int seraphIconWidth = getSeraphTagIconWidth(stats);
+                int totalIconWidth = urchinIconWidth + seraphIconWidth;
+                if (urchinIconWidth > 0 && seraphIconWidth > 0) {
+                    totalIconWidth += TAG_ICON_GAP;
+                }
+
+                String value = fitToWidth(
+                    getDisplayValue(info, column, scope, i),
+                    Math.max(
+                        1,
+                        width -
+                        reservedLeft -
+                        totalIconWidth -
+                        (totalIconWidth > 0 && !getDisplayValue(info, column, scope, i).isEmpty()
+                            ? TAG_TEXT_GAP
+                            : 0)
+                    )
+                );
+                int totalWidth = mc.fontRendererObj.getStringWidth(value);
+                if (totalIconWidth > 0) {
+                    totalWidth += totalIconWidth;
+                    if (!value.isEmpty()) {
+                        totalWidth += TAG_TEXT_GAP;
+                    }
+                }
+
+                int drawX = isCenterAlignedColumn(scope, column)
+                    ? x + (width - totalWidth) / 2
+                    : textStartX;
+
+                if (!value.isEmpty()) {
+                    mc.fontRendererObj.drawStringWithShadow(value, drawX, baselineY, -1);
+                }
+                if (totalIconWidth > 0) {
+                    int iconX = drawX + mc.fontRendererObj.getStringWidth(value);
+                    if (!value.isEmpty()) {
+                        iconX += TAG_TEXT_GAP;
+                    }
+                    int centerY = baselineY + (mc.fontRendererObj.FONT_HEIGHT - TAG_ICON_SIZE) / 2;
+
+                    if (urchinIconWidth > 0) {
+                        drawUrchinTagIcons(stats, iconX, centerY);
+                        iconX += urchinIconWidth;
+                    }
+                    if (seraphIconWidth > 0) {
+                        if (urchinIconWidth > 0) {
+                            iconX += TAG_ICON_GAP;
+                        }
+                        drawSeraphTagIcons(stats, iconX, centerY);
+                    }
+                }
+
+                x += width;
+                if (i < columns.size() - 1) {
+                    x += getGapAfterColumn(columns, i);
+                }
+                continue;
+            }
+
+            int maxTextWidth = Math.max(1, width - reservedLeft);
+            if (column == 2 && shouldKeepTagsInName(scope)) {
+                int urchinIconWidth = getUrchinTagIconWidth(stats);
+                int seraphIconWidth = getSeraphTagIconWidth(stats);
+                int totalIconWidth = urchinIconWidth + seraphIconWidth;
+                if (urchinIconWidth > 0 && seraphIconWidth > 0) {
+                    totalIconWidth += TAG_ICON_GAP;
+                }
+                maxTextWidth = Math.max(
+                    1,
+                    maxTextWidth - totalIconWidth - (totalIconWidth > 0 ? TAG_TEXT_GAP : 0)
+                );
+            }
+
             String value = fitToWidth(
                 getDisplayValue(info, column, scope, i),
                 maxTextWidth
             );
-            if (value != null && !value.isEmpty()) {
+            if (!value.isEmpty()) {
                 int drawX;
                 if (isCenterAlignedColumn(scope, column)) {
                     drawX = x + (width - mc.fontRendererObj.getStringWidth(value)) / 2;
@@ -434,6 +511,33 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
                     drawX = textStartX;
                 }
                 mc.fontRendererObj.drawStringWithShadow(value, drawX, baselineY, -1);
+
+                if (column == 2 && shouldKeepTagsInName(scope)) {
+                    int urchinIconWidth = getUrchinTagIconWidth(stats);
+                    int seraphIconWidth = getSeraphTagIconWidth(stats);
+                    int totalIconWidth = urchinIconWidth + seraphIconWidth;
+                    if (urchinIconWidth > 0 && seraphIconWidth > 0) {
+                        totalIconWidth += TAG_ICON_GAP;
+                    }
+                    if (totalIconWidth > 0) {
+                        int iconX = drawX + mc.fontRendererObj.getStringWidth(value);
+                        if (!value.isEmpty()) {
+                            iconX += TAG_TEXT_GAP;
+                        }
+                        int centerY = baselineY + (mc.fontRendererObj.FONT_HEIGHT - TAG_ICON_SIZE) / 2;
+
+                        if (urchinIconWidth > 0) {
+                            drawUrchinTagIcons(stats, iconX, centerY);
+                            iconX += urchinIconWidth;
+                        }
+                        if (seraphIconWidth > 0) {
+                            if (urchinIconWidth > 0) {
+                                iconX += TAG_ICON_GAP;
+                            }
+                            drawSeraphTagIcons(stats, iconX, centerY);
+                        }
+                    }
+                }
             }
             x += width;
             if (i < columns.size() - 1) {
@@ -451,9 +555,26 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         if (ExtendedTabStatsColumns.isClientColumn(scope, column)) {
             return getCachedClientType(info) == null ? 0 : CLIENT_ICON_SIZE;
         }
-        return mc.fontRendererObj.getStringWidth(
-            getDisplayValue(info, column, scope, columnIndex)
-        );
+
+        TabStats stats = getStatsForInfo(info, scope);
+        String value = getDisplayValue(info, column, scope, columnIndex);
+        int width = mc.fontRendererObj.getStringWidth(value);
+        int urchinIconWidth = getUrchinTagIconWidth(stats);
+        int seraphIconWidth = getSeraphTagIconWidth(stats);
+        int totalIconWidth = urchinIconWidth + seraphIconWidth;
+        if (urchinIconWidth > 0 && seraphIconWidth > 0) {
+            totalIconWidth += TAG_ICON_GAP;
+        }
+
+        if (ExtendedTabStatsColumns.isTagsColumn(scope, column)) {
+            return width + totalIconWidth + (totalIconWidth > 0 && !value.isEmpty() ? TAG_TEXT_GAP : 0);
+        }
+
+        if (column == 2 && shouldKeepTagsInName(scope)) {
+            return width + totalIconWidth + (totalIconWidth > 0 && !value.isEmpty() ? TAG_TEXT_GAP : 0);
+        }
+
+        return width;
     }
 
     private String fitToWidth(String value, int width) {
@@ -1207,21 +1328,15 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             return value;
         }
 
-        String safe = value == null ? "" : value;
-
-        if (Mellow.config.showUrchinTagsInTab && stats.isUrchinTagged()) {
-            for (UrchinTag tag : stats.getUrchinTags()) {
-                safe += " " + FormattingUtils.formatUrchinTagIcon(tag);
-            }
-        }
+        StringBuilder safe = new StringBuilder(value == null ? "" : value);
 
         if (Mellow.config.showSeraphTagsInTab && stats.isSeraphTagged()) {
             for (SeraphTag tag : stats.getSeraphTags()) {
-                safe += " " + FormattingUtils.formatSeraphTagIcon(tag);
+                safe.append(' ').append(FormattingUtils.formatSeraphTagIcon(tag));
             }
         }
 
-        return safe;
+        return safe.toString();
     }
 
     private int getRowBackground(NetworkPlayerInfo info) {
@@ -1290,25 +1405,101 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         }
 
         if (stats != null && Mellow.config != null) {
-            if (Mellow.config.showUrchinTagsInTab && stats.isUrchinTagged()) {
-                for (UrchinTag tag : stats.getUrchinTags()) {
-                    if (builder.length() > 0) {
-                        builder.append(" ");
-                    }
-                    builder.append(FormattingUtils.formatUrchinTagIcon(tag));
-                }
-            }
-            if (Mellow.config.showSeraphTagsInTab && stats.isSeraphTagged()) {
-                for (SeraphTag tag : stats.getSeraphTags()) {
-                    if (builder.length() > 0) {
-                        builder.append(" ");
-                    }
-                    builder.append(FormattingUtils.formatSeraphTagIcon(tag));
-                }
-            }
+            // Seraph tags are rendered as icons in drawValues(), not as text badges
         }
 
         return builder.toString();
+    }
+
+    private TabStats getStatsForInfo(NetworkPlayerInfo info, StatScope scope) {
+        if (info == null || info.getGameProfile() == null) {
+            return null;
+        }
+
+        String playerName = info.getGameProfile().getName();
+        if (playerName == null || playerName.isEmpty()) {
+            return null;
+        }
+
+        TabStats stats = Mellow.tabStats.get(playerName);
+        boolean isNicked =
+            Mellow.nickUtils != null && Mellow.nickUtils.isNicked(playerName);
+        if (stats == null && isNicked && Mellow.nickUtils != null) {
+            stats = Mellow.nickUtils.getResolvedTabStatsForNick(playerName, scope);
+        }
+        return stats;
+    }
+
+    private int getUrchinTagIconWidth(TabStats stats) {
+        if (
+            stats == null ||
+            Mellow.config == null ||
+            !Mellow.config.showUrchinTagsInTab ||
+            !stats.isUrchinTagged()
+        ) {
+            return 0;
+        }
+
+        return UrchinTagIconRenderer.measureTags(
+            stats.getUrchinTags(),
+            TAG_ICON_SIZE,
+            TAG_ICON_GAP
+        );
+    }
+
+    private void drawUrchinTagIcons(TabStats stats, int x, int y) {
+        if (
+            stats == null ||
+            Mellow.config == null ||
+            !Mellow.config.showUrchinTagsInTab ||
+            !stats.isUrchinTagged()
+        ) {
+            return;
+        }
+
+        UrchinTagIconRenderer.drawTags(
+            stats.getUrchinTags(),
+            x,
+            y,
+            TAG_ICON_SIZE,
+            TAG_ICON_GAP
+        );
+    }
+
+    private int getSeraphTagIconWidth(TabStats stats) {
+        if (
+            stats == null ||
+            Mellow.config == null ||
+            !Mellow.config.showSeraphTagsInTab ||
+            !stats.isSeraphTagged()
+        ) {
+            return 0;
+        }
+
+        return SeraphIconRenderer.measureTags(
+            stats.getSeraphTags(),
+            TAG_ICON_SIZE,
+            TAG_ICON_GAP
+        );
+    }
+
+    private void drawSeraphTagIcons(TabStats stats, int x, int y) {
+        if (
+            stats == null ||
+            Mellow.config == null ||
+            !Mellow.config.showSeraphTagsInTab ||
+            !stats.isSeraphTagged()
+        ) {
+            return;
+        }
+
+        SeraphIconRenderer.drawTags(
+            stats.getSeraphTags(),
+            x,
+            y,
+            TAG_ICON_SIZE,
+            TAG_ICON_GAP
+        );
     }
 
     private String buildPingColumnValue(NetworkPlayerInfo info) {
@@ -1452,7 +1643,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         int iconX = columnX + (columnWidth - CLIENT_ICON_SIZE) / 2;
         int rowY = baselineY - (ENTRY_HEIGHT - mc.fontRendererObj.FONT_HEIGHT) / 2;
         int iconY = rowY + (ENTRY_HEIGHT - CLIENT_ICON_SIZE) / 2;
-        SeraphClientIconRenderer.drawIcon(clientType, iconX, iconY, CLIENT_ICON_SIZE);
+        SeraphIconRenderer.drawClientIcon(clientType, iconX, iconY, CLIENT_ICON_SIZE);
     }
 
     private boolean shouldKeepTagsInName(StatScope scope) {
