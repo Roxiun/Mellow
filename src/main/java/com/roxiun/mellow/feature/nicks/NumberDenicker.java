@@ -1,6 +1,8 @@
 package com.roxiun.mellow.feature.nicks;
 
 import com.roxiun.mellow.api.aurora.AuroraApi;
+import com.roxiun.mellow.api.frosty.FrostyApi;
+import com.roxiun.mellow.api.frosty.FrostyReponse;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.util.ChatUtils;
@@ -22,6 +24,7 @@ public class NumberDenicker {
     private final Minecraft mc = Minecraft.getMinecraft();
     private final MellowOneConfig config;
     private final AuroraApi auroraApi;
+    private final FrostyApi frostyApi;
     private final NickUtils nickUtils;
 
     private boolean gameStarted = false;
@@ -37,10 +40,12 @@ public class NumberDenicker {
     public NumberDenicker(
         MellowOneConfig config,
         NickUtils nickUtils,
-        AuroraApi auroraApi
+        AuroraApi auroraApi,
+        FrostyApi frostyApi
     ) {
         this.config = config;
         this.auroraApi = auroraApi;
+        this.frostyApi = frostyApi;
         this.nickUtils = nickUtils;
     }
 
@@ -64,6 +69,8 @@ public class NumberDenicker {
 
         if (!this.gameStarted) return;
 
+        boolean useFrosty = config.numberDenickerProvider == 1;
+
         Matcher finalMatcher = FINAL_KILL_PATTERN.matcher(message);
         if (finalMatcher.find()) {
             String nickName = finalMatcher.group(2);
@@ -78,20 +85,34 @@ public class NumberDenicker {
                     );
                     if (
                         isPlayerInGame(nickName) &&
-                        nickUtils.isNicked(nickName) &&
-                        (!player.finalsChecked ||
-                            player.fuzzy_finals_potentials == null)
+                        nickUtils.isNicked(nickName)
                     ) {
-                        mc.addScheduledTask(() ->
-                            ChatUtils.sendMessage(
-                                "§aAttempting to denick " +
-                                    nickName +
-                                    " with " +
-                                    finalNumberStr +
-                                    " finals"
-                            )
-                        );
-                        processNumbers("finals", nickName, finalNumberStr);
+                        if (useFrosty) {
+                            // For Frosty, accumulate until we have both stats
+                            player.finalsNumber = finalNumber;
+                            player.currentType = "finals";
+                            // Don't process yet if we don't have beds number
+                            if (player.bedsNumber != -1) {
+                                processNumbers("both", nickName, null);
+                                // Reset for next detection
+                                player.finalsNumber = -1;
+                                player.bedsNumber = -1;
+                            }
+                        } else {
+                            // Aurora API processes each stat independently
+                            if (!player.finalsChecked) {
+                                mc.addScheduledTask(() ->
+                                    ChatUtils.sendMessage(
+                                        "§aAttempting to denick " +
+                                            nickName +
+                                            " with " +
+                                            finalNumberStr +
+                                            " finals"
+                                    )
+                                );
+                                processNumbers("finals", nickName, finalNumberStr);
+                            }
+                        }
                     }
                 }
             } catch (NumberFormatException e) {
@@ -103,26 +124,49 @@ public class NumberDenicker {
         Matcher bedMatcher = BED_DESTRUCTION_PATTERN.matcher(message);
         if (bedMatcher.find()) {
             String nickName = bedMatcher.group(3);
-            String bedNumber = bedMatcher.group(2).replace(",", "");
-            PotentialNick player = nickToPotentials.computeIfAbsent(
-                nickName,
-                k -> new PotentialNick()
-            );
-            if (
-                isPlayerInGame(nickName) &&
-                nickUtils.isNicked(nickName) &&
-                (!player.bedsChecked || player.fuzzy_beds_potentials == null)
-            ) {
-                mc.addScheduledTask(() ->
-                    ChatUtils.sendMessage(
-                        "§aAttempting to denick " +
-                            nickName +
-                            " with " +
-                            bedNumber +
-                            " beds"
-                    )
-                );
-                processNumbers("beds", nickName, bedNumber);
+            String bedNumberStr = bedMatcher.group(2).replace(",", "");
+
+            try {
+                int bedNumber = Integer.parseInt(bedNumberStr);
+                if (bedNumber >= config.minBedsForDenick) {
+                    PotentialNick player = nickToPotentials.computeIfAbsent(
+                        nickName,
+                        k -> new PotentialNick()
+                    );
+                    if (
+                        isPlayerInGame(nickName) &&
+                        nickUtils.isNicked(nickName)
+                    ) {
+                        if (useFrosty) {
+                            // For Frosty, accumulate until we have both stats
+                            player.bedsNumber = bedNumber;
+                            player.currentType = "beds";
+                            // Process if we have finals number too
+                            if (player.finalsNumber != -1) {
+                                processNumbers("both", nickName, null);
+                                // Reset for next detection
+                                player.finalsNumber = -1;
+                                player.bedsNumber = -1;
+                            }
+                        } else {
+                            // Aurora API processes each stat independently
+                            if (!player.bedsChecked) {
+                                mc.addScheduledTask(() ->
+                                    ChatUtils.sendMessage(
+                                        "§aAttempting to denick " +
+                                            nickName +
+                                            " with " +
+                                            bedNumberStr +
+                                            " beds"
+                                    )
+                                );
+                                processNumbers("beds", nickName, bedNumberStr);
+                            }
+                        }
+                    }
+                }
+            } catch (NumberFormatException e) {
+                // Ignore if the number is invalid
             }
         }
     }
@@ -131,23 +175,136 @@ public class NumberDenicker {
         PotentialNick player = nickToPotentials.get(nickName);
         if (player == null) return;
 
+        boolean useFrosty = config.numberDenickerProvider == 1;
+
+        if (useFrosty) {
+            processFrostyNumbers(nickName);
+        } else {
+            processAuroraNumbers(type, nickName, number);
+        }
+    }
+
+    private void processFrostyNumbers(String nickName) {
+        PotentialNick player = nickToPotentials.get(nickName);
+        if (player == null) return;
+
+        try {
+            final int finalKills = Math.max(player.finalsNumber, 0);
+            final int bedsBroken = Math.max(player.bedsNumber, 0);
+
+            if (finalKills == 0 && bedsBroken == 0) {
+                return;
+            }
+
+            mc.addScheduledTask(() ->
+                ChatUtils.sendMessage(
+                    "§aAttempting to denick " +
+                        nickName +
+                        " with stats"
+                )
+            );
+
+            AsyncExecutor.getInstance().profileIo(() -> {
+                try {
+                    FrostyReponse response = frostyApi.queryStats(
+                        finalKills,
+                        bedsBroken,
+                        config.frostyApiKey
+                    );
+
+                    if (response != null && response.success) {
+                        if (response.data == null || response.data.isEmpty()) {
+                            mc.addScheduledTask(() ->
+                                ChatUtils.sendMessage(
+                                    "§cNo fuzzy match found for " + nickName
+                                )
+                            );
+                            return;
+                        }
+
+                        List<String> playerNames = response.data
+                            .stream()
+                            .map(p -> p.username)
+                            .collect(Collectors.toList());
+
+                        if (config.numberDenickerFuzzy) {
+                            String fuzzyPlayers = response.data
+                                .stream()
+                                .map(
+                                    p -> {
+                                        String finalsText = finalKills > 0
+                                            ? "FK: " +
+                                                p.totalFinalKills +
+                                                " [" +
+                                                formatSignedDelta(
+                                                    p.totalFinalKills - finalKills
+                                                ) +
+                                                "]"
+                                            : "FK: " + p.totalFinalKills;
+                                        String bedsText = bedsBroken > 0
+                                            ? "Beds: " +
+                                                p.totalBedsBroken +
+                                                " [" +
+                                                formatSignedDelta(
+                                                    p.totalBedsBroken - bedsBroken
+                                                ) +
+                                                "]"
+                                            : "Beds: " + p.totalBedsBroken;
+                                        return (
+                                            "§a" +
+                                            p.username +
+                                            " §7(" +
+                                            finalsText +
+                                            ", " +
+                                            bedsText +
+                                            ")"
+                                        );
+                                    }
+                                )
+                                .collect(Collectors.joining(", "));
+
+                            mc.addScheduledTask(() ->
+                                ChatUtils.sendMessage(
+                                    "§aFound potential players: " + fuzzyPlayers
+                                )
+                            );
+                        }
+
+                        if (!playerNames.isEmpty()) {
+                            String realName = playerNames.get(0);
+                            mc.addScheduledTask(() -> {
+                                sendAlert(nickName, realName);
+                                setNickDisplayName(nickName, realName + "?");
+                            });
+                        }
+                    } else {
+                        mc.addScheduledTask(() ->
+                            ChatUtils.sendMessage(
+                                "§cError fetching data from Frosty API."
+                            )
+                        );
+                    }
+                } catch (IOException e) {
+                    mc.addScheduledTask(() ->
+                        ChatUtils.sendMessage(
+                            "§cError fetching data from Frosty API."
+                        )
+                    );
+                }
+            });
+        } catch (NumberFormatException e) {
+            // Ignore if the number is invalid
+        }
+    }
+
+    private void processAuroraNumbers(String type, String nickName, String number) {
+        PotentialNick player = nickToPotentials.get(nickName);
+        if (player == null) return;
+
         AsyncExecutor.getInstance().profileIo(() -> {
             try {
-                int[] rangeValues = { 0, 50, 100, 200, 500, 1000 };
-                int[] maxValues = { 5, 10, 20 };
-
-                int rangeIndex = type.equals("finals")
-                    ? config.finalsRange
-                    : config.bedsRange;
-                int maxIndex = config.maxResults;
-
-                if (
-                    rangeIndex < 0 || rangeIndex >= rangeValues.length
-                ) rangeIndex = 1; // Default to 200
-                if (maxIndex < 0 || maxIndex >= maxValues.length) maxIndex = 0; // Default to 5
-
-                int range = rangeValues[rangeIndex];
-                int max = maxValues[maxIndex];
+                int range = config.getAuroraDenickRange(type);
+                int max = config.getAuroraDenickMaxResults();
 
                 AuroraApi.AuroraResponse response = auroraApi.queryStats(
                     type,
@@ -275,6 +432,10 @@ public class NumberDenicker {
         });
     }
 
+    private String formatSignedDelta(long delta) {
+        return delta >= 0 ? "+" + delta : String.valueOf(delta);
+    }
+
     private void sendAlert(String playerName, String realName) {
         String alertMsg =
             "§6" + realName + "§7 might be nicked as " + playerName + "§7.";
@@ -318,6 +479,11 @@ public class NumberDenicker {
 
         List<String> fuzzy_finals_potentials = null;
         List<String> fuzzy_beds_potentials = null;
+
+        // For Frosty API support
+        String currentType = null;
+        int finalsNumber = -1;
+        int bedsNumber = -1;
 
         void setPotentials(List<String> potentials) {
             this.potentials = potentials;

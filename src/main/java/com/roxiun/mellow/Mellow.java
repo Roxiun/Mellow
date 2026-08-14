@@ -4,6 +4,7 @@ import com.roxiun.mellow.anticheat.AnticheatManager;
 import com.roxiun.mellow.api.aurora.AuroraApi;
 import com.roxiun.mellow.api.aurora.AuroraPingService;
 import com.roxiun.mellow.api.aurora.AuroraWinstreakService;
+import com.roxiun.mellow.api.frosty.FrostyApi;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.luna.LunaPingService;
 import com.roxiun.mellow.api.mojang.MojangApi;
@@ -69,6 +70,7 @@ public class Mellow {
     public static AuroraPingService auroraPingService;
     public static AuroraWinstreakService auroraWinstreakService;
     public static AuroraApi auroraApi;
+    public static FrostyApi frostyApi;
     public static LunaPingService lunaPingService;
     public static SeraphClientCacheService seraphClientCacheService;
     public static SeraphPingService seraphPingService;
@@ -110,6 +112,7 @@ public class Mellow {
         seraphApi = new SeraphApi(mojangApi);
         seraphClientCacheService = new SeraphClientCacheService(seraphApi, config);
         auroraApi = new AuroraApi();
+        frostyApi = new FrostyApi();
 
         playerCache = new PlayerCache(
             mojangApi,
@@ -135,7 +138,8 @@ public class Mellow {
         NumberDenicker numberDenicker = new NumberDenicker(
             config,
             nickUtils,
-            auroraApi
+            auroraApi,
+            frostyApi
         );
         PregameStats pregameStats = new PregameStats(
             playerCache,
@@ -242,7 +246,13 @@ public class Mellow {
             new RefreshCommand(inGameTabStatsSyncService)
         );
         ClientCommandHandler.instance.registerCommand(
-            new DenickCommand(config, auroraApi)
+            new DenickCommand(config, auroraApi, frostyApi)
+        );
+        ClientCommandHandler.instance.registerCommand(
+            new AuroraDenickCommand(config, auroraApi)
+        );
+        ClientCommandHandler.instance.registerCommand(
+            new FrostyDenickCommand(config, frostyApi)
         );
         ClientCommandHandler.instance.registerCommand(
             new SkinDenickCommand(playerCache)

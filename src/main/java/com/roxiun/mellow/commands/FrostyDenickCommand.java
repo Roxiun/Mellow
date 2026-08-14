@@ -1,6 +1,5 @@
 package com.roxiun.mellow.commands;
 
-import com.roxiun.mellow.api.aurora.AuroraApi;
 import com.roxiun.mellow.api.frosty.FrostyApi;
 import com.roxiun.mellow.api.frosty.FrostyReponse;
 import com.roxiun.mellow.config.MellowOneConfig;
@@ -11,159 +10,31 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
 
-public class DenickCommand extends CommandBase {
+public class FrostyDenickCommand extends CommandBase {
 
     private final MellowOneConfig config;
-    private final AuroraApi auroraApi;
     private final FrostyApi frostyApi;
 
-    public DenickCommand(
-        MellowOneConfig config,
-        AuroraApi auroraApi,
-        FrostyApi frostyApi
-    ) {
+    public FrostyDenickCommand(MellowOneConfig config, FrostyApi frostyApi) {
         this.config = config;
-        this.auroraApi = auroraApi;
         this.frostyApi = frostyApi;
     }
 
     @Override
     public String getCommandName() {
-        return "denick";
+        return "frostydenick";
     }
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return config != null && config.numberDenickerProvider == 1
-            ? "/denick <finals_count> <beds_count>"
-            : "/denick <finals | beds> <number>";
+        return "/frostydenick <finals_count> <beds_count>";
     }
 
     @Override
-    public void processCommand(ICommandSender sender, String[] args) throws CommandException {
-        if (config != null && config.numberDenickerProvider == 1) {
-            processFrostyCommand(sender, args);
-            return;
-        }
-
-        processAuroraCommand(sender, args);
-    }
-
-    @Override
-    public List<String> addTabCompletionOptions(
-        ICommandSender sender,
-        String[] args,
-        BlockPos pos
-    ) {
-        if (config != null && config.numberDenickerProvider == 1) {
-            return null;
-        }
-
-        if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "finals", "beds");
-        }
-        return null;
-    }
-
-    @Override
-    public int getRequiredPermissionLevel() {
-        return 0;
-    }
-
-    private void processAuroraCommand(ICommandSender sender, String[] args) {
-        if (args.length != 2) {
-            ChatUtils.sendCommandMessage(
-                sender,
-                "§cInvalid usage. Use: " + getCommandUsage(sender)
-            );
-            return;
-        }
-
-        String type = args[0];
-        if (
-            !type.equalsIgnoreCase("finals") && !type.equalsIgnoreCase("beds")
-        ) {
-            ChatUtils.sendCommandMessage(
-                sender,
-                "§cInvalid type. Use 'finals' or 'beds'."
-            );
-            return;
-        }
-
-        String numberStr = args[1];
-        try {
-            Integer.parseInt(numberStr.replace(",", ""));
-        } catch (NumberFormatException e) {
-            ChatUtils.sendCommandMessage(
-                sender,
-                "§cInvalid number: " + numberStr
-            );
-            return;
-        }
-
-        ChatUtils.sendCommandMessage(sender, "§aSearching for players...");
-
-        AsyncExecutor.getInstance().command(() -> {
-            try {
-                int range = config.getAuroraDenickRange(type);
-                int max = config.getAuroraDenickMaxResults();
-
-                AuroraApi.AuroraResponse response = auroraApi.queryStats(
-                    type,
-                    numberStr,
-                    range,
-                    max,
-                    config.auroraApiKey
-                );
-
-                MainThreadDispatcher.run(() -> {
-                    if (response != null && response.success) {
-                        if (response.data.isEmpty()) {
-                            ChatUtils.sendCommandMessage(
-                                sender,
-                                "§cNo players found."
-                            );
-                        } else {
-                            String players = response.data
-                                .stream()
-                                .map(
-                                    p ->
-                                        "§a" +
-                                        p.name +
-                                        " §7(distance: " +
-                                        p.distance +
-                                        ")"
-                                )
-                                .collect(Collectors.joining(", "));
-                            ChatUtils.sendCommandMessage(
-                                sender,
-                                "§aFound players: " + players
-                            );
-                        }
-                    } else {
-                        ChatUtils.sendCommandMessage(
-                            sender,
-                            "§cError fetching data from Aurora API."
-                        );
-                    }
-                });
-            } catch (IOException e) {
-                MainThreadDispatcher.run(() -> {
-                    ChatUtils.sendCommandMessage(
-                        sender,
-                        "§cAn error occurred while fetching data."
-                    );
-                });
-                e.printStackTrace();
-            }
-        });
-    }
-
-    private void processFrostyCommand(ICommandSender sender, String[] args) {
+    public void processCommand(ICommandSender sender, String[] args) {
         if (args.length != 2) {
             ChatUtils.sendCommandMessage(
                 sender,
@@ -246,13 +117,13 @@ public class DenickCommand extends CommandBase {
                                     bedsCount
                                 );
                                 return (
-                                    "§a" +
-                                    p.username +
-                                    " §7(" +
-                                    finalsText +
-                                    ", " +
-                                    bedsText +
-                                    ")"
+                                "§a" +
+                                p.username +
+                                " §7(" +
+                                finalsText +
+                                ", " +
+                                bedsText +
+                                ")"
                                 );
                             }
                         )
@@ -273,6 +144,20 @@ public class DenickCommand extends CommandBase {
                 e.printStackTrace();
             }
         });
+    }
+
+    @Override
+    public List<String> addTabCompletionOptions(
+        ICommandSender sender,
+        String[] args,
+        BlockPos pos
+    ) {
+        return null;
+    }
+
+    @Override
+    public int getRequiredPermissionLevel() {
+        return 0;
     }
 
     private String formatSignedDelta(long delta) {
@@ -305,3 +190,4 @@ public class DenickCommand extends CommandBase {
         );
     }
 }
+

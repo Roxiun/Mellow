@@ -100,7 +100,12 @@ public class MellowCommand extends CommandBase {
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/denick <finals | beds> <number>:§d Manually denick a player based on finals or beds.§r"
+                "§r§5/auroradenick <finals | beds> <number>:§d Manually denick a player based on finals or beds using Aurora.§r"
+            )
+        );
+        sender.addChatMessage(
+            new ChatComponentText(
+                "§r§5/frostydenick <finals_count> <beds_count>:§d Manually denick players using Frosty cosmetics lookup.§r"
             )
         );
         sender.addChatMessage(

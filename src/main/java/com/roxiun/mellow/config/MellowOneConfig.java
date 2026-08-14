@@ -1005,6 +1005,16 @@ public class MellowOneConfig extends Config {
     public String auroraApiKey = "";
 
     @Text(
+        name = "Frosty API Key",
+        placeholder = "Enter your Frosty API key",
+        category = "API Keys",
+        subcategory = "Frosty",
+        secure = true,
+        multiline = false
+    )
+    public String frostyApiKey = "";
+
+    @Text(
         name = "Luna API Key",
         placeholder = "Enter your Luna API key",
         category = "API Keys",
@@ -1298,20 +1308,65 @@ public class MellowOneConfig extends Config {
     )
     public static boolean ignoredSeraphPingInfo;
 
-    // Number denicker
     @Info(
-        text = "This module attempts to denick players based the number of finals and beds broken from chat messages. Configure the Aurora key in API Keys > Aurora.",
-        type = InfoType.INFO,
-        size = OptionSize.DUAL,
-        category = "Number Denicker"
+            text = "This module attempts to denick players based the number of finals and beds broken from chat messages. Configure the keys in API Keys > Aurora / Frosty.",
+            type = InfoType.INFO,
+            size = OptionSize.DUAL,
+            category = "Number Denicker",
+            subcategory = "General"
     )
-    public static boolean ignoredNumberDenickerInfo; // Useless. Java limitations with @annotation.
+    public static boolean ignoredNumberDenickerInfo;
+
+    @Switch(name = "Enable Number Denicker", category = "Number Denicker", subcategory = "General")
+    public boolean numberDenicker = false;
+
+    @Dropdown(
+        name = "Provider",
+        options = { "Aurora", "Frosty" },
+        category = "Number Denicker",
+        subcategory = "General"
+    )
+    public int numberDenickerProvider = 0; // 0 = Aurora, 1 = Frosty
+
+    @Number(
+        name = "Minimum Finals to Check",
+        category = "Number Denicker",
+        subcategory = "General",
+        min = 0,
+        max = 500000,
+        step = 1000
+    )
+    public int minFinalsForDenick = 15000;
+
+    @Number(
+            name = "Minimum Beds to Check",
+            category = "Number Denicker",
+            subcategory = "General",
+            min = 0,
+            max = 500000,
+            step = 1000
+    )
+    public int minBedsForDenick = 5000;
+
+    @Button(
+            name = "Run /generate-key on the bot to get your key. You will need to be whitelisted for it.",
+            text = "Discord Server",
+            size = OptionSize.DUAL,
+            category = "Number Denicker",
+            subcategory = "Frosty"
+    )
+    Runnable frostyLinkButton = () -> {
+        NetworkUtils.browseLink(
+                "https://discord.gg/JwvA3GeDtA"
+        );
+    };
 
     @Button(
         name = "Run /api view on the bot to get your key",
         text = "Discord Bot",
         size = OptionSize.DUAL,
-        category = "Number Denicker"
+        category = "Number Denicker",
+        subcategory = "Aurora"
     )
     Runnable auroraLinkButton = () -> {
         NetworkUtils.browseLink(
@@ -1319,47 +1374,39 @@ public class MellowOneConfig extends Config {
         );
     };
 
-    @Switch(name = "Enable Number Denicker", category = "Number Denicker")
-    public boolean numberDenicker = false;
-
-    @Switch(name = "Print all potential players", category = "Number Denicker")
+    @Switch(name = "Print all potential players", category = "Number Denicker", subcategory = "Aurora")
     public boolean numberDenickerFuzzy = true;
 
     @Info(
         text = "Turning all potential players off, will only print players with both matching beds and finals.",
         type = InfoType.INFO,
         size = OptionSize.DUAL,
-        category = "Number Denicker"
+        category = "Number Denicker",
+        subcategory = "Aurora"
     )
     public static boolean ignoredNumberDenickerFuzzyInfo;
 
     @Dropdown(
         name = "Finals Range",
         options = { "0", "50", "100", "200", "500" },
-        category = "Number Denicker"
+        category = "Number Denicker",
+        subcategory = "Aurora"
     )
     public int finalsRange = 3; // Index for 100
 
     @Dropdown(
         name = "Beds Range",
         options = { "0", "50", "100", "200", "500" },
-        category = "Number Denicker"
+        category = "Number Denicker",
+        subcategory = "Aurora"
     )
     public int bedsRange = 1; // Index for 50
-
-    @Number(
-        name = "Minimum Finals to Check",
-        category = "Number Denicker",
-        min = 0,
-        max = 500000,
-        step = 1000
-    )
-    public int minFinalsForDenick = 15000;
 
     @Dropdown(
         name = "Max Results",
         options = { "5", "10", "20" },
-        category = "Number Denicker"
+        category = "Number Denicker",
+        subcategory = "Aurora"
     )
     public int maxResults = 0; // Index for 5
 
@@ -1522,6 +1569,19 @@ public class MellowOneConfig extends Config {
         hideIf("hitboxBrightnessOffset", () -> hitboxBrightnessMode != 0);
     }
 
+    public int getAuroraDenickRange(String type) {
+        int[] rangeValues = { 0, 50, 100, 200, 500, 1000 };
+        int rangeIndex = "finals".equalsIgnoreCase(type)
+                ? finalsRange
+                : bedsRange;
+        return rangeValues[clampIndex(rangeIndex, rangeValues.length)];
+    }
+
+    public int getAuroraDenickMaxResults() {
+        int[] maxValues = { 5, 10, 20 };
+        return maxValues[clampIndex(maxResults, maxValues.length)];
+    }
+
     private void sanitizeDropdownIndexes() {
         // BedWars tab stats dropdowns: Team..Client (15 options)
         customStat1 = clampIndex(customStat1, 15);
@@ -1571,6 +1631,7 @@ public class MellowOneConfig extends Config {
             3
         );
         pingProvider = clampIndex(pingProvider, 4);
+        numberDenickerProvider = clampIndex(numberDenickerProvider, 2);
         winstreakMinStars = clampIndex(winstreakMinStars, 51);
         winstreakMinFkdr = clampIndex(winstreakMinFkdr, 18);
         finalsRange = clampIndex(finalsRange, 5);
