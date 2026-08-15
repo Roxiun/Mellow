@@ -111,6 +111,10 @@ public class ReplayCommand extends CommandBase {
         ChatUtils.sendCommandMessage(sender, "§d§lReplay Info");
         ChatUtils.sendMultilineCommandMessage(
             sender,
+            "§7Type: §f" + (metadata.isClip() ? "Clip" : "Replay")
+        );
+        ChatUtils.sendMultilineCommandMessage(
+            sender,
             "§7Id: §f" + metadata.getReplayId()
         );
         ChatUtils.sendMultilineCommandMessage(
@@ -123,7 +127,7 @@ public class ReplayCommand extends CommandBase {
         );
         ChatUtils.sendMultilineCommandMessage(
             sender,
-            "§7Duration: §f" + Math.max(0, metadata.getDurationMs() / 1000) + "s"
+            "§7Duration: §f" + Math.max(0, metadata.getVisibleDurationMs() / 1000) + "s"
         );
         ChatUtils.sendMultilineCommandMessage(
             sender,

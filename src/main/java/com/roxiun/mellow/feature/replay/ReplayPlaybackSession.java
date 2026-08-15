@@ -22,7 +22,12 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S01PacketJoinGame;
 import net.minecraft.network.play.server.S07PacketRespawn;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.network.play.server.S0BPacketAnimation;
 import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
+import net.minecraft.network.play.server.S28PacketEffect;
+import net.minecraft.network.play.server.S29PacketSoundEffect;
+import net.minecraft.network.play.server.S2APacketParticles;
+import net.minecraft.network.play.server.S2CPacketSpawnGlobalEntity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.scoreboard.ScorePlayerTeam;
@@ -65,11 +70,13 @@ public class ReplayPlaybackSession {
     private int currentTimeMs;
     private boolean paused;
     private boolean viewerPositionInitialized;
+    private boolean reanchorViewerAfterWorldChange;
     private int speedIndex = 2;
     private String lastTeleportedPlayerName = "";
     private boolean stopRequested;
     private boolean bootstrapPacketOpen;
     private boolean worldBootstrapped;
+    private boolean suppressTransientEffects;
     private final boolean allowLegacyFallbackPlayers;
     private final boolean usesLegacyLocalSnapshots;
 
@@ -160,7 +167,7 @@ public class ReplayPlaybackSession {
 
     public void open() {
         paused = false;
-        restartFrom(0, false);
+        restartFrom(getPlaybackStartMs(), false);
         ChatUtils.sendMessage(
             "§dOpened replay §f" + replay.getMetadata().getReplayId() +
             "§7. Left-click the compass to cycle players or right-click it for the player list."
@@ -212,6 +219,7 @@ public class ReplayPlaybackSession {
         localReplayPlayer = null;
         currentScoreboard = null;
         viewerPositionInitialized = false;
+        reanchorViewerAfterWorldChange = false;
         packetIndex = 0;
         chatIndex = 0;
         scoreboardIndex = 0;
@@ -232,6 +240,7 @@ public class ReplayPlaybackSession {
         localReplayPlayer = null;
         currentScoreboard = null;
         viewerPositionInitialized = false;
+        reanchorViewerAfterWorldChange = false;
         packetIndex = 0;
         chatIndex = 0;
         scoreboardIndex = 0;
@@ -251,7 +260,7 @@ public class ReplayPlaybackSession {
 
     public void togglePause() {
         if (paused && isAtEnd(currentTimeMs, replay.getMetadata().getDurationMs())) {
-            restartFrom(0, false);
+            restartFrom(getPlaybackStartMs(), false);
             paused = false;
             ChatUtils.sendMessage("§7Replay restarted.");
             return;
@@ -275,10 +284,13 @@ public class ReplayPlaybackSession {
     }
 
     public void seekTo(int targetMs) {
-        int clamped = Math.max(0, Math.min(replay.getMetadata().getDurationMs(), targetMs));
+        int clamped = Math.max(
+            getPlaybackStartMs(),
+            Math.min(replay.getMetadata().getDurationMs(), targetMs)
+        );
         SeekMode seekMode = resolveSeekMode(currentTimeMs, clamped);
         if (seekMode == SeekMode.NONE) {
-            ChatUtils.sendMessage("§7Jumped to §f" + formatTime(currentTimeMs) + "§7.");
+            ChatUtils.sendMessage("§7Jumped to §f" + formatTime(getVisibleCurrentTimeMs()) + "§7.");
             return;
         }
 
@@ -293,7 +305,9 @@ public class ReplayPlaybackSession {
             advanceChatsTo(clamped, false);
             advanceScoreboardTo(clamped);
             updateLocalReplayPlayer(clamped);
-            restoreViewerTransform(preservedViewer);
+            if (!restoreViewerTransform(preservedViewer)) {
+                initializeViewerPosition();
+            }
             currentTimeMs = clamped;
         }
 
@@ -301,7 +315,7 @@ public class ReplayPlaybackSession {
         restoreSelectedHotbarSlot(preservedHotbarSlot);
         updateReplayProgressBar();
         paused = wasPaused;
-        ChatUtils.sendMessage("§7Jumped to §f" + formatTime(currentTimeMs) + "§7.");
+        ChatUtils.sendMessage("§7Jumped to §f" + formatTime(getVisibleCurrentTimeMs()) + "§7.");
     }
 
     public boolean teleportToPlayer(String playerName) {
@@ -354,8 +368,8 @@ public class ReplayPlaybackSession {
             replay.getMetadata().getReplayId(),
             replay.getMetadata().getMap(),
             replay.getMetadata().getMode(),
-            currentTimeMs,
-            replay.getMetadata().getDurationMs(),
+            getVisibleCurrentTimeMs(),
+            replay.getMetadata().getVisibleDurationMs(),
             getSpeed()
         );
     }
@@ -402,8 +416,8 @@ public class ReplayPlaybackSession {
         lines.add("§7Map: §f" + safe(replay.getMetadata().getMap()));
         lines.add("§7Mode: §f" + safe(replay.getMetadata().getMode()));
         lines.add(
-            "§7Time: §f" + formatTime(currentTimeMs) + "§7 / §f" +
-            formatTime(replay.getMetadata().getDurationMs())
+            "§7Time: §f" + formatTime(getVisibleCurrentTimeMs()) + "§7 / §f" +
+            formatTime(replay.getMetadata().getVisibleDurationMs())
         );
         lines.add("§7Speed: §f" + speedLabel());
         lines.add("§7State: §f" + (paused ? "Paused" : "Playing"));
@@ -433,12 +447,14 @@ public class ReplayPlaybackSession {
     public void onJoinGame(S01PacketJoinGame packetIn) {
         localReplayPlayer = null;
         viewerPositionInitialized = false;
+        reanchorViewerAfterWorldChange = false;
         worldBootstrapped = true;
     }
 
     public void onRespawn(S07PacketRespawn packetIn) {
         localReplayPlayer = null;
         viewerPositionInitialized = false;
+        reanchorViewerAfterWorldChange = true;
     }
 
     public void onViewerPosition(S08PacketPlayerPosLook packetIn) {
@@ -447,12 +463,14 @@ public class ReplayPlaybackSession {
         }
         mc.thePlayer.setPositionAndRotation(
             packetIn.getX(),
-            packetIn.getY(),
+            packetIn.getY() + (reanchorViewerAfterWorldChange ? 2.0D : 0.0D),
             packetIn.getZ(),
             packetIn.getYaw(),
             packetIn.getPitch()
         );
-        viewerPositionInitialized = true;
+        if (!reanchorViewerAfterWorldChange) {
+            viewerPositionInitialized = true;
+        }
     }
 
     private void restartFrom(int targetMs, boolean announceRebuild) {
@@ -481,13 +499,19 @@ public class ReplayPlaybackSession {
         localReplayPlayer = null;
         currentScoreboard = null;
         viewerPositionInitialized = false;
+        reanchorViewerAfterWorldChange = false;
         lastTeleportedPlayerName = "";
         stopRequested = false;
         bootstrapPacketOpen = false;
         worldBootstrapped = false;
         bootstrapReplayWorld();
-        applyPacketsUpTo(targetMs);
-        advanceChatsTo(targetMs, false);
+        suppressTransientEffects = targetMs > 0;
+        try {
+            applyPacketsUpTo(targetMs);
+        } finally {
+            suppressTransientEffects = false;
+        }
+        advanceChatsBefore(targetMs);
         advanceScoreboardTo(targetMs);
         updateLocalReplayPlayer(targetMs);
         if (!restoreViewerTransform(preservedViewer)) {
@@ -495,7 +519,11 @@ public class ReplayPlaybackSession {
         }
         currentTimeMs = targetMs;
         if (announceRebuild && targetMs > 0) {
-            ChatUtils.sendMessage("§7Rebuilt replay state at §f" + formatTime(targetMs) + "§7.");
+            ChatUtils.sendMessage(
+                "§7Rebuilt replay state at §f" +
+                formatTime(Math.max(0, targetMs - getPlaybackStartMs())) +
+                "§7."
+            );
         }
     }
 
@@ -503,7 +531,10 @@ public class ReplayPlaybackSession {
         if (mc.thePlayer == null) {
             return;
         }
-        mc.thePlayer.experience = computeReplayProgress(currentTimeMs, replay.getMetadata().getDurationMs());
+        mc.thePlayer.experience = computeReplayProgress(
+            getVisibleCurrentTimeMs(),
+            replay.getMetadata().getVisibleDurationMs()
+        );
         mc.thePlayer.experienceLevel = 0;
         mc.thePlayer.experienceTotal = 0;
     }
@@ -545,6 +576,16 @@ public class ReplayPlaybackSession {
             if (mc.ingameGUI != null) {
                 mc.ingameGUI.getChatGUI().printChatMessage(component);
             }
+        }
+    }
+
+    private void advanceChatsBefore(int targetMs) {
+        while (chatIndex < replay.getChats().size()) {
+            ReplayChatEvent event = replay.getChats().get(chatIndex);
+            if (event.getTimestampMs() >= targetMs) {
+                break;
+            }
+            chatIndex++;
         }
     }
 
@@ -624,6 +665,7 @@ public class ReplayPlaybackSession {
                 snapshot.getPitch()
             );
             viewerPositionInitialized = true;
+            reanchorViewerAfterWorldChange = false;
         }
     }
 
@@ -650,6 +692,7 @@ public class ReplayPlaybackSession {
             anchor.rotationPitch
         );
         viewerPositionInitialized = true;
+        reanchorViewerAfterWorldChange = false;
     }
 
     private ViewerTransform captureViewerTransform() {
@@ -673,7 +716,8 @@ public class ReplayPlaybackSession {
         if (
             preservedViewer == null ||
             mc.thePlayer == null ||
-            mc.theWorld == null
+            mc.theWorld == null ||
+            reanchorViewerAfterWorldChange
         ) {
             return false;
         }
@@ -1156,10 +1200,19 @@ public class ReplayPlaybackSession {
             entity.rotationPitch
         );
         viewerPositionInitialized = true;
+        reanchorViewerAfterWorldChange = false;
     }
 
     private double getSpeed() {
         return SPEEDS[speedIndex];
+    }
+
+    private int getPlaybackStartMs() {
+        return replay.getMetadata().getPlaybackStartMs();
+    }
+
+    private int getVisibleCurrentTimeMs() {
+        return Math.max(0, currentTimeMs - getPlaybackStartMs());
     }
 
     private String speedLabel() {
@@ -1206,6 +1259,18 @@ public class ReplayPlaybackSession {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void processPacket(Packet<?> packet) {
+        if (
+            suppressTransientEffects &&
+            (
+                packet instanceof S0BPacketAnimation ||
+                packet instanceof S28PacketEffect ||
+                packet instanceof S29PacketSoundEffect ||
+                packet instanceof S2APacketParticles ||
+                packet instanceof S2CPacketSpawnGlobalEntity
+            )
+        ) {
+            return;
+        }
         ((Packet) packet).processPacket(netHandler);
     }
 

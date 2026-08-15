@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.UUID;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.network.NetworkPlayerInfo;
+import net.minecraft.entity.DataWatcher;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
@@ -46,12 +47,21 @@ final class ReplayLocalPlayerPacketRecorder {
     private int swingProgressInt;
     private int hurtTime;
     private byte[] metadataPayload;
+    private Byte entityFlags;
     private byte[] attributesPayload;
     private final ItemStack[] equipment = new ItemStack[EQUIPMENT_SLOT_COUNT];
 
     ReplayLocalPlayerPacketRecorder() {}
 
     ReplayLocalPlayerPacketRecorder(ReplayLocalPlayerPacketRecorder other) {
+        copyFrom(other);
+    }
+
+    void copyFrom(ReplayLocalPlayerPacketRecorder other) {
+        if (other == null) {
+            reset();
+            return;
+        }
         this.playerListAdded = other.playerListAdded;
         this.spawned = other.spawned;
         this.entityId = other.entityId;
@@ -67,6 +77,7 @@ final class ReplayLocalPlayerPacketRecorder {
         this.swingProgressInt = other.swingProgressInt;
         this.hurtTime = other.hurtTime;
         this.metadataPayload = copyBytes(other.metadataPayload);
+        this.entityFlags = other.entityFlags;
         this.attributesPayload = copyBytes(other.attributesPayload);
         for (int slot = 0; slot < EQUIPMENT_SLOT_COUNT; slot++) {
             this.equipment[slot] = copyItemStack(other.equipment[slot]);
@@ -176,6 +187,7 @@ final class ReplayLocalPlayerPacketRecorder {
         swingProgressInt = 0;
         hurtTime = 0;
         metadataPayload = null;
+        entityFlags = null;
         attributesPayload = null;
         Arrays.fill(equipment, null);
     }
@@ -204,6 +216,7 @@ final class ReplayLocalPlayerPacketRecorder {
         if (spawned) {
             syncMovement(player, sink);
             syncMetadata(player, sink, false);
+            syncEntityFlags(player, sink, false);
             syncAttributes(player, sink, false);
             syncEquipment(player, sink, false);
             syncHeadLook(player, sink);
@@ -264,6 +277,7 @@ final class ReplayLocalPlayerPacketRecorder {
             pitch = toAngleByte(player.rotationPitch);
             headYaw = toAngleByte(player.rotationYawHead);
             syncMetadata(player, sink, true);
+            syncEntityFlags(player, sink, true);
             syncAttributes(player, sink, true);
             syncEquipment(player, sink, true);
             sink.accept(
@@ -345,6 +359,41 @@ final class ReplayLocalPlayerPacketRecorder {
             sink.accept(frame);
             metadataPayload = copyBytes(frame.getPayload());
         }
+    }
+
+    private void syncEntityFlags(
+        EntityPlayerSP player,
+        FrameSink sink,
+        boolean force
+    ) throws Exception {
+        byte flags = withLocalPlayerPoseFlags(
+            player.getDataWatcher().getWatchableObjectByte(0),
+            player.isSneaking(),
+            player.isSprinting()
+        );
+        if (!force && entityFlags != null && entityFlags.byteValue() == flags) {
+            return;
+        }
+
+        DataWatcher watcher = new DataWatcher(player);
+        watcher.addObject(0, Byte.valueOf(flags));
+        sink.accept(
+            ReplayPacketFactory.encode(
+                new S1CPacketEntityMetadata(entityId, watcher, true)
+            )
+        );
+        entityFlags = Byte.valueOf(flags);
+    }
+
+    static byte withLocalPlayerPoseFlags(
+        byte originalFlags,
+        boolean sneaking,
+        boolean sprinting
+    ) {
+        int flags = originalFlags & 0xFF;
+        flags = sneaking ? flags | (1 << 1) : flags & ~(1 << 1);
+        flags = sprinting ? flags | (1 << 3) : flags & ~(1 << 3);
+        return (byte) flags;
     }
 
     private void syncAttributes(

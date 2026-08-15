@@ -176,6 +176,163 @@ public class ReplayIoTest {
     }
 
     @Test
+    public void liveSpoolSnapshotsRemainImmutableWhileCaptureContinues()
+        throws Exception {
+        File tempDir = Files.createTempDirectory("replay-live-snapshot").toFile();
+        ReplayRecordingSpool spool = null;
+        ReplayRecordingSpoolSnapshot first = null;
+        ReplayRecordingSpoolSnapshot second = null;
+        try {
+            ReplayIo io = new ReplayIo();
+            spool = io.createClipSpool(tempDir);
+            ReplayPacketFrame firstPacket = new ReplayPacketFrame(
+                0,
+                "example.FirstPacket",
+                new byte[] { 1, 2, 3 }
+            );
+            ReplayPacketFrame secondPacket = new ReplayPacketFrame(
+                50,
+                "example.SecondPacket",
+                new byte[] { 4, 5 }
+            );
+            spool.appendPacket(firstPacket);
+            Assert.assertEquals(15L, spool.getBytesWritten());
+            first = spool.snapshot();
+            Assert.assertEquals(15L, first.getBytesWritten());
+
+            spool.appendPacket(secondPacket);
+            Assert.assertEquals(29L, spool.getBytesWritten());
+            second = spool.snapshot();
+            Assert.assertEquals(29L, second.getBytesWritten());
+
+            ReplayMetadata firstMetadata = buildMetadata();
+            firstMetadata.setKind(ReplayMetadata.KIND_CLIP);
+            firstMetadata.setPlaybackStartMs(0);
+            firstMetadata.setSavedAt(1000L);
+            File firstDirectory = new File(tempDir, "first-clip");
+            io.saveClipAtomically(
+                firstDirectory,
+                firstMetadata,
+                first,
+                Collections.<ReplayChatEvent>emptyList()
+            );
+
+            ReplayMetadata secondMetadata = buildMetadata();
+            secondMetadata.setKind(ReplayMetadata.KIND_CLIP);
+            secondMetadata.setPlaybackStartMs(25);
+            secondMetadata.setSavedAt(2000L);
+            File secondDirectory = new File(tempDir, "second-clip");
+            io.saveClipAtomically(
+                secondDirectory,
+                secondMetadata,
+                second,
+                Collections.singletonList(
+                    new ReplayChatEvent(40, "{\"text\":\"clip\"}", (byte) 0)
+                )
+            );
+
+            ReplayLoadedData firstLoaded = io.loadReplay(firstDirectory);
+            ReplayLoadedData secondLoaded = io.loadReplay(secondDirectory);
+            Assert.assertEquals(1, firstLoaded.getPackets().size());
+            assertPacketEquals(firstPacket, firstLoaded.getPackets().get(0));
+            Assert.assertEquals(2, secondLoaded.getPackets().size());
+            assertPacketEquals(secondPacket, secondLoaded.getPackets().get(1));
+            Assert.assertTrue(secondLoaded.getMetadata().isClip());
+            Assert.assertEquals(25, secondLoaded.getMetadata().getPlaybackStartMs());
+            Assert.assertEquals(1, secondLoaded.getChats().size());
+        } finally {
+            if (first != null) {
+                first.close();
+            }
+            if (second != null) {
+                second.close();
+            }
+            if (spool != null) {
+                spool.discard();
+            }
+            deleteRecursively(tempDir);
+        }
+    }
+
+    @Test
+    public void snapshotLeaseDefersTemporarySpoolDeletion() throws Exception {
+        File tempDir = Files.createTempDirectory("replay-snapshot-lease").toFile();
+        ReplayRecordingSpool spool = null;
+        ReplayRecordingSpoolSnapshot snapshot = null;
+        try {
+            ReplayIo io = new ReplayIo();
+            spool = io.createClipSpool(tempDir);
+            spool.appendPacket(
+                new ReplayPacketFrame(0, "example.Packet", new byte[] { 1 })
+            );
+            snapshot = spool.snapshot();
+            File spoolDirectory = spool.getPacketsFile().getParentFile();
+
+            spool.discard();
+            Assert.assertTrue(spoolDirectory.exists());
+            snapshot.close();
+            snapshot = null;
+            Assert.assertFalse(spoolDirectory.exists());
+            spool = null;
+        } finally {
+            if (snapshot != null) {
+                snapshot.close();
+            }
+            if (spool != null) {
+                spool.discard();
+            }
+            deleteRecursively(tempDir);
+        }
+    }
+
+    @Test
+    public void startupCleanupRemovesOnlyClipTemporaryArtifacts() throws Exception {
+        File tempDir = Files.createTempDirectory("replay-clip-cleanup").toFile();
+        try {
+            ReplayIo io = new ReplayIo();
+            File replayRoot = io.getReplayRoot(tempDir);
+            File tempRoot = new File(replayRoot, ".tmp");
+            Assert.assertTrue(tempRoot.mkdirs() || tempRoot.isDirectory());
+            File clipTemp = new File(tempRoot, "clip-old");
+            File recordingTemp = new File(tempRoot, "recording-old");
+            File savingTemp = new File(replayRoot, ".old-clip.saving");
+            Assert.assertTrue(clipTemp.mkdirs());
+            Assert.assertTrue(recordingTemp.mkdirs());
+            Assert.assertTrue(savingTemp.mkdirs());
+
+            io.cleanupStaleClipSpools(tempDir);
+
+            Assert.assertFalse(clipTemp.exists());
+            Assert.assertFalse(savingTemp.exists());
+            Assert.assertTrue(recordingTemp.exists());
+        } finally {
+            deleteRecursively(tempDir);
+        }
+    }
+
+    @Test
+    public void clipMetadataDerivesVisibleTimelineAndCatalogTimestamp() {
+        ReplayMetadata metadata = new ReplayMetadata();
+        metadata.setKind(ReplayMetadata.KIND_CLIP);
+        metadata.setStartedAt(1000L);
+        metadata.setSavedAt(9000L);
+        metadata.setDurationMs(80_000);
+        metadata.setPlaybackStartMs(20_000);
+
+        Assert.assertTrue(metadata.isClip());
+        Assert.assertEquals(60_000, metadata.getVisibleDurationMs());
+        Assert.assertEquals(9000L, metadata.getCatalogTimestamp());
+
+        ReplayMetadata legacy = new ReplayMetadata();
+        legacy.setStartedAt(1234L);
+        legacy.setDurationMs(5000);
+        Assert.assertFalse(legacy.isClip());
+        Assert.assertEquals(0, legacy.getPlaybackStartMs());
+        Assert.assertEquals(5000, legacy.getVisibleDurationMs());
+        Assert.assertEquals(1234L, legacy.getCatalogTimestamp());
+    }
+
+    @Test
     public void loadReplayRejectsLegacyFormat() throws Exception {
         File tempDir = Files.createTempDirectory("replay-io-legacy").toFile();
         try {

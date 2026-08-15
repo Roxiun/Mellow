@@ -68,12 +68,64 @@ public class ReplayIo {
         return new ReplayRecordingSpool(getReplayRoot(mcDataDir));
     }
 
+    ReplayRecordingSpool createClipSpool(File mcDataDir) throws IOException {
+        return new ReplayRecordingSpool(getReplayRoot(mcDataDir), "clip-");
+    }
+
+    public void cleanupStaleClipSpools(File mcDataDir) {
+        File replayRoot = getReplayRoot(mcDataDir);
+        File tempRoot = new File(replayRoot, ".tmp");
+        File[] children = tempRoot.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                if (child.isDirectory() && child.getName().startsWith("clip-")) {
+                    deleteRecursively(child);
+                }
+            }
+        }
+        File[] replayChildren = replayRoot.listFiles();
+        if (replayChildren != null) {
+            for (File child : replayChildren) {
+                if (
+                    child.isDirectory() &&
+                    child.getName().startsWith(".") &&
+                    child.getName().endsWith(".saving")
+                ) {
+                    deleteRecursively(child);
+                }
+            }
+        }
+    }
+
     public File createReplayDirectory(File mcDataDir, ReplayMetadata metadata) {
         File root = getReplayRoot(mcDataDir);
         String stamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT)
             .format(new Date(metadata.getStartedAt()));
         String suffix = sanitize(metadata.getMap());
         String id = stamp + "_" + (suffix.isEmpty() ? "bedwars" : suffix);
+        File directory = new File(root, id);
+        int counter = 2;
+        while (directory.exists()) {
+            directory = new File(root, id + "_" + counter);
+            counter++;
+        }
+        directory.mkdirs();
+        metadata.setReplayId(directory.getName());
+        return directory;
+    }
+
+    public File createClipDirectory(File mcDataDir, ReplayMetadata metadata) {
+        File root = getReplayRoot(mcDataDir);
+        long timestamp = metadata.getSavedAt() > 0L
+            ? metadata.getSavedAt()
+            : System.currentTimeMillis();
+        String stamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT)
+            .format(new Date(timestamp));
+        String label = sanitize(metadata.getMap());
+        if (label.isEmpty()) {
+            label = sanitize(metadata.getServerName());
+        }
+        String id = stamp + "_clip" + (label.isEmpty() ? "" : "_" + label);
         File directory = new File(root, id);
         int counter = 2;
         while (directory.exists()) {
@@ -115,6 +167,47 @@ public class ReplayIo {
         writeSpoolIndex(new File(directory, INDEX_FILE), spool.getIndexEntries());
     }
 
+    void saveClip(
+        File directory,
+        ReplayMetadata metadata,
+        ReplayRecordingSpoolSnapshot snapshot,
+        List<ReplayChatEvent> chats
+    ) throws IOException {
+        metadata.setFormatVersion(FORMAT_VERSION_V2);
+        metadata.setPacketCount(snapshot.getPacketCount());
+        writeMetadata(new File(directory, META_FILE), metadata);
+        writePackets(new File(directory, PACKETS_FILE), snapshot);
+        writeClipEvents(new File(directory, EVENTS_FILE), snapshot, chats);
+        writeSpoolIndex(new File(directory, INDEX_FILE), snapshot.getIndexEntries());
+    }
+
+    void saveClipAtomically(
+        File directory,
+        ReplayMetadata metadata,
+        ReplayRecordingSpoolSnapshot snapshot,
+        List<ReplayChatEvent> chats
+    ) throws IOException {
+        File staging = new File(
+            directory.getParentFile(),
+            "." + directory.getName() + ".saving"
+        );
+        deleteRecursively(staging);
+        if (directory.exists() && !deleteRecursively(directory)) {
+            throw new IOException("Could not prepare clip output directory.");
+        }
+        if (!staging.mkdirs()) {
+            throw new IOException("Could not create clip staging directory.");
+        }
+        try {
+            saveClip(staging, metadata, snapshot, chats);
+            if (!staging.renameTo(directory)) {
+                throw new IOException("Could not finalize clip output directory.");
+            }
+        } finally {
+            deleteRecursively(staging);
+        }
+    }
+
     public ReplayLoadedData loadReplay(File directory) throws IOException {
         ReplayMetadata metadata = readMetadata(new File(directory, META_FILE));
         if (metadata.getFormatVersion() != FORMAT_VERSION_V2) {
@@ -152,7 +245,7 @@ public class ReplayIo {
         List<ReplayCatalogEntry> entries = new ArrayList<>();
         Arrays.sort(directories);
         for (File directory : directories) {
-            if (!directory.isDirectory()) {
+            if (!directory.isDirectory() || directory.getName().startsWith(".")) {
                 continue;
             }
             File meta = new File(directory, META_FILE);
@@ -173,8 +266,8 @@ public class ReplayIo {
                     ReplayCatalogEntry right
                 ) {
                     return Long.compare(
-                        right.getMetadata().getStartedAt(),
-                        left.getMetadata().getStartedAt()
+                        right.getMetadata().getCatalogTimestamp(),
+                        left.getMetadata().getCatalogTimestamp()
                     );
                 }
             }
@@ -257,6 +350,32 @@ public class ReplayIo {
             writeVarInt(out, spool.getPacketCount());
             int previousTimestamp = 0;
             for (int i = 0; i < spool.getPacketCount(); i++) {
+                int timestamp = in.readInt();
+                int packetTypeId = in.readInt();
+                writeVarInt(out, timestamp - previousTimestamp);
+                previousTimestamp = timestamp;
+                writeVarInt(out, packetTypeId);
+                writeByteArray(out, readSpoolByteArray(in));
+            }
+        }
+    }
+
+    private void writePackets(File file, ReplayRecordingSpoolSnapshot snapshot)
+        throws IOException {
+        List<String> packetTypes = snapshot.getPacketTypes();
+        try (
+            DataOutputStream out = openCompressedOutput(file);
+            DataInputStream in = snapshot.openPacketsInput()
+        ) {
+            out.writeInt(PACKETS_MAGIC);
+            out.writeInt(FORMAT_VERSION_V2);
+            writeVarInt(out, packetTypes.size());
+            for (String className : packetTypes) {
+                writeString(out, className);
+            }
+            writeVarInt(out, snapshot.getPacketCount());
+            int previousTimestamp = 0;
+            for (int i = 0; i < snapshot.getPacketCount(); i++) {
                 int timestamp = in.readInt();
                 int packetTypeId = in.readInt();
                 writeVarInt(out, timestamp - previousTimestamp);
@@ -365,6 +484,53 @@ public class ReplayIo {
             writeVarInt(out, spool.getLocalSnapshotCount());
             int previousLocalTimestamp = 0;
             for (int i = 0; i < spool.getLocalSnapshotCount(); i++) {
+                int timestamp = localsIn.readInt();
+                out.writeByte(EVENT_LOCAL_PLAYER);
+                writeVarInt(out, timestamp - previousLocalTimestamp);
+                previousLocalTimestamp = timestamp;
+                out.writeDouble(localsIn.readDouble());
+                out.writeDouble(localsIn.readDouble());
+                out.writeDouble(localsIn.readDouble());
+                out.writeFloat(localsIn.readFloat());
+                out.writeFloat(localsIn.readFloat());
+                out.writeBoolean(localsIn.readBoolean());
+                out.writeBoolean(localsIn.readBoolean());
+            }
+        }
+    }
+
+    private void writeClipEvents(
+        File file,
+        ReplayRecordingSpoolSnapshot snapshot,
+        List<ReplayChatEvent> chats
+    ) throws IOException {
+        try (
+            DataOutputStream out = openCompressedOutput(file);
+            DataInputStream scoreboardsIn = snapshot.openScoreboardsInput();
+            DataInputStream localsIn = snapshot.openLocalSnapshotsInput()
+        ) {
+            out.writeInt(EVENTS_MAGIC);
+            out.writeInt(FORMAT_VERSION_V2);
+            writeChatEvents(out, chats == null ? Collections.<ReplayChatEvent>emptyList() : chats);
+
+            writeVarInt(out, snapshot.getScoreboardCount());
+            int previousScoreboardTimestamp = 0;
+            for (int i = 0; i < snapshot.getScoreboardCount(); i++) {
+                int timestamp = scoreboardsIn.readInt();
+                out.writeByte(EVENT_SCOREBOARD);
+                writeVarInt(out, timestamp - previousScoreboardTimestamp);
+                previousScoreboardTimestamp = timestamp;
+                writeString(out, readSpoolString(scoreboardsIn));
+                int lineCount = scoreboardsIn.readInt();
+                writeVarInt(out, lineCount);
+                for (int lineIndex = 0; lineIndex < lineCount; lineIndex++) {
+                    writeString(out, readSpoolString(scoreboardsIn));
+                }
+            }
+
+            writeVarInt(out, snapshot.getLocalSnapshotCount());
+            int previousLocalTimestamp = 0;
+            for (int i = 0; i < snapshot.getLocalSnapshotCount(); i++) {
                 int timestamp = localsIn.readInt();
                 out.writeByte(EVENT_LOCAL_PLAYER);
                 writeVarInt(out, timestamp - previousLocalTimestamp);

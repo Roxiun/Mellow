@@ -45,6 +45,36 @@ public class MellowOneConfig extends Config {
     public boolean enableReplayRecording = false;
 
     @Switch(
+        name = "Enable Replay Clipping",
+        category = "Replays",
+        subcategory = "Clipping",
+        description = "Keeps a temporary multiplayer packet buffer so /clip can save recent gameplay."
+    )
+    public boolean enableReplayClipping = true;
+
+    @Number(
+        name = "Clip Length",
+        category = "Replays",
+        subcategory = "Clipping",
+        description = "Number of recent seconds saved by /clip.",
+        min = 15,
+        max = 300,
+        step = 5
+    )
+    public int replayClipLengthSeconds = 60;
+
+    @Number(
+        name = "Maximum Temporary Clip Buffer",
+        category = "Replays",
+        subcategory = "Clipping",
+        description = "Maximum temporary replay data per multiplayer world, in MiB.",
+        min = 128,
+        max = 4096,
+        step = 128
+    )
+    public int replayClipBufferMiB = 1024;
+
+    @Switch(
         name = "Store Chat In Replays",
         category = "Replays",
         subcategory = "Recording",

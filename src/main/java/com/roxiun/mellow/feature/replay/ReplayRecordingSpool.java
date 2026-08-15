@@ -55,14 +55,23 @@ final class ReplayRecordingSpool implements Closeable {
     private int scoreboardCount;
     private int localSnapshotCount;
     private int nextSecondMark;
+    private long bytesWritten;
+    private int activeSnapshots;
+    private boolean deleteRequested;
     private boolean closed;
 
     ReplayRecordingSpool(File replayRoot) throws IOException {
+        this(replayRoot, "recording-");
+    }
+
+    ReplayRecordingSpool(File replayRoot, String prefix) throws IOException {
         File tempRoot = new File(replayRoot, ".tmp");
         if (!tempRoot.exists()) {
             tempRoot.mkdirs();
         }
-        this.directory = Files.createTempDirectory(tempRoot.toPath(), "recording-").toFile();
+        this.directory = Files
+            .createTempDirectory(tempRoot.toPath(), prefix == null ? "recording-" : prefix)
+            .toFile();
         this.packetsFile = new File(directory, "packets.tmp");
         this.chatsFile = new File(directory, "chats.tmp");
         this.scoreboardsFile = new File(directory, "scoreboards.tmp");
@@ -85,6 +94,7 @@ final class ReplayRecordingSpool implements Closeable {
         packetsOut.writeInt(timestamp);
         packetsOut.writeInt(typeId);
         writeByteArray(packetsOut, frame == null ? null : frame.getPayload());
+        bytesWritten += 12L + (frame == null || frame.getPayload() == null ? 0L : frame.getPayload().length);
         packetCount++;
     }
 
@@ -93,6 +103,7 @@ final class ReplayRecordingSpool implements Closeable {
         chatsOut.writeInt(event == null ? 0 : event.getTimestampMs());
         writeString(chatsOut, event == null ? "" : event.getComponentJson());
         chatsOut.writeByte(event == null ? 0 : (event.getType() & 0xFF));
+        bytesWritten += 9L + utf8Length(event == null ? "" : event.getComponentJson());
         chatCount++;
     }
 
@@ -107,6 +118,10 @@ final class ReplayRecordingSpool implements Closeable {
         for (String line : lines) {
             writeString(scoreboardsOut, line);
         }
+        bytesWritten += 12L + utf8Length(frame == null ? "" : frame.getTitle());
+        for (String line : lines) {
+            bytesWritten += 4L + utf8Length(line);
+        }
         scoreboardCount++;
     }
 
@@ -120,7 +135,40 @@ final class ReplayRecordingSpool implements Closeable {
         localSnapshotsOut.writeFloat(snapshot == null ? 0.0F : snapshot.getPitch());
         localSnapshotsOut.writeBoolean(snapshot != null && snapshot.isSneaking());
         localSnapshotsOut.writeBoolean(snapshot != null && snapshot.isSprinting());
+        bytesWritten += 38L;
         localSnapshotCount++;
+    }
+
+    long getBytesWritten() {
+        return bytesWritten;
+    }
+
+    synchronized ReplayRecordingSpoolSnapshot snapshot() throws IOException {
+        ensureOpen();
+        flush();
+        activeSnapshots++;
+        return new ReplayRecordingSpoolSnapshot(
+            this,
+            packetsFile,
+            chatsFile,
+            scoreboardsFile,
+            localSnapshotsFile,
+            new ArrayList<>(packetTypes),
+            new ArrayList<>(indexEntries),
+            packetCount,
+            chatCount,
+            scoreboardCount,
+            localSnapshotCount,
+            bytesWritten
+        );
+    }
+
+    void flush() throws IOException {
+        ensureOpen();
+        packetsOut.flush();
+        chatsOut.flush();
+        scoreboardsOut.flush();
+        localSnapshotsOut.flush();
     }
 
     int getPacketCount() {
@@ -198,16 +246,30 @@ final class ReplayRecordingSpool implements Closeable {
         }
     }
 
-    void discard() {
+    synchronized void discard() {
         try {
             finish();
         } catch (IOException ignored) {}
-        deleteRecursively(directory);
+        deleteRequested = true;
+        deleteIfReleased();
     }
 
     @Override
     public void close() throws IOException {
         finish();
+    }
+
+    synchronized void releaseSnapshot() {
+        if (activeSnapshots > 0) {
+            activeSnapshots--;
+        }
+        deleteIfReleased();
+    }
+
+    private void deleteIfReleased() {
+        if (deleteRequested && activeSnapshots == 0) {
+            deleteRecursively(directory);
+        }
     }
 
     private int ensurePacketTypeId(String className) {
@@ -264,6 +326,10 @@ final class ReplayRecordingSpool implements Closeable {
         byte[] bytes = (value == null ? "" : value).getBytes(StandardCharsets.UTF_8);
         out.writeInt(bytes.length);
         out.write(bytes);
+    }
+
+    private static int utf8Length(String value) {
+        return (value == null ? "" : value).getBytes(StandardCharsets.UTF_8).length;
     }
 
     private static boolean deleteRecursively(File file) {

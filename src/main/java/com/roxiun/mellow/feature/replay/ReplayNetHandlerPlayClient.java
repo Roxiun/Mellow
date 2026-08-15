@@ -123,7 +123,10 @@ public class ReplayNetHandlerPlayClient extends NetHandlerPlayClient {
 
     @Override
     public void handleRespawn(S07PacketRespawn packetIn) {
-        if (!session.shouldProcessWorldBootstrapPacket()) {
+        if (
+            !session.shouldProcessWorldBootstrapPacket() &&
+            !session.hasWorldBootstrapped()
+        ) {
             return;
         }
         WorldType worldType = packetIn.getWorldType() == null

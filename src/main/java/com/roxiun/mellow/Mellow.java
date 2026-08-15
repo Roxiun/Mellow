@@ -150,6 +150,7 @@ public class Mellow {
             requestPopupManager
         );
         ReplayManager replayManager = ReplayManager.getInstance();
+        replayManager.initialize();
         Runtime.getRuntime().addShutdownHook(
             new Thread(
                 new Runnable() {
@@ -275,6 +276,7 @@ public class Mellow {
             new WinstreakCommand(playerCache, config)
         );
         ClientCommandHandler.instance.registerCommand(new ReplayCommand(replayManager));
+        ClientCommandHandler.instance.registerCommand(new ClipCommand(replayManager));
     }
 
     public StatsProvider getStatsProvider() {

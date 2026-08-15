@@ -89,7 +89,7 @@ public class ReplayBrowserGui extends GuiScreen {
 
         drawCenteredString(
             fontRendererObj,
-            "§dMellow Replays",
+            "§dMellow Replays & Clips",
             panelX + (PANEL_WIDTH / 2),
             panelY + 10,
             0xFFFFFF
@@ -203,7 +203,7 @@ public class ReplayBrowserGui extends GuiScreen {
             listY + listHeight,
             0x28000000
         );
-        fontRendererObj.drawStringWithShadow("§fSaved Replays", listX, listY - 10, 0xFFFFFF);
+        fontRendererObj.drawStringWithShadow("§fSaved Replays & Clips", listX, listY - 10, 0xFFFFFF);
         fontRendererObj.drawStringWithShadow("§fReplay Details", listX + LIST_WIDTH + 16, listY - 10, 0xFFFFFF);
     }
 
@@ -211,7 +211,7 @@ public class ReplayBrowserGui extends GuiScreen {
         if (entries.isEmpty()) {
             drawCenteredString(
                 fontRendererObj,
-                "§7No saved replays yet.",
+                "§7No saved replays or clips yet.",
                 listX + (LIST_WIDTH / 2),
                 listY + (listHeight / 2) - 4,
                 0xFFFFFF
@@ -235,19 +235,23 @@ public class ReplayBrowserGui extends GuiScreen {
             drawRect(listX, rowY, listX + LIST_WIDTH, rowY + ROW_HEIGHT - 2, backgroundColor);
 
             fontRendererObj.drawStringWithShadow(
-                trim(fontRendererObj, safe(metadata.getReplayId()), LIST_WIDTH - 10),
+                trim(
+                    fontRendererObj,
+                    (metadata.isClip() ? "§d[Clip] §f" : "") + safe(metadata.getReplayId()),
+                    LIST_WIDTH - 10
+                ),
                 listX + 6,
                 rowY + 5,
                 0xFFFFFF
             );
             fontRendererObj.drawStringWithShadow(
-                "§7" + trim(fontRendererObj, safe(metadata.getMap()), LIST_WIDTH - 16),
+                "§7" + trim(fontRendererObj, primaryLocation(metadata), LIST_WIDTH - 16),
                 listX + 6,
                 rowY + 16,
                 0xFFFFFF
             );
             fontRendererObj.drawStringWithShadow(
-                "§8" + formatDuration(metadata.getDurationMs()) + "  " + trim(fontRendererObj, safe(metadata.getMode()), LIST_WIDTH - 48),
+                "§8" + formatDuration(metadata.getVisibleDurationMs()) + "  " + trim(fontRendererObj, safe(metadata.getMode()), LIST_WIDTH - 48),
                 listX + 6,
                 rowY + 26,
                 0xFFFFFF
@@ -263,7 +267,7 @@ public class ReplayBrowserGui extends GuiScreen {
         ReplayCatalogEntry selected = getSelectedEntry();
         if (selected == null) {
             fontRendererObj.drawStringWithShadow(
-                "§7Select a replay to inspect it.",
+                "§7Select a replay or clip to inspect it.",
                 detailX,
                 detailY,
                 0xFFFFFF
@@ -272,18 +276,18 @@ public class ReplayBrowserGui extends GuiScreen {
         }
 
         ReplayMetadata metadata = selected.getMetadata();
-        drawDetailLine(detailX, detailY, "Id", safe(metadata.getReplayId()));
-        drawDetailLine(detailX, detailY + (lineHeight * 1), "Map", safe(metadata.getMap()));
-        drawDetailLine(detailX, detailY + (lineHeight * 2), "Mode", safe(metadata.getMode()));
-        drawDetailLine(detailX, detailY + (lineHeight * 3), "Viewer", safe(metadata.getViewerName()));
-        drawDetailLine(detailX, detailY + (lineHeight * 4), "Server", safe(metadata.getServerName()));
-        drawDetailLine(detailX, detailY + (lineHeight * 5), "Game", safe(metadata.getGameType()));
-        drawDetailLine(detailX, detailY + (lineHeight * 6), "Started", formatDate(metadata.getStartedAt()));
-        drawDetailLine(detailX, detailY + (lineHeight * 7), "Duration", formatDuration(metadata.getDurationMs()));
+        drawDetailLine(detailX, detailY, "Type", metadata.isClip() ? "Clip" : "Replay");
+        drawDetailLine(detailX, detailY + (lineHeight * 1), "Id", safe(metadata.getReplayId()));
+        drawDetailLine(detailX, detailY + (lineHeight * 2), "Map", safe(metadata.getMap()));
+        drawDetailLine(detailX, detailY + (lineHeight * 3), "Mode", safe(metadata.getMode()));
+        drawDetailLine(detailX, detailY + (lineHeight * 4), "Viewer", safe(metadata.getViewerName()));
+        drawDetailLine(detailX, detailY + (lineHeight * 5), "Server", safe(metadata.getServerName()));
+        drawDetailLine(detailX, detailY + (lineHeight * 6), metadata.isClip() ? "Saved" : "Started", formatDate(metadata.getCatalogTimestamp()));
+        drawDetailLine(detailX, detailY + (lineHeight * 7), "Duration", formatDuration(metadata.getVisibleDurationMs()));
         drawDetailLine(detailX, detailY + (lineHeight * 8), "Packets", String.valueOf(metadata.getPacketCount()));
 
         fontRendererObj.drawSplitString(
-            "§7Double-click a replay or press §fOpen§7 to start playback.",
+            "§7Double-click an entry or press §fOpen§7 to start playback.",
             detailX,
             detailY + (lineHeight * 10),
             PANEL_WIDTH - LIST_WIDTH - 34,
@@ -299,6 +303,14 @@ public class ReplayBrowserGui extends GuiScreen {
             y,
             0xFFFFFF
         );
+    }
+
+    private String primaryLocation(ReplayMetadata metadata) {
+        String map = metadata == null ? "" : metadata.getMap();
+        if (map != null && !map.trim().isEmpty()) {
+            return map;
+        }
+        return safe(metadata == null ? "" : metadata.getServerName());
     }
 
     private void refreshEntries(String selectedReplayId) {

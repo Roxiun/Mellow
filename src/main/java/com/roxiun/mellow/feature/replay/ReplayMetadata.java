@@ -4,7 +4,11 @@ import java.util.UUID;
 
 public class ReplayMetadata {
 
+    public static final String KIND_REPLAY = "replay";
+    public static final String KIND_CLIP = "clip";
+
     private String replayId;
+    private String kind = KIND_REPLAY;
     private String map;
     private String mode;
     private String serverName;
@@ -12,6 +16,8 @@ public class ReplayMetadata {
     private long startedAt;
     private long endedAt;
     private int durationMs;
+    private int playbackStartMs;
+    private long savedAt;
     private int packetCount;
     private UUID viewerUuid;
     private String viewerName;
@@ -26,6 +32,18 @@ public class ReplayMetadata {
 
     public void setReplayId(String replayId) {
         this.replayId = replayId;
+    }
+
+    public String getKind() {
+        return KIND_CLIP.equalsIgnoreCase(kind) ? KIND_CLIP : KIND_REPLAY;
+    }
+
+    public void setKind(String kind) {
+        this.kind = KIND_CLIP.equalsIgnoreCase(kind) ? KIND_CLIP : KIND_REPLAY;
+    }
+
+    public boolean isClip() {
+        return KIND_CLIP.equals(getKind());
     }
 
     public String getMap() {
@@ -82,6 +100,30 @@ public class ReplayMetadata {
 
     public void setDurationMs(int durationMs) {
         this.durationMs = durationMs;
+    }
+
+    public int getPlaybackStartMs() {
+        return Math.max(0, Math.min(durationMs, playbackStartMs));
+    }
+
+    public void setPlaybackStartMs(int playbackStartMs) {
+        this.playbackStartMs = Math.max(0, playbackStartMs);
+    }
+
+    public int getVisibleDurationMs() {
+        return Math.max(0, durationMs - getPlaybackStartMs());
+    }
+
+    public long getSavedAt() {
+        return savedAt;
+    }
+
+    public void setSavedAt(long savedAt) {
+        this.savedAt = savedAt;
+    }
+
+    public long getCatalogTimestamp() {
+        return savedAt > 0L ? savedAt : startedAt;
     }
 
     public int getPacketCount() {
