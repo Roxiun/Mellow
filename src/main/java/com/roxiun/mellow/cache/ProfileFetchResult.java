@@ -43,7 +43,19 @@ public class ProfileFetchResult {
     }
 
     public boolean isSuccess() {
-        return profile != null;
+        return failureReason == null && profile != null;
+    }
+
+    public ProfileFetchResult withProfile(PlayerProfile availableProfile) {
+        if (failureReason == null || availableProfile == null) {
+            return this;
+        }
+        return new ProfileFetchResult(
+            availableProfile,
+            failureReason,
+            errorDetail,
+            providerName
+        );
     }
 
     public PlayerProfile getProfile() {

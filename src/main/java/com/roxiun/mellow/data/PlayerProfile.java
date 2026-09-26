@@ -24,6 +24,20 @@ public class PlayerProfile {
     private final List<SeraphTag> seraphTags;
     private final long lastUpdated;
 
+    public static PlayerProfile identity(String uuid, String name) {
+        return new PlayerProfile(
+            uuid,
+            name,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+    }
+
     public PlayerProfile(
         String uuid,
         String name,
@@ -241,7 +255,7 @@ public class PlayerProfile {
         }
 
         if (bedwarsPlayer == null) {
-            return null;
+            return TabStats.tagsOnly(coralTags, seraphTags, name);
         }
 
         // Format numbers with appropriate formatting including colors

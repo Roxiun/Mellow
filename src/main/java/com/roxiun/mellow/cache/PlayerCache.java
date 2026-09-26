@@ -104,14 +104,6 @@ public class PlayerCache {
             );
         }
 
-        if (provider.requiresApiKey() && !provider.isConfigured()) {
-            return ProfileFetchResult.failure(
-                FetchFailureReason.MISSING_API_KEY,
-                "Missing API key",
-                provider.getDisplayName()
-            );
-        }
-
         ResolvedUuid uuidResult = resolveUuid(playerName, ProfileFetchContext.GENERAL);
         if (!uuidResult.isSuccess()) {
             return ProfileFetchResult.failure(
@@ -121,9 +113,27 @@ public class PlayerCache {
             );
         }
 
+        if (provider.requiresApiKey() && !provider.isConfigured()) {
+            return withAvailableProfile(
+                ProfileFetchResult.failure(
+                    FetchFailureReason.MISSING_API_KEY,
+                    "Missing API key",
+                    provider.getDisplayName()
+                ),
+                playerName,
+                uuidResult.uuid,
+                true
+            );
+        }
+
         ProviderResult<String> rawResult = provider.fetchPlayerDataResult(uuidResult.uuid);
         if (!rawResult.isSuccess()) {
-            return toProfileFailure(rawResult, provider.getDisplayName());
+            return withAvailableProfile(
+                toProfileFailure(rawResult, provider.getDisplayName()),
+                playerName,
+                uuidResult.uuid,
+                true
+            );
         }
         storeRawData(provider, uuidResult.uuid, rawResult.getValue());
 
@@ -138,7 +148,12 @@ public class PlayerCache {
         if (result.isSuccess()) {
             cache.put(cacheKey, new CachedProfile(result.getProfile()));
         }
-        return result;
+        return withAvailableProfile(
+            result,
+            playerName,
+            uuidResult.uuid,
+            true
+        );
     }
 
     public ProfileFetchResult getScopedProfileResult(
@@ -175,14 +190,6 @@ public class PlayerCache {
             );
         }
 
-        if (provider.requiresApiKey() && !provider.isConfigured()) {
-            return ProfileFetchResult.failure(
-                FetchFailureReason.MISSING_API_KEY,
-                "Missing API key",
-                provider.getDisplayName()
-            );
-        }
-
         ResolvedUuid uuidResult = resolveUuid(
             playerName,
             context == null ? ProfileFetchContext.GENERAL : context
@@ -195,9 +202,27 @@ public class PlayerCache {
             );
         }
 
+        if (provider.requiresApiKey() && !provider.isConfigured()) {
+            return withAvailableProfile(
+                ProfileFetchResult.failure(
+                    FetchFailureReason.MISSING_API_KEY,
+                    "Missing API key",
+                    provider.getDisplayName()
+                ),
+                playerName,
+                uuidResult.uuid,
+                includeTags
+            );
+        }
+
         ProviderResult<String> rawResult = provider.fetchPlayerDataResult(uuidResult.uuid);
         if (!rawResult.isSuccess()) {
-            return toProfileFailure(rawResult, provider.getDisplayName());
+            return withAvailableProfile(
+                toProfileFailure(rawResult, provider.getDisplayName()),
+                playerName,
+                uuidResult.uuid,
+                includeTags
+            );
         }
         storeRawData(provider, uuidResult.uuid, rawResult.getValue());
 
@@ -213,7 +238,28 @@ public class PlayerCache {
         if (result.isSuccess()) {
             cache.put(cacheKey, new CachedProfile(result.getProfile()));
         }
-        return result;
+        return withAvailableProfile(
+            result,
+            playerName,
+            uuidResult.uuid,
+            includeTags
+        );
+    }
+
+    private ProfileFetchResult withAvailableProfile(
+        ProfileFetchResult result,
+        String playerName,
+        String uuid,
+        boolean includeTags
+    ) {
+        if (result == null || result.isSuccess() || result.getProfile() != null) {
+            return result;
+        }
+        PlayerProfile profile = PlayerProfile.identity(uuid, playerName);
+        if (includeTags) {
+            profile = enrichProfileWithTags(profile);
+        }
+        return result.withProfile(profile);
     }
 
     public PlayerProfile enrichProfileWithTags(PlayerProfile profile) {

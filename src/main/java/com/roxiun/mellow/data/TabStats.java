@@ -21,6 +21,29 @@ public class TabStats {
     private final String beds;
     private final String finals;
 
+    public static TabStats tagsOnly(
+        List<CoralTag> coralTags,
+        List<SeraphTag> seraphTags,
+        String playerName
+    ) {
+        return new TabStats(
+            coralTags,
+            seraphTags,
+            playerName,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+    }
+
     public TabStats(
         List<CoralTag> coralTags,
         String stars,

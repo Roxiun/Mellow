@@ -185,8 +185,11 @@ public class PregameStats {
             true
         );
         PlayerProfile profile = result.getProfile();
+        BedwarsPlayer player = profile == null
+            ? null
+            : profile.getBedwarsPlayer();
 
-        if (profile == null || profile.getBedwarsPlayer() == null) {
+        if (player == null) {
             if (shouldSuppressFailureMessage(result)) {
                 return;
             }
@@ -201,7 +204,9 @@ public class PregameStats {
                     )
                 );
             }
-            return;
+            if (profile == null) {
+                return;
+            }
         }
 
         UUID uuid = UUIDUtils.fromString(profile.getUuid());
@@ -253,8 +258,7 @@ public class PregameStats {
             });
         }
 
-        if (sendStats) {
-            BedwarsPlayer player = profile.getBedwarsPlayer();
+        if (sendStats && player != null) {
             String stats =
                 player.getStars() +
                 " §r" +

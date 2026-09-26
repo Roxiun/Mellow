@@ -104,7 +104,11 @@ public class StatsChecker {
                 playerCache.clearPlayerStats(playerName);
                 PlayerProfile profile = playerCache.getProfile(playerName);
 
-                if (profile == null || !hasStatsForScope(profile, activeScope)) {
+                if (profile == null) {
+                    return;
+                }
+                if (!hasStatsForScope(profile, activeScope)) {
+                    sendBlacklistAndTagAlerts(profile, playerName);
                     return;
                 }
 
@@ -182,18 +186,22 @@ public class StatsChecker {
                         false
                     );
                     PlayerProfile profile = result.getProfile();
+                    boolean hasStats =
+                        profile != null && hasStatsForScope(profile, activeScope);
 
-                    if (profile == null || !hasStatsForScope(profile, activeScope)) {
+                    if (!hasStats) {
                         maybeReportLiveFetchFailure(playerName, result);
+                    }
+                    if (profile == null) {
                         return;
                     }
-                    boolean passesFilters = passesScopeFilters(
-                        profile,
-                        activeScope
-                    );
-                    boolean shouldPopulateTabStats = config.tabStats && passesFilters;
+                    boolean passesFilters =
+                        hasStats && passesScopeFilters(profile, activeScope);
+                    boolean shouldPopulateTabStats =
+                        config.tabStats &&
+                        (passesFilters || (!hasStats && shouldShowRemoteTagsInTab()));
 
-                    if (shouldPopulateTabStats) {
+                    if (shouldPopulateTabStats && hasStats) {
                         TabStats newTabStats = profile.getTabStats(activeScope);
                         if (newTabStats != null) {
                             tabStats.put(playerName, newTabStats);
@@ -250,6 +258,14 @@ public class StatsChecker {
         boolean warningNeedsTags =
             config.printBlacklistTags && (config.isCoralEnabled() || config.seraph);
         return tabNeedsCoralTags || tabNeedsSeraphTags || warningNeedsTags;
+    }
+
+    private boolean shouldShowRemoteTagsInTab() {
+        return (
+            config != null &&
+            ((config.shouldShowCoralTagsInTab() && config.isCoralEnabled()) ||
+                (config.showSeraphTagsInTab && config.seraph))
+        );
     }
 
     private void maybeReportLiveFetchFailure(
