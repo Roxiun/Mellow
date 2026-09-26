@@ -93,7 +93,7 @@ configurations { shade }
 // Configures the libraries/dependencies for your mod.
 dependencies {
     shade("com.squareup.okhttp3:okhttp:4.9.3") { exclude(group = "org.jetbrains.kotlin") }
-    shade("net.hypixel:mod-api:1.0")
+    shade("net.hypixel:mod-api:1.0.2")
     shade("org.tukaani:xz:1.9")
     testImplementation("junit:junit:4.13.2")
     // Adds the OneConfig library, so we can develop with it.
