@@ -14,7 +14,7 @@ import net.minecraft.event.ClickEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -204,7 +204,7 @@ public final class ModrinthUpdater {
         }
     }
 
-    private static boolean isRemoteVersionNewer(
+    static boolean isRemoteVersionNewer(
         String currentVersion,
         String remoteVersion
     ) {
@@ -259,13 +259,16 @@ public final class ModrinthUpdater {
     }
 
     @SubscribeEvent
-    public void onEntityJoinWorld(EntityJoinWorldEvent event) {
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
         if (!isOutdated || hasPromptedThisLaunch) {
             return;
         }
 
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.thePlayer == null || event.entity != mc.thePlayer) {
+        if (mc == null || mc.thePlayer == null) {
             return;
         }
 
