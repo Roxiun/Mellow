@@ -44,29 +44,33 @@ public final class ProviderHealthWarningService {
             return;
         }
 
-        boolean warned = false;
-
-        if (currentConfig.statsProvider == 1) {
-            ChatUtils.sendMessage(
-                "§eNadeshiko is currently broken. We recommend switching your Stats Provider to §bAbyss§e in OneConfig."
-            );
-            warned = true;
-        } else if (
-            currentConfig.statsProvider == 0 &&
-            !hasHypixelApiKey(currentConfig)
-        ) {
-            ChatUtils.sendMessage(
-                "§eHypixel Public API is selected but no API key is set. We recommend switching your Stats Provider to §bAbyss§e in OneConfig."
-            );
-            warned = true;
-        }
-
-        if (warned) {
+        String warningMessage = getWarningMessage(
+            currentConfig.statsProvider,
+            currentConfig.hypixelApiKey
+        );
+        if (warningMessage != null) {
+            ChatUtils.sendMessage(warningMessage);
             hasWarnedThisLaunch = true;
         }
     }
 
-    private static boolean hasHypixelApiKey(MellowOneConfig config) {
-        return config.hypixelApiKey != null && !config.hypixelApiKey.trim().isEmpty();
+    static String getWarningMessage(int statsProvider, String hypixelApiKey) {
+        if (statsProvider == 1 || statsProvider == 2) {
+            String providerName = statsProvider == 1 ? "Nadeshiko" : "Abyss";
+            return (
+                "§e" +
+                providerName +
+                " is deprecated. Switch your Stats Provider to §bBordic§e for keyless stats, or use §bHypixel Public API§e and add a key in §bAPI Keys > Hypixel§e."
+            );
+        }
+
+        if (
+            statsProvider == 0 &&
+            (hypixelApiKey == null || hypixelApiKey.trim().isEmpty())
+        ) {
+            return "§eHypixel Public API is selected but no API key is set. Switch to §bBordic§e for keyless stats, or add a key in §bAPI Keys > Hypixel§e.";
+        }
+
+        return null;
     }
 }

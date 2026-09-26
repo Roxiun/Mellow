@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.client.Minecraft;
 
 public class PlayerCache {
@@ -46,7 +47,7 @@ public class PlayerCache {
     private volatile String lastCoralApiKey;
     private volatile String lastSeraphApiKey;
 
-    private long lastMissingApiKeyWarnAt;
+    private final AtomicBoolean hasWarnedMissingApiKey = new AtomicBoolean(false);
 
     public PlayerCache(
         MojangApi mojangApi,
@@ -622,18 +623,16 @@ public class PlayerCache {
     }
 
     private void maybeWarnMissingApiKey(String providerName) {
-        long now = System.currentTimeMillis();
-        if (now - lastMissingApiKeyWarnAt < 10_000L) {
+        if (!hasWarnedMissingApiKey.compareAndSet(false, true)) {
             return;
         }
 
-        lastMissingApiKeyWarnAt = now;
         Minecraft.getMinecraft().addScheduledTask(() ->
             ChatUtils.sendMessage(
                 "§e" +
                 providerName +
                 " is selected but no API key is configured. " +
-                "Set a key in OneConfig or switch your Stats Provider to §bAbyss§e."
+                "Add a key in §bAPI Keys > Hypixel§e or switch your Stats Provider to §bBordic§e for keyless stats."
             )
         );
     }
