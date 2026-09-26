@@ -12,6 +12,9 @@ import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.data.PlayerProfile;
 import com.roxiun.mellow.feature.stats.StatsFetchFailureFormatter;
 import com.roxiun.mellow.util.ChatUtils;
+import com.roxiun.mellow.util.UUIDUtils;
+import com.roxiun.mellow.util.blacklist.BlacklistManager;
+import com.roxiun.mellow.util.blacklist.BlacklistedPlayer;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,10 +29,16 @@ public class BedwarsCommand extends CommandBase {
 
     private final PlayerCache playerCache;
     private final MellowOneConfig config;
+    private final BlacklistManager blacklistManager;
 
-    public BedwarsCommand(PlayerCache playerCache, MellowOneConfig config) {
+    public BedwarsCommand(
+        PlayerCache playerCache,
+        MellowOneConfig config,
+        BlacklistManager blacklistManager
+    ) {
         this.playerCache = playerCache;
         this.config = config;
+        this.blacklistManager = blacklistManager;
     }
 
     @Override
@@ -96,6 +105,21 @@ public class BedwarsCommand extends CommandBase {
                 ChatUtils.sendMultilineCommandMessage(sender, statsLines)
             );
 
+            BlacklistedPlayer blacklistedPlayer = blacklistManager.getBlacklistedPlayer(
+                UUIDUtils.fromString(profile.getUuid())
+            );
+            if (blacklistedPlayer != null) {
+                String localBlacklistMessage = formatLocalBlacklistMessage(
+                    blacklistedPlayer
+                );
+                MainThreadDispatcher.run(() ->
+                    ChatUtils.sendMultilineCommandMessage(
+                        sender,
+                        localBlacklistMessage
+                    )
+                );
+            }
+
             if (config.isCoralEnabled() && profile.isCoralTagged()) {
                 List<String> coralMessages = new ArrayList<>();
                 profile.getCoralTags().forEach(tag -> {
@@ -154,6 +178,26 @@ public class BedwarsCommand extends CommandBase {
                 }
             }
         });
+    }
+
+    static String formatLocalBlacklistMessage(
+        BlacklistedPlayer blacklistedPlayer
+    ) {
+        String message = "§6§lLocal§r§6: This player is on your blacklist";
+        String reason = blacklistedPlayer.getReason();
+        if (reason == null) {
+            return message;
+        }
+
+        String trimmedReason = reason.trim();
+        if (
+            trimmedReason.isEmpty() ||
+            "(none)".equalsIgnoreCase(trimmedReason) ||
+            BlacklistManager.isExternalFileImportReason(trimmedReason)
+        ) {
+            return message;
+        }
+        return message + ": " + trimmedReason;
     }
 
     @Override
