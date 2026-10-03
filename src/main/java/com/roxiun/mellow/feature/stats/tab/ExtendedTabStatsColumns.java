@@ -2,6 +2,7 @@ package com.roxiun.mellow.feature.stats.tab;
 
 import com.roxiun.mellow.api.provider.model.StatScope;
 import com.roxiun.mellow.config.MellowOneConfig;
+import com.roxiun.mellow.config.StatOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,47 +65,12 @@ public final class ExtendedTabStatsColumns {
         }
 
         if (scope == StatScope.SKYWARS) {
-            return new int[] {
-                config.skywarsCustomStat1,
-                config.skywarsCustomStat2,
-                config.skywarsCustomStat3,
-                config.skywarsCustomStat4,
-                config.skywarsCustomStat5,
-                config.skywarsCustomStat6,
-                config.skywarsCustomStat7,
-                config.skywarsCustomStat8,
-                config.skywarsCustomStat9,
-                config.skywarsCustomStat10,
-            };
+            return StatOrder.toColumns(StatOrder.SKYWARS, config.skywarsStatOrder);
         }
-
         if (scope == StatScope.DUELS) {
-            return new int[] {
-                config.duelsCustomStat1,
-                config.duelsCustomStat2,
-                config.duelsCustomStat3,
-                config.duelsCustomStat4,
-                config.duelsCustomStat5,
-                config.duelsCustomStat6,
-                config.duelsCustomStat7,
-                config.duelsCustomStat8,
-                config.duelsCustomStat9,
-                config.duelsCustomStat10,
-            };
+            return StatOrder.toColumns(StatOrder.DUELS, config.duelsStatOrder);
         }
-
-        return new int[] {
-            config.customStat1,
-            config.customStat2,
-            config.customStat3,
-            config.customStat4,
-            config.customStat5,
-            config.customStat6,
-            config.customStat7,
-            config.customStat8,
-            config.customStat9,
-            config.customStat10,
-        };
+        return StatOrder.toColumns(StatOrder.BEDWARS, config.bedwarsStatOrder);
     }
 
     public static List<Integer> getConfiguredColumns(

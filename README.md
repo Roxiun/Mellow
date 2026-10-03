@@ -86,7 +86,9 @@ Development sources retain MCP names using the checked-in `mappings/mcp-1.8.9.ti
 
 ## Usage
 
-All settings can be configured through OneConfig (press **Right Shift**).
+All settings can be configured through OneConfig (press **Right Shift**). New configurations use **Bordic** for stats; existing provider choices are preserved.
+
+Under **Tab Stats**, drag entries in each game's stat list to change the order, and uncheck entries to hide them. Existing numeric slot selections migrate once into the lists. Duplicate selections collapse into a single entry; hidden slots are omitted. All available stats can now be enabled, beyond the old ten-slot limit.
 
 ### Commands
 
