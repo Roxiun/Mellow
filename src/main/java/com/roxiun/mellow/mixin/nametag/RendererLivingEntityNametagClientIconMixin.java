@@ -5,12 +5,13 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 
 @Mixin(RendererLivingEntity.class)
 public class RendererLivingEntityNametagClientIconMixin {
 
-    @Redirect(
+    @WrapOperation(
         method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
         at = @At(
             value = "INVOKE",
@@ -18,14 +19,14 @@ public class RendererLivingEntityNametagClientIconMixin {
         ),
         require = 0
     )
-    private int mellow$expandNametagWidth(FontRenderer fontRenderer, String text) {
+    private int mellow$expandNametagWidth(FontRenderer fontRenderer, String text, Operation<Integer> original) {
         return NametagClientIconRenderer.adjustWidth(
             text,
-            fontRenderer.getStringWidth(text)
+            original.call(fontRenderer, text)
         );
     }
 
-    @Redirect(
+    @WrapOperation(
         method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
         at = @At(
             value = "INVOKE",
@@ -38,7 +39,8 @@ public class RendererLivingEntityNametagClientIconMixin {
         String text,
         int x,
         int y,
-        int color
+        int color,
+        Operation<Integer> original
     ) {
         int adjustedX = NametagClientIconRenderer.adjustTextX(text, x);
         NametagClientIconRenderer.drawActiveIcon(
@@ -48,6 +50,6 @@ public class RendererLivingEntityNametagClientIconMixin {
             y,
             color
         );
-        return fontRenderer.drawString(text, adjustedX, y, color);
+        return original.call(fontRenderer, text, adjustedX, y, color);
     }
 }

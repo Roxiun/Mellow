@@ -49,19 +49,14 @@ import com.roxiun.mellow.util.tagignore.TagIgnoreManager;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.client.ClientCommandHandler;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import org.polyfrost.oneconfig.api.event.v1.EventManager;
 import org.lwjgl.input.Keyboard;
 
-@Mod(modid = Mellow.MODID, name = Mellow.NAME, version = Mellow.VERSION)
-public class Mellow {
+public class Mellow implements net.fabricmc.api.ClientModInitializer {
 
     public static final String MODID = "mellow";
     public static final String NAME = "Mellow";
-    public static final String VERSION = "@VER@";
+    public static final String VERSION = net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(MODID).map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("development");
 
     public static MellowOneConfig config;
     public static final Map<String, TabStats> tabStats = new ConcurrentHashMap<>();
@@ -84,9 +79,16 @@ public class Mellow {
 
     private ProviderManager providerManager;
 
-    @Mod.EventHandler
-    public void init(FMLInitializationEvent event) {
+    @Override
+    public void onInitializeClient() {
+        EventManager.register(org.polyfrost.oneconfig.api.event.v1.events.InitializationEvent.class, this::initializeFeatures);
+    }
+
+    private void initializeFeatures() {
         config = new MellowOneConfig();
+        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("polyhitbox")) {
+            com.roxiun.mellow.platform.PolyHitboxIntegration.register();
+        }
         ModrinthUpdater.init(config);
         ProviderHealthWarningService.init(config);
 
@@ -175,9 +177,10 @@ public class Mellow {
             Keyboard.KEY_N,
             "Mellow Requests"
         );
-        ClientRegistry.registerKeyBinding(requestAcceptKeybind);
-        ClientRegistry.registerKeyBinding(requestDenyKeybind);
-        MinecraftForge.EVENT_BUS.register(
+        com.roxiun.mellow.platform.ClientBindings.register(requestAcceptKeybind);
+        com.roxiun.mellow.platform.ClientBindings.register(requestDenyKeybind);
+        net.minecraft.client.Minecraft.getMinecraft().gameSettings.loadOptions();
+        EventManager.INSTANCE.register(
             new RequestPopupRouter(
                 config,
                 requestPopupManager,
@@ -203,7 +206,7 @@ public class Mellow {
             .addGameStateListener(inGameTabStatsSyncService::onSnapshotUpdate);
         HypixelFeatures.getInstance().addGameStateListener(replayManager::onGameSnapshot);
 
-        MinecraftForge.EVENT_BUS.register(
+        EventManager.INSTANCE.register(
             new ChatEventRouter(
                 config,
                 numberDenicker,
@@ -211,72 +214,72 @@ public class Mellow {
                 requestPopupService
             )
         );
-        MinecraftForge.EVENT_BUS.register(
+        EventManager.INSTANCE.register(
             new WorldLifecycleRouter(numberDenicker, pregameStats, nickUtils)
         );
-        MinecraftForge.EVENT_BUS.register(
+        EventManager.INSTANCE.register(
             new ClientTickRouter(HypixelFeatures.getInstance())
         );
-        MinecraftForge.EVENT_BUS.register(new ReplayHudRouter(replayManager));
-        MinecraftForge.EVENT_BUS.register(new ReplayInputRouter(replayManager));
-        MinecraftForge.EVENT_BUS.register(new NametagColorRouter(config));
+        EventManager.INSTANCE.register(new ReplayHudRouter(replayManager));
+        EventManager.INSTANCE.register(new ReplayInputRouter(replayManager));
+        EventManager.INSTANCE.register(new NametagColorRouter(config));
         TabOverlayRouter tabOverlayRouter = new TabOverlayRouter(config);
-        MinecraftForge.EVENT_BUS.register(tabOverlayRouter);
-        MinecraftForge.EVENT_BUS.register(
+        EventManager.INSTANCE.register(tabOverlayRouter);
+        EventManager.INSTANCE.register(
             new TabOverlayInputRouter(tabOverlayRouter)
         );
 
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new BedwarsCommand(playerCache, config, blacklistManager)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new SkywarsCommand(playerCache, config)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new PVCommand(playerCache, config)
         );
-        ClientCommandHandler.instance.registerCommand(new MellowCommand());
-        ClientCommandHandler.instance.registerCommand(new DebugStateCommand());
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(new MellowCommand());
+        com.roxiun.mellow.platform.ClientCommands.register(new DebugStateCommand());
+        com.roxiun.mellow.platform.ClientCommands.register(
             new ClearCacheCommand(playerCache, tabStats)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new RefreshCommand(inGameTabStatsSyncService)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new DenickCommand(config, auroraApi)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new SkinDenickCommand(playerCache)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new BlacklistCommand(blacklistManager, mojangApi, seraphApi, config)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new AnnoylistCommand(annoylistManager, mojangApi)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new TagIgnoreCommand(tagIgnoreManager, mojangApi)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new CoralCommand(coralApi, config)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new SeraphCommand(seraphApi, mojangApi, config)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new StatusCommand(mojangApi, config)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new NameHistoryCommand(mojangApi)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new ClientCommand(seraphApi, mojangApi, config)
         );
-        ClientCommandHandler.instance.registerCommand(
+        com.roxiun.mellow.platform.ClientCommands.register(
             new WinstreakCommand(playerCache, config)
         );
-        ClientCommandHandler.instance.registerCommand(new ReplayCommand(replayManager));
+        com.roxiun.mellow.platform.ClientCommands.register(new ReplayCommand(replayManager));
     }
 
     public StatsProvider getStatsProvider() {

@@ -31,7 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
 import net.hypixel.data.type.GameType;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import com.roxiun.mellow.platform.event.ClientChatReceivedEvent;
 
 public class PregameStats {
 

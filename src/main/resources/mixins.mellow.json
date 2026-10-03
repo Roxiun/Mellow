@@ -1,8 +1,7 @@
 {
-  "compatibilityLevel": "JAVA_8",
-  "minVersion": "0.7",
+  "compatibilityLevel": "JAVA_25",
+  "minVersion": "0.8",
   "package": "com.roxiun.mellow.mixin",
-  "refmap": "mixins.${id}.refmap.json",
   "injectors": {
     "maxShiftBy": 5
   },
@@ -14,15 +13,23 @@
     "nametag.RenderNametagColorMixin",
     "nametag.RendererLivingEntityNametagClientIconMixin",
     "nametag.RendererLivingEntityNametagColorMixin",
-    "OverflowAnimationsTabCompatMixin",
     "PingMixin",
     "replay.NetworkManagerReplayCaptureMixin",
     "replay.NetHandlerPlayClientAccessor",
-    "VanillaHudTabBackgroundCompatMixin"
+    "VanillaHudTabBackgroundCompatMixin",
+    "platform.MinecraftEventsMixin",
+    "platform.PlayerTickMixin",
+    "platform.WorldEntityMixin",
+    "platform.HudEventsMixin",
+    "platform.TabEventsMixin",
+    "platform.NametagEventsMixin",
+    "platform.ChatPacketAccessor",
+    "platform.ChatEventsMixin",
+    "platform.ClientCommandsMixin",
+    "platform.ClientChatCompletionMixin"
   ],
   "mixins": [
-    "compat.polynametag.PolyNametagRenderingMixin",
-    "compat.polyhitbox.PolyHitboxRendererMixin"
+    "compat.polynametag.PolyNametagRenderingMixin"
   ],
   "verbose": true
 }

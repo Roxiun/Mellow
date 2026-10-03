@@ -1,246 +1,145 @@
-@file:Suppress("UnstableApiUsage", "PropertyName")
+import org.gradle.api.artifacts.transform.*
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition
+import org.gradle.api.file.FileSystemLocation
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.*
+import java.util.zip.ZipInputStream
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.polyfrost.gradle.util.noServerRunConfigs
+/** Loom's development classpath needs the bundle's nested mods as separate artifacts. */
+@CacheableTransform
+abstract class UnpackModBundle : TransformAction<TransformParameters.None> {
+    @get:InputArtifact
+    @get:PathSensitive(PathSensitivity.NAME_ONLY)
+    abstract val inputArtifact: Provider<FileSystemLocation>
 
-// Adds support for kotlin, and adds the Polyfrost Gradle Toolkit
-// which we use to prepare the environment.
-plugins {
-    kotlin("jvm")
-    id("org.polyfrost.multi-version")
-    id("org.polyfrost.defaults.repo")
-    id("org.polyfrost.defaults.java")
-    id("org.polyfrost.defaults.loom")
-    id("com.github.johnrengelman.shadow")
-    id("net.kyori.blossom") version "1.3.2"
-    id("signing")
-    java
-}
-
-// Gets the mod name, version and id from the `gradle.properties` file.
-val mod_name: String by project
-val mod_version: String by project
-val mod_id: String by project
-val mod_archives_name: String by project
-
-// Replaces the variables in `ExampleMod.java` to the ones specified in `gradle.properties`.
-blossom {
-    replaceToken("@VER@", mod_version)
-    replaceToken("@NAME@", mod_name)
-    replaceToken("@ID@", mod_id)
-}
-
-// Sets the mod version to the one specified in `gradle.properties`. Make sure to change this
-// following semver!
-version = mod_version
-// Sets the group, make sure to change this to your own. It can be a website you own backwards or
-// your GitHub username.
-// e.g. com.github.<your username> or com.<your domain>
-group = "com.roxiun"
-
-// Sets the name of the output jar (the one you put in your mods folder and send to other people)
-// It outputs all versions of the mod into the `versions/{mcVersion}/build` directory.
-base { archivesName.set("$mod_archives_name-$platform") }
-
-// Configures Polyfrost Loom, our plugin fork to easily set up the programming environment.
-loom {
-    // Removes the server configs from IntelliJ IDEA, leaving only client runs.
-    noServerRunConfigs()
-
-    // Adds the tweak class if we are building legacy version of forge as per the documentation
-    // (https://docs.polyfrost.org)
-    if (project.platform.isLegacyForge) {
-        runConfigs {
-            "client" {
-                programArgs(
-                        "--tweakClass",
-                        "cc.polyfrost.oneconfig.loader.stage0.LaunchWrapperTweaker"
-                )
-                property(
-                        "mixin.debug.export",
-                        "true"
-                ) // Outputs all mixin changes to `versions/{mcVersion}/run/.mixin.out/class`
-            }
-        }
-    }
-    // Configures the mixins if we are building for forge
-    if (project.platform.isForge) {
-        forge { mixinConfig("mixins.${mod_id}.json") }
-    }
-    // Configures the name of the mixin "refmap"
-    mixin.defaultRefmapName.set("mixins.${mod_id}.refmap.json")
-}
-
-// Creates the shade/shadow configuration, so we can include libraries inside our mod, rather than
-// having to add them separately.
-val shade: Configuration by
-        configurations.creating { configurations.implementation.get().extendsFrom(this) }
-val modShade: Configuration by
-        configurations.creating { configurations.modImplementation.get().extendsFrom(this) }
-
-// Configures the output directory for when building from the `src/resources` directory.
-sourceSets { main { output.setResourcesDir(java.classesDirectory) } }
-
-// Adds the Polyfrost maven repository so that we can get the libraries necessary to develop the
-// mod.
-repositories {
-    maven("https://repo.polyfrost.org/releases")
-    maven("https://repo.hypixel.net/repository/Hypixel/")
-}
-
-configurations { shade }
-
-// Configures the libraries/dependencies for your mod.
-dependencies {
-    shade("com.squareup.okhttp3:okhttp:4.9.3") { exclude(group = "org.jetbrains.kotlin") }
-    shade("net.hypixel:mod-api:1.0.2")
-    shade("org.tukaani:xz:1.9")
-    testImplementation("junit:junit:4.13.2")
-    // Adds the OneConfig library, so we can develop with it.
-    modCompileOnly("cc.polyfrost:oneconfig-$platform:0.2.2-alpha+")
-
-    // Adds DevAuth, which we can use to log in to Minecraft in development.
-    modRuntimeOnly(
-            "me.djtheredstoner:DevAuth-${if (platform.isFabric) "fabric" else if (platform.isLegacyForge) "forge-legacy" else "forge-latest"}:1.2.0"
-    )
-
-    // If we are building for legacy forge, includes the launch wrapper with `shade` as we
-    // configured earlier, as well as mixin 0.7.11
-    if (platform.isLegacyForge) {
-        compileOnly("org.spongepowered:mixin:0.7.11-SNAPSHOT")
-        shade("cc.polyfrost:oneconfig-wrapper-launchwrapper:1.0.0-beta17")
-    }
-}
-
-tasks {
-    test {
-        useJUnit()
-    }
-
-    // Processes the `src/resources/mcmod.info`, `fabric.mod.json`, or `mixins.${mod_id}.json` and
-    // replaces
-    // the mod id, name and version with the ones in `gradle.properties`
-    processResources {
-        inputs.property("id", mod_id)
-        inputs.property("name", mod_name)
-        val java =
-                if (project.platform.mcMinor >= 18) {
-                    17 // If we are playing on version 1.18, set the java version to 17
-                } else {
-                    // Else if we are playing on version 1.17, use java 16.
-                    if (project.platform.mcMinor == 17) 16
-                    else 8 // For all previous versions, we **need** java 8 (for Forge support).
+    override fun transform(outputs: TransformOutputs) {
+        val input = inputArtifact.get().asFile
+        fun unpack(bytes: ByteArray, name: String) {
+            outputs.file(name).writeBytes(bytes)
+            ZipInputStream(bytes.inputStream()).use { zip ->
+                var entry = zip.nextEntry
+                while (entry != null) {
+                    if (!entry.isDirectory && entry.name.startsWith("META-INF/jars/") && entry.name.endsWith(".jar")) {
+                        unpack(zip.readBytes(), entry.name.substringAfterLast('/'))
+                    }
+                    entry = zip.nextEntry
                 }
-        val compatLevel = "JAVA_${java}"
-        inputs.property("java", java)
-        inputs.property("java_level", compatLevel)
-        inputs.property("version", mod_version)
-        inputs.property("mcVersionStr", project.platform.mcVersionStr)
-        filesMatching(listOf("mcmod.info", "mixins.${mod_id}.json", "mods.toml")) {
-            expand(
-                    mapOf(
-                            "id" to mod_id,
-                            "name" to mod_name,
-                            "java" to java,
-                            "java_level" to compatLevel,
-                            "version" to mod_version,
-                            "mcVersionStr" to project.platform.mcVersionStr
-                    )
-            )
-        }
-        filesMatching("fabric.mod.json") {
-            expand(
-                    mapOf(
-                            "id" to mod_id,
-                            "name" to mod_name,
-                            "java" to java,
-                            "java_level" to compatLevel,
-                            "version" to mod_version,
-                            "mcVersionStr" to
-                                    project.platform.mcVersionStr.substringBeforeLast(".") + ".x"
-                    )
-            )
-        }
-    }
-
-    // Configures the resources to include if we are building for forge or fabric.
-    withType(Jar::class.java) {
-        if (project.platform.isFabric) {
-            exclude("mcmod.info", "mods.toml")
-        } else {
-            exclude("fabric.mod.json")
-            if (project.platform.isLegacyForge) {
-                exclude("mods.toml")
-            } else {
-                exclude("mcmod.info")
             }
         }
-    }
-
-    // Configures our shadow/shade configuration, so we can
-    // include some dependencies within our mod jar file.
-    named<ShadowJar>("shadowJar") {
-        archiveClassifier.set("dev")
-        configurations = listOf(shade)
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    }
-
-    remapJar {
-        inputFile.set(shadowJar.get().archiveFile)
-        archiveClassifier.set("")
-    }
-
-    jar {
-        // Sets the jar manifest attributes.
-        if (platform.isLegacyForge) {
-            manifest.attributes +=
-                    mapOf(
-                            "ModSide" to "CLIENT", // We aren't developing a server-side mod
-                            "ForceLoadAsMod" to
-                                    true, // We want to load this jar as a mod, so we force Forge to
-                            // do so.
-                            "TweakOrder" to
-                                    "0", // Makes sure that the OneConfig launch wrapper is loaded
-                            // as soon as possible.
-                            "MixinConfigs" to "mixins.${mod_id}.json", // We want to use our mixin
-                            // configuration, so we specify it
-                            // here.
-                            "TweakClass" to
-                                    "cc.polyfrost.oneconfig.loader.stage0.LaunchWrapperTweaker" // Loads the OneConfig launch wrapper.
-                    )
-        }
-        dependsOn(shadowJar)
-        archiveClassifier.set("")
-        enabled = false
+        unpack(input.readBytes(), input.name)
     }
 }
 
-tasks.named("build") {
-    doLast {
-        // Path to the built JAR file after the build (from the build/libs directory)
-        val finalJar = file("build/libs/${mod_archives_name}-1.8.9-forge-${mod_version}.jar")
+plugins {
+    java
+    id("net.fabricmc.fabric-loom-remap") version "1.17.4"
+    id("ploceus") version "1.17.4"
+}
 
-        // Ensure the built JAR file exists before proceeding
-        if (finalJar.exists()) {
-            // Additional destination directory
-            val home = System.getProperty("user.home")
-            val additionalDestDir =
-                    file(
-                            "$home/Library/Application Support/PrismLauncher/instances/1.8.9/.minecraft/mods"
-                    )
+group = "com.roxiun"
+version = providers.gradleProperty("mod_version").get()
+base.archivesName.set("Mellow-1.8.9-ornithe")
 
-            // Ensure the destination directory exists
-            additionalDestDir.mkdirs()
+repositories {
+    mavenCentral()
+    google { content { includeGroupByRegex("androidx.*"); includeGroupByRegex("com\\.android.*") } }
+    maven("https://repo.polyfrost.org/releases")
+    maven("https://repo.polyfrost.org/snapshots")
+    maven("https://maven.ornithemc.net/releases")
+    maven("https://maven.cloverclient.com/releases")
+    maven("https://repo.hypixel.net/repository/Hypixel/")
+    maven("https://api.modrinth.com/maven")
+}
 
-            // Copy the final JAR to the additional directory
-            copy {
-                from(finalJar)
-                into(additionalDestDir)
-            }
+ploceus { setIntermediaryGeneration(2) }
+configurations.configureEach { exclude(group = "org.lwjgl.lwjgl") }
 
-            println("JAR file copied to: ${additionalDestDir.absolutePath}")
-        } else {
-            println("Built JAR file does not exist: ${finalJar.absolutePath}")
+val oneConfigBundle by configurations.creating {
+    isTransitive = false
+    attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, "unpacked-mod-bundle")
+}
+dependencies.registerTransform(UnpackModBundle::class) {
+    from.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, "jar")
+    to.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, "unpacked-mod-bundle")
+}
+
+dependencies {
+    minecraft("com.mojang:minecraft:1.8.9")
+    mappings(ploceus.layeredMappings {
+        mappings(file("mappings/mcp-1.8.9.tiny"))
+    })
+    modImplementation("net.fabricmc:fabric-loader:0.19.3")
+    ploceus.dependOsl("0.21.1")
+    modCompileOnly("org.polyfrost.oneconfig:1.8.9-ornithe:1.2.10")
+    oneConfigBundle("maven.modrinth:oneconfig:lzo51827")
+    for (module in listOf("config", "config-impl", "events", "hud", "ui", "utils", "internal", "poly-compose")) {
+        compileOnly("org.polyfrost.oneconfig:$module:1.2.10")
+    }
+    modImplementation("pl.tomgirl:pylon:0.1.7")
+    modImplementation("net.fabricmc:fabric-language-kotlin:1.13.13+kotlin.2.4.10")
+    implementation("com.squareup.okhttp3:okhttp:4.9.3")
+    include("com.squareup.okhttp3:okhttp:4.9.3")
+    include("com.squareup.okio:okio:2.8.0")
+    implementation("net.hypixel:mod-api:1.0.2")
+    implementation("org.tukaani:xz:1.9")
+    include("org.tukaani:xz:1.9")
+    modCompileOnly("maven.modrinth:hitbox:lF5nB8Es")
+    modCompileOnly("maven.modrinth:polynametag:U0L3xRrU")
+    modCompileOnly("maven.modrinth:vanillahud:Gpl9yiBF")
+    modRuntimeOnly("maven.modrinth:compose-multiplatform:un1Ye4Ye")
+    testImplementation("junit:junit:4.13.2")
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+    withSourcesJar()
+}
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
+    options.release.set(25)
+    options.compilerArgs.addAll(listOf("-Xmaxerrs", "1000"))
+}
+loom {
+    runs {
+        named("client") {
+            property("mixin.debug.export", "true")
+            if (System.getProperty("os.name").contains("Mac")) vmArg("-XstartOnFirstThread")
         }
+        remove(getByName("server"))
+    }
+}
+tasks.processResources {
+    inputs.property("version", project.version)
+    filesMatching("fabric.mod.json") { expand("version" to project.version) }
+}
+tasks.test { useJUnit() }
+
+// Resolve through Gradle's cached transform before Loom constructs its mod classpath.
+oneConfigBundle.files.forEach { dependencies.add("modRuntimeOnly", files(it)) }
+
+// Optional compatibility matrix: ./gradlew runClient -PcompatMods
+if (providers.gradleProperty("compatMods").isPresent) {
+    dependencies {
+        modRuntimeOnly("maven.modrinth:hitbox:lF5nB8Es")
+        modRuntimeOnly("maven.modrinth:polynametag:U0L3xRrU")
+        modRuntimeOnly("maven.modrinth:vanillahud:Gpl9yiBF")
+    }
+}
+
+if (providers.gradleProperty("clientTest").isPresent) {
+    val clientTest = sourceSets.create("clientTest") {
+        compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().runtimeClasspath + output
+    }
+    loom.mods.register("mellow-client-tests") { sourceSet(clientTest) }
+    val testDirectory = layout.buildDirectory.dir(if (providers.gradleProperty("compatMods").isPresent) "client-test/compat" else "client-test/base").get().asFile
+    val result = testDirectory.resolve("smoke-result.txt")
+    loom.runs.named("client") { runDir(testDirectory.absolutePath) }
+    tasks.named<JavaExec>("runClient") {
+        systemProperty("mellow.smokeResult", result.absolutePath)
+        doFirst { result.delete() }
+        doLast { check(result.isFile && result.readText() == "PASS") { "Client smoke test did not pass; inspect the client log" } }
+        dependsOn(clientTest.classesTaskName)
+        classpath += clientTest.runtimeClasspath
     }
 }

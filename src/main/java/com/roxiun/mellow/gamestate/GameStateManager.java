@@ -1,6 +1,6 @@
 package com.roxiun.mellow.gamestate;
 
-import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
+import com.roxiun.mellow.platform.HypixelServer;
 import com.roxiun.mellow.gamestate.query.GameContext;
 import com.roxiun.mellow.util.scoreboard.ScoreboardUtils;
 import java.util.HashMap;
@@ -82,7 +82,7 @@ public class GameStateManager implements GameContext {
         }
 
         GameSnapshot current = snapshot.get();
-        boolean onHypixel = HypixelUtils.INSTANCE.isHypixel();
+        boolean onHypixel = HypixelServer.isHypixel();
 
         if (!onHypixel) {
             if (current.isOnHypixel()) {

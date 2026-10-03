@@ -55,7 +55,7 @@ public final class ReplayPacketFactory {
             buffer.readBytes(payload);
             return new ReplayPacketFrame(
                 0,
-                S38PacketPlayerListItem.class.getName(),
+                ReplayPacketCodec.typeName(S38PacketPlayerListItem.class),
                 payload
             );
         } finally {

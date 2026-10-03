@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.ChatComponentText;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import com.roxiun.mellow.platform.event.ClientChatReceivedEvent;
 
 public class NumberDenicker {
 

@@ -1,6 +1,6 @@
 package com.roxiun.mellow.anticheat;
 
-import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
+import com.roxiun.mellow.platform.HypixelServer;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.anticheat.check.Check;
 import com.roxiun.mellow.anticheat.check.impl.AutoBlockCheck;
@@ -23,8 +23,8 @@ import net.minecraft.event.HoverEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import org.polyfrost.oneconfig.api.event.v1.EventManager;
+import com.roxiun.mellow.platform.event.TickEvent;
 
 public class AnticheatManager {
 
@@ -59,7 +59,7 @@ public class AnticheatManager {
     }
 
     private void registerEvents() {
-        MinecraftForge.EVENT_BUS.register(new AnticheatListener(this));
+        EventManager.INSTANCE.register(new AnticheatListener(this));
     }
 
     public void reloadChecks() {
@@ -113,7 +113,7 @@ public class AnticheatManager {
                 );
 
                 // Add WDR button if on Hypixel
-                if (HypixelUtils.INSTANCE.isHypixel()) {
+                if (HypixelServer.isHypixel()) {
                     String plainName = player.getName().replaceAll("§.", "").trim();
                     boolean shouldBlockOnClick =
                         Mellow.nickUtils != null && Mellow.nickUtils.isNicked(plainName);

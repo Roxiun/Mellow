@@ -132,7 +132,7 @@ public class ReplayTeleportPickerGui extends GuiScreen {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
         super.mouseClicked(mouseX, mouseY, mouseButton);
         if (mouseButton != 0) {
             return;
@@ -148,7 +148,7 @@ public class ReplayTeleportPickerGui extends GuiScreen {
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
+    public void handleMouseInput() {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
         if (wheel == 0 || rows.size() <= visibleRowCount) {
@@ -164,7 +164,7 @@ public class ReplayTeleportPickerGui extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void keyTyped(char typedChar, int keyCode) {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             mc.displayGuiScreen(null);
             return;

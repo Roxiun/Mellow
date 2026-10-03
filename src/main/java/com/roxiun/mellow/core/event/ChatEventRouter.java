@@ -8,8 +8,8 @@ import com.roxiun.mellow.feature.replay.ReplayManager;
 import com.roxiun.mellow.feature.stats.PregameStats;
 import com.roxiun.mellow.module.bedwars.BedwarsChatSignalParser;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import com.roxiun.mellow.platform.event.ClientChatReceivedEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 
 public class ChatEventRouter {
 
@@ -31,7 +31,7 @@ public class ChatEventRouter {
         this.requestPopupService = requestPopupService;
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onChat(ClientChatReceivedEvent event) {
         numberDenicker.onChat(event);
         pregameStats.onChat(event);

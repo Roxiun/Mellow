@@ -13,9 +13,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.event.ClickEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.polyfrost.oneconfig.api.event.v1.EventManager;
+import com.roxiun.mellow.platform.event.TickEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -29,7 +29,7 @@ public final class ModrinthUpdater {
     private static final String MODRINTH_PROJECT_URL =
         "https://modrinth.com/mod/statsify";
     private static final String TARGET_GAME_VERSION = "1.8.9";
-    private static final String TARGET_LOADER = "forge";
+    private static final String TARGET_LOADER = "ornithe";
     private static final String RELEASE_TYPE = "release";
     private static final int CHANGELOG_PREVIEW_MAX = 180;
 
@@ -53,7 +53,7 @@ public final class ModrinthUpdater {
             return;
         }
 
-        MinecraftForge.EVENT_BUS.register(INSTANCE);
+        EventManager.INSTANCE.register(INSTANCE);
         checkForUpdates();
     }
 
@@ -258,7 +258,7 @@ public final class ModrinthUpdater {
         return parts;
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
             return;

@@ -7,10 +7,10 @@ import com.roxiun.mellow.feature.stats.tab.ExtendedStatsTabOverlay;
 import com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsMode;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import com.roxiun.mellow.platform.event.RenderGameOverlayEvent;
+
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
+import com.roxiun.mellow.platform.event.TickEvent;
 
 public class TabOverlayRouter {
 
@@ -35,7 +35,7 @@ public class TabOverlayRouter {
         this.config = config;
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    @Subscribe(priority = -100)
     public void onRenderPlayerList(RenderGameOverlayEvent.Pre event) {
         if (event.type != RenderGameOverlayEvent.ElementType.PLAYER_LIST) {
             return;
@@ -71,10 +71,9 @@ public class TabOverlayRouter {
         }
 
         event.setCanceled(true);
-        statsOverlay.renderExtendedPlayerList(scope);
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    @Subscribe(priority = -100)
     public void onRenderPinnedOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) {
             return;
@@ -87,7 +86,7 @@ public class TabOverlayRouter {
             return;
         }
 
-        if (!pinnedByDoubleTap || isTabKeyDown()) {
+        if (!pinnedByDoubleTap && !isTabKeyDown()) {
             return;
         }
 
@@ -103,7 +102,7 @@ public class TabOverlayRouter {
         statsOverlay.renderExtendedPlayerList(scope);
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
             return;

@@ -1,8 +1,8 @@
 package com.roxiun.mellow.feature.replay;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.MouseEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import com.roxiun.mellow.platform.event.MouseEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 
 public class ReplayInputRouter {
 
@@ -13,7 +13,7 @@ public class ReplayInputRouter {
         this.replayManager = replayManager;
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onMouse(MouseEvent event) {
         if (event.dwheel != 0 || !event.buttonstate) {
             return;

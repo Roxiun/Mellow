@@ -3,8 +3,8 @@ package com.roxiun.mellow.feature.replay;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import com.roxiun.mellow.platform.event.RenderGameOverlayEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 
 public class ReplayHudRouter {
 
@@ -14,8 +14,8 @@ public class ReplayHudRouter {
         this.replayManager = replayManager;
     }
 
-    @SubscribeEvent
-    public void onRenderOverlay(RenderGameOverlayEvent.Text event) {
+    @Subscribe
+    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         if (!replayManager.isPlaybackActive()) {
             return;
         }

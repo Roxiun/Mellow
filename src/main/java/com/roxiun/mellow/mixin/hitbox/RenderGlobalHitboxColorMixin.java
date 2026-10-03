@@ -1,6 +1,6 @@
 package com.roxiun.mellow.mixin.hitbox;
 
-import cc.polyfrost.oneconfig.config.core.OneColor;
+import com.roxiun.mellow.util.RgbaColor;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.util.hitbox.HitboxRenderContext;
@@ -45,7 +45,7 @@ public abstract class RenderGlobalHitboxColorMixin {
         }
 
         Entity current = HitboxRenderContext.getCurrentEntity();
-        OneColor teamColor = TeamHitboxColorResolver.resolveTeamHitboxColor(
+        RgbaColor teamColor = TeamHitboxColorResolver.resolveTeamHitboxColor(
             current,
             config,
             alpha

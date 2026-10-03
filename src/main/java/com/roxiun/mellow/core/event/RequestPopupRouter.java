@@ -11,9 +11,9 @@ import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.InputEvent;
+import com.roxiun.mellow.platform.event.RenderGameOverlayEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
+import com.roxiun.mellow.platform.event.InputEvent;
 import org.lwjgl.input.Keyboard;
 
 public class RequestPopupRouter {
@@ -43,7 +43,7 @@ public class RequestPopupRouter {
         this.denyKeybind = denyKeybind;
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) {
             return;
@@ -60,7 +60,7 @@ public class RequestPopupRouter {
         renderPopup(activeRequest);
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onKeyInput(InputEvent.KeyInputEvent event) {
         if (
             config == null ||

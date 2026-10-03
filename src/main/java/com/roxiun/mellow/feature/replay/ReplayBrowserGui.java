@@ -114,7 +114,7 @@ public class ReplayBrowserGui extends GuiScreen {
     }
 
     @Override
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) {
         if (button == null || !button.enabled) {
             return;
         }
@@ -133,7 +133,7 @@ public class ReplayBrowserGui extends GuiScreen {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
         super.mouseClicked(mouseX, mouseY, mouseButton);
         if (mouseButton != 0 || entries.isEmpty()) {
             return;
@@ -157,7 +157,7 @@ public class ReplayBrowserGui extends GuiScreen {
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
+    public void handleMouseInput() {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
         if (wheel == 0 || entries.size() <= visibleRowCount) {
@@ -173,7 +173,7 @@ public class ReplayBrowserGui extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void keyTyped(char typedChar, int keyCode) {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             mc.displayGuiScreen(null);
             return;
