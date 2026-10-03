@@ -17,12 +17,35 @@ public final class ClientSmokeTest implements ClientModInitializer {
         // Run after the game's initialization event and all mod initialization listeners finish.
         final int[] ticks = {0};
         EventManager.register(org.polyfrost.oneconfig.api.event.v1.events.TickEvent.End.class, () -> {
-            if (++ticks[0] == 5) verify();
+            ++ticks[0];
+            if (Boolean.getBoolean("mellow.configPreview")) {
+                if (ticks[0] == 60) org.polyfrost.oneconfig.api.ui.v1.OneConfigUI.open(
+                    new org.polyfrost.oneconfig.internal.ui.navigation.graph.ModConfigRoute("mellow-v1.json", System.getProperty("mellow.configPreviewCategory", "Tab Stats")));
+                if (ticks[0] == 140) {
+                    var mc = Minecraft.getMinecraft();
+                    net.minecraft.util.ScreenShotHelper.saveScreenshot(mc.mcDataDir, "mellow-config.png", mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
+                    verify();
+                }
+            } else if (ticks[0] == 5) verify();
         });
     }
     private void verify() {
         try {
             if (Mellow.config == null) throw new AssertionError("Mellow not initialized");
+            Object providerDefault = Mellow.config.getTree().getProp("statsProvider").getMetadata("default");
+            if (!Integer.valueOf(3).equals(providerDefault)) throw new AssertionError("Bordic is not the reset default");
+            var orderProperty = Mellow.config.getTree().getProp("bedwarsStatOrder");
+            if (orderProperty == null || !Boolean.TRUE.equals(orderProperty.getMetadata("checkable")))
+                throw new AssertionError("Native stat-order control was not registered");
+            String[] savedOrder = Mellow.config.bedwarsStatOrder;
+            try {
+                orderProperty.setAs(new String[]{"Ping", "Name"});
+                int[] columns = com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                    com.roxiun.mellow.api.provider.model.StatScope.BEDWARS, Mellow.config);
+                if (!java.util.Arrays.equals(columns, new int[]{13, 2})) throw new AssertionError("UI reorder did not update renderer");
+                orderProperty.setAs(new String[0]);
+                if (Mellow.config.bedwarsStatOrder.length != 0) throw new AssertionError("Cannot disable all stats");
+            } finally { orderProperty.setAs(savedOrder); }
             String[] classes = {
                 "net.minecraft.client.network.NetHandlerPlayClient",
                 "net.minecraft.network.NetworkManager",

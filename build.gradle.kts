@@ -142,6 +142,8 @@ if (providers.gradleProperty("clientTest").isPresent) {
     loom.runs.named("client") { runDir(testDirectory.absolutePath) }
     tasks.named<JavaExec>("runClient") {
         systemProperty("mellow.smokeResult", result.absolutePath)
+        systemProperty("mellow.configPreview", providers.gradleProperty("configPreview").isPresent.toString())
+        systemProperty("mellow.configPreviewCategory", providers.gradleProperty("configPreview").getOrElse("Tab Stats").ifEmpty { "Tab Stats" })
         doFirst { result.delete() }
         doLast { check(result.isFile && result.readText() == "PASS") { "Client smoke test did not pass; inspect the client log" } }
         dependsOn(clientTest.classesTaskName)

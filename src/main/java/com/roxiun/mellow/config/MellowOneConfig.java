@@ -4,7 +4,8 @@ import org.polyfrost.oneconfig.api.config.v1.Config;
 import org.polyfrost.oneconfig.api.config.v1.annotations.Button;
 import org.polyfrost.oneconfig.api.config.v1.annotations.Checkbox;
 import org.polyfrost.oneconfig.api.config.v1.annotations.Dropdown;
-import org.polyfrost.oneconfig.api.config.v1.annotations.Info;
+import org.polyfrost.oneconfig.api.config.v1.annotations.DraggableList;
+import org.polyfrost.oneconfig.api.config.v1.annotations.Include;
 import org.polyfrost.oneconfig.api.config.v1.annotations.Number;
 import org.polyfrost.oneconfig.api.config.v1.annotations.Switch;
 import org.polyfrost.oneconfig.api.config.v1.annotations.Text;
@@ -157,714 +158,116 @@ public class MellowOneConfig extends Config {
     @Switch(title = "Highlight Tagged Players", category = "Tab Stats")
     public boolean highlightTaggedPlayers = false;
 
-    @Info(
-        description = "Set the order of stats in the tab list",
-        category = "Tab Stats"
-    )
-    public static boolean ignoredStatsOrderInfo;
+    // Legacy slots remain readable so both Forge and earlier Ornithe profiles migrate.
+    @DraggableList(title = "BedWars Stat Order", description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "BedWars", checkable = true,
+        options = {"Team", "Stars", "Name", "FKDR", "Winstreak", "WLR", "BBLR", "Wins", "Beds", "Finals", "HP", "Tags", "Ping", "Client"})
+    public String[] bedwarsStatOrder = {"Team", "Stars", "Name", "FKDR", "Winstreak", "HP"};
 
-    @Dropdown(
-        title = "First Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
+    @DraggableList(title = "SkyWars Stat Order", description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "SkyWars", checkable = true,
+        options = {"Team", "Level", "Name", "KDR", "WLR", "Wins", "Kills", "HP", "Tags", "Ping", "Client"})
+    public String[] skywarsStatOrder = {"Team", "Level", "Name", "KDR", "WLR", "HP"};
+
+    @DraggableList(title = "Duels Stat Order", description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "Duels", checkable = true,
+        options = {"Team", "Division", "Name", "KDR", "WLR", "Wins", "Losses", "Kills", "Deaths", "Winstreak", "HP", "Tags", "Ping", "Client"})
+    public String[] duelsStatOrder = {"Team", "Division", "Name", "KDR", "WLR", "Wins", "Losses", "Kills", "Deaths", "HP"};
+
+    @Include
+    public boolean statOrderMigrated = false;
+
+    @Include
     public int customStat1 = 0;
 
-    @Dropdown(
-        title = "Second Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat2 = 1; // Stars
+    @Include
+    public int customStat2 = 1;
 
-    @Dropdown(
-        title = "Third Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat3 = 2; // Name
+    @Include
+    public int customStat3 = 2;
 
-    @Dropdown(
-        title = "Fourth Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat4 = 3; // FKDR
+    @Include
+    public int customStat4 = 3;
 
-    @Dropdown(
-        title = "Fifth Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat5 = 4; // Winstreak
+    @Include
+    public int customStat5 = 4;
 
-    @Dropdown(
-        title = "Sixth Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat6 = 11; // HP by default
+    @Include
+    public int customStat6 = 11;
 
-    @Dropdown(
-        title = "Seventh Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat7 = 10; // None by default
+    @Include
+    public int customStat7 = 10;
 
-    @Dropdown(
-        title = "Eighth Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat8 = 10; // None by default
+    @Include
+    public int customStat8 = 10;
 
-    @Dropdown(
-        title = "Ninth Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat9 = 10; // None by default
+    @Include
+    public int customStat9 = 10;
 
-    @Dropdown(
-        title = "Tenth Stat",
-        options = {
-            "Team",
-            "Stars",
-            "Name",
-            "FKDR",
-            "Winstreak",
-            "WLR",
-            "BBLR",
-            "Wins",
-            "Beds",
-            "Finals",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats"
-    )
-    public int customStat10 = 10; // None by default
+    @Include
+    public int customStat10 = 10;
 
-    @Info(
-        description = "Set the order of SkyWars stats in the tab list",
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
-    public static boolean ignoredSkywarsStatsOrderInfo;
-
-    @Dropdown(
-        title = "First SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat1 = 0;
 
-    @Dropdown(
-        title = "Second SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat2 = 1;
 
-    @Dropdown(
-        title = "Third SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat3 = 2;
 
-    @Dropdown(
-        title = "Fourth SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat4 = 3;
 
-    @Dropdown(
-        title = "Fifth SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat5 = 4;
 
-    @Dropdown(
-        title = "Sixth SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
-    public int skywarsCustomStat6 = 8; // HP by default
+    @Include
+    public int skywarsCustomStat6 = 8;
 
-    @Dropdown(
-        title = "Seventh SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat7 = 7;
 
-    @Dropdown(
-        title = "Eighth SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat8 = 7;
 
-    @Dropdown(
-        title = "Ninth SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat9 = 7;
 
-    @Dropdown(
-        title = "Tenth SkyWars Stat",
-        options = {
-            "Team",
-            "Level",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Kills",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "SkyWars"
-    )
+    @Include
     public int skywarsCustomStat10 = 7;
 
-    @Info(
-        description = "Set the order of Duels stats in the tab list",
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
-    public static boolean ignoredDuelsStatsOrderInfo;
-
-    @Dropdown(
-        title = "First Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat1 = 0;
 
-    @Dropdown(
-        title = "Second Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat2 = 1;
 
-    @Dropdown(
-        title = "Third Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat3 = 2;
 
-    @Dropdown(
-        title = "Fourth Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat4 = 3;
 
-    @Dropdown(
-        title = "Fifth Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat5 = 4;
 
-    @Dropdown(
-        title = "Sixth Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat6 = 5;
 
-    @Dropdown(
-        title = "Seventh Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat7 = 6;
 
-    @Dropdown(
-        title = "Eighth Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat8 = 7;
 
-    @Dropdown(
-        title = "Ninth Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
+    @Include
     public int duelsCustomStat9 = 8;
 
-    @Dropdown(
-        title = "Tenth Duels Stat",
-        options = {
-            "Team",
-            "Division",
-            "Name",
-            "KDR",
-            "WLR",
-            "Wins",
-            "Losses",
-            "Kills",
-            "Deaths",
-            "Winstreak",
-            "None",
-            "HP",
-            "Tags",
-            "Ping",
-            "Client",
-        },
-        category = "Tab Stats",
-        subcategory = "Duels"
-    )
-    public int duelsCustomStat10 = 11; // HP by default
+    @Include
+    public int duelsCustomStat10 = 11;
 
-    @Info(
-        description = "Toggle seperator between stats",
-        category = "Tab Stats",
-        subcategory = "Seperator"
-    )
-    public static boolean ignoredDotsInfo;
-
-    @Checkbox(
+    @Checkbox(description = "Toggle separator between stats",
         title = "Between 1st and 2nd",
         category = "Tab Stats",
         subcategory = "Seperator"
@@ -942,24 +345,12 @@ public class MellowOneConfig extends Config {
     )
     public int minFkdr = -1;
 
-    @Dropdown(
+    @Dropdown(description = "Hypixel provider requires an API key from developer.hypixel.net. Configure it in API Keys > Hypixel. Other providers do not require a key.",
         title = "Stats Provider",
         options = { "Hypixel Public API", "Nadeshiko", "Abyss", "Bordic" },
         subcategory = "Stats"
     )
-    public int statsProvider = 2;
-
-    @Info(
-        description = "Hypixel provider requires an API key from developer.hypixel.net. Configure it in API Keys > Hypixel. Other providers do not require a key.",
-        subcategory = "Stats"
-    )
-    public static boolean ignoredHypixelApiInfo;
-
-    @Info(
-        description = "Manage all service API keys here. Feature-specific toggles remain in their own categories.",
-        category = "API Keys"
-    )
-    public static boolean ignoredApiKeysInfo;
+    public int statsProvider = 3; // Bordic
 
     @org.polyfrost.oneconfig.api.config.v1.annotations.Include
     public String hypixelApiKey = "";
@@ -1030,25 +421,14 @@ public class MellowOneConfig extends Config {
     public boolean autoSkinDenick = true;
 
     // Coral Configs
-    @Info(
-        description = "Coral is a community blacklist, allowing you to see potential cheaters in your game",
-        category = "Coral"
-    )
-    public static boolean ignoredCoralDescription;
 
-    @Switch(title = "Enable Coral", category = "Coral")
+    @Switch(description = "Coral is a community blacklist, allowing you to see potential cheaters in your game Coral requires an API key. Enabling it sends player identifiers to api.urchin.gg and is subject to their ToS. Configure the key in API Keys > Coral.", title = "Enable Coral", category = "Coral")
     // Keep the legacy field name so existing OneConfig profiles migrate in place.
     public boolean urchin = false;
 
     @Switch(title = "Show Coral Tags in Tab", category = "Coral")
     // Keep the legacy field name so existing OneConfig profiles migrate in place.
     public boolean showUrchinTagsInTab = true;
-
-    @Info(
-        description = "Coral requires an API key. Enabling it sends player identifiers to api.urchin.gg and is subject to their ToS. Configure the key in API Keys > Coral.",
-        category = "Coral"
-    )
-    public static boolean ignoredCoralWarning;
 
     public String getCoralApiKey() {
         return urchinKey;
@@ -1063,51 +443,17 @@ public class MellowOneConfig extends Config {
     }
 
     // Seraph Configs
-    @Info(
-        description = "Seraph is a community blacklist, allowing you to see potential cheaters in your game",
-        category = "Seraph"
-    )
-    public static boolean ignoredSeraphDescription;
 
-    @Switch(title = "Enable Seraph", category = "Seraph")
+    @Switch(description = "Seraph is a community blacklist, allowing you to see potential cheaters in your game Enabling Seraph will send requests to them and be subject to their ToS, this could enable tracking of your data (IP, Seraph API Key, Game Info). Configure the key in API Keys > Seraph. Seraph does not require a key to view any tags older than 1 week old", title = "Enable Seraph", category = "Seraph")
     public boolean seraph = false;
 
     @Switch(title = "Show Seraph Tags in Tab", category = "Seraph")
     public boolean showSeraphTagsInTab = true;
 
-    @Info(
-        description = "Enabling Seraph will send requests to them and be subject to their ToS, this could enable tracking of your data (IP, Seraph API Key, Game Info). Configure the key in API Keys > Seraph.",
-        category = "Seraph"
-    )
-    public static boolean ignoredSeraphWarning;
-
-    @Info(
-        description = "Seraph does not require a key to view any tags older than 1 week old",
-        category = "Seraph"
-    )
-    public static boolean ignoredSeraphInfo;
-
     // Winstreaks Configs
-    @Info(
-        description = "Shows hidden or zero BedWars winstreaks fetched from the Bordic Aurora API",
-        category = "Winstreaks"
-    )
-    public static boolean ignoredWinstreaksDescription;
 
-    @Switch(title = "Show Hidden Winstreaks", category = "Winstreaks")
+    @Switch(description = "Shows hidden or zero BedWars winstreaks fetched from the Bordic Aurora API When hidden winstreaks are enabled, Mellow only uses Aurora when the visible BedWars winstreak is missing or hidden. Enabling this sends player UUIDs to Bordic and is subject to their ToS. Hidden winstreak lookups do not require or send an Aurora API key.", title = "Show Hidden Winstreaks", category = "Winstreaks")
     public boolean showHiddenWinstreaks = true;
-
-    @Info(
-        description = "When hidden winstreaks are enabled, Mellow only uses Aurora when the visible BedWars winstreak is missing or hidden.",
-        category = "Winstreaks"
-    )
-    public static boolean ignoredWinstreaksVisibleFirstInfo;
-
-    @Info(
-        description = "Enabling this sends player UUIDs to Bordic and is subject to their ToS. Hidden winstreak lookups do not require or send an Aurora API key.",
-        category = "Winstreaks"
-    )
-    public static boolean ignoredWinstreaksWarning;
 
     @Dropdown(
         title = "Minimum Stars to Fetch WS",
@@ -1195,37 +541,14 @@ public class MellowOneConfig extends Config {
     public int winstreakMinFkdr = 0;
 
     // Ping Configs
-    @Dropdown(
+    @Dropdown(description = "Aurora API provides historical ping averages per player UUID without requiring or sending an API key. Luna's API provides ping averages per player UUID. Configure the key in API Keys > Luna. Seraph API provides the latest recorded ping per player UUID. Configure the key in API Keys > Seraph.",
         title = "Ping Provider",
         category = "Ping",
         options = { "None", "Aurora API", "Luna's API", "Seraph API" }
     )
     public int pingProvider = 1;
 
-    @Info(
-        description = "Aurora API provides historical ping averages per player UUID without requiring or sending an API key.",
-        category = "Ping"
-    )
-    public static boolean ignoredAuroraPingInfo;
-
-    @Info(
-        description = "Luna's API provides ping averages per player UUID. Configure the key in API Keys > Luna.",
-        category = "Ping"
-    )
-    public static boolean ignoredLunaPingInfo;
-
-    @Info(
-        description = "Seraph API provides the latest recorded ping per player UUID. Configure the key in API Keys > Seraph.",
-        category = "Ping"
-    )
-    public static boolean ignoredSeraphPingInfo;
-
     // Number denicker
-    @Info(
-        description = "This module attempts to denick players based the number of finals and beds broken from chat messages. Configure the Aurora key in API Keys > Aurora.",
-        category = "Number Denicker"
-    )
-    public static boolean ignoredNumberDenickerInfo; // Useless. Java limitations with @annotation.
 
     @Button(
         title = "Run /api view on the bot to get your key",
@@ -1238,17 +561,11 @@ public class MellowOneConfig extends Config {
         );
     }
 
-    @Switch(title = "Enable Number Denicker", category = "Number Denicker")
+    @Switch(description = "This module attempts to denick players based the number of finals and beds broken from chat messages. Configure the Aurora key in API Keys > Aurora.", title = "Enable Number Denicker", category = "Number Denicker")
     public boolean numberDenicker = false;
 
-    @Switch(title = "Print all potential players", category = "Number Denicker")
+    @Switch(description = "Turning all potential players off, will only print players with both matching beds and finals.", title = "Print all potential players", category = "Number Denicker")
     public boolean numberDenickerFuzzy = true;
-
-    @Info(
-        description = "Turning all potential players off, will only print players with both matching beds and finals.",
-        category = "Number Denicker"
-    )
-    public static boolean ignoredNumberDenickerFuzzyInfo;
 
     @Dropdown(
         title = "Finals Range",
@@ -1432,11 +749,17 @@ public class MellowOneConfig extends Config {
         initialize(false);
         boolean migrated = LegacyConfigMigration.importIfNeeded(this, alreadySaved);
         sanitizeDropdownIndexes();
+        if (!statOrderMigrated) {
+            bedwarsStatOrder = StatOrder.fromLegacy(StatOrder.BEDWARS, new int[] {customStat1,customStat2,customStat3,customStat4,customStat5,customStat6,customStat7,customStat8,customStat9,customStat10});
+            skywarsStatOrder = StatOrder.fromLegacy(StatOrder.SKYWARS, new int[] {skywarsCustomStat1,skywarsCustomStat2,skywarsCustomStat3,skywarsCustomStat4,skywarsCustomStat5,skywarsCustomStat6,skywarsCustomStat7,skywarsCustomStat8,skywarsCustomStat9,skywarsCustomStat10});
+            duelsStatOrder = StatOrder.fromLegacy(StatOrder.DUELS, new int[] {duelsCustomStat1,duelsCustomStat2,duelsCustomStat3,duelsCustomStat4,duelsCustomStat5,duelsCustomStat6,duelsCustomStat7,duelsCustomStat8,duelsCustomStat9,duelsCustomStat10});
+            statOrderMigrated = true;
+            migrated = true;
+        }
         if (migrated) save();
         org.polyfrost.oneconfig.api.hud.v1.HudManager.INSTANCE.register(emeraldCounterHUD, id);
         org.polyfrost.oneconfig.api.hud.v1.HudManager.INSTANCE.register(diamondCounterHUD, id);
         org.polyfrost.oneconfig.api.hud.v1.HudManager.INSTANCE.register(upgradesTrapsHUD, id);
-
 
         hideIf("hitboxHueValue", () -> hitboxHueMode == 0);
         hideIf("hitboxHueOffset", () -> hitboxHueMode != 0);
@@ -1516,10 +839,10 @@ public class MellowOneConfig extends Config {
         int maxIndex = optionCount - 1;
         return value > maxIndex ? maxIndex : value;
     }
-    @Button(title = "Hypixel API Key", text = "Edit Key", category = "API Keys", subcategory = "Hypixel")
+    @Button(description = "Manage all service API keys here. Feature-specific toggles remain in their own categories.", title = "Hypixel API Key", text = "Edit Key", category = "API Keys", subcategory = "Hypixel")
     public void editHypixelKey() {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.m_20213497();
-        mc.m_78135006(() -> mc.m_52715402(new ApiKeyScreen(mc.f_70816363, "Hypixel API Key", hypixelApiKey, value -> {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Hypixel API Key", hypixelApiKey, value -> {
             hypixelApiKey = value;
             save();
         })));
@@ -1527,8 +850,8 @@ public class MellowOneConfig extends Config {
 
     @Button(title = "Aurora API Key", text = "Edit Key", category = "API Keys", subcategory = "Aurora")
     public void editAuroraKey() {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.m_20213497();
-        mc.m_78135006(() -> mc.m_52715402(new ApiKeyScreen(mc.f_70816363, "Aurora API Key", auroraApiKey, value -> {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Aurora API Key", auroraApiKey, value -> {
             auroraApiKey = value;
             save();
         })));
@@ -1536,8 +859,8 @@ public class MellowOneConfig extends Config {
 
     @Button(title = "Luna API Key", text = "Edit Key", category = "API Keys", subcategory = "Luna")
     public void editLunaKey() {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.m_20213497();
-        mc.m_78135006(() -> mc.m_52715402(new ApiKeyScreen(mc.f_70816363, "Luna API Key", lunaPingApiKey, value -> {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Luna API Key", lunaPingApiKey, value -> {
             lunaPingApiKey = value;
             save();
         })));
@@ -1545,8 +868,8 @@ public class MellowOneConfig extends Config {
 
     @Button(title = "Coral API Key", text = "Edit Key", category = "API Keys", subcategory = "Coral")
     public void editCoralKey() {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.m_20213497();
-        mc.m_78135006(() -> mc.m_52715402(new ApiKeyScreen(mc.f_70816363, "Coral API Key", urchinKey, value -> {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Coral API Key", urchinKey, value -> {
             urchinKey = value;
             save();
         })));
@@ -1554,8 +877,8 @@ public class MellowOneConfig extends Config {
 
     @Button(title = "Seraph API Key", text = "Edit Key", category = "API Keys", subcategory = "Seraph")
     public void editSeraphKey() {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.m_20213497();
-        mc.m_78135006(() -> mc.m_52715402(new ApiKeyScreen(mc.f_70816363, "Seraph API Key", seraphKey, value -> {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Seraph API Key", seraphKey, value -> {
             seraphKey = value;
             save();
         })));

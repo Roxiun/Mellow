@@ -340,6 +340,9 @@ public class GuiPlayerTabOverlayMixin {
                         result.append(" ");
                     }
                     // If previous is team, don't add any separator since team already has internal spacing
+                } else if (!previousIsTeam) {
+                    // The reorderable list can enable more than the old ten slots.
+                    result.append(MIDDLE_DOT).append("§r");
                 }
             }
             result.append(validPartsWithType.get(i).getKey());
