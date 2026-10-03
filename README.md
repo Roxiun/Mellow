@@ -54,11 +54,11 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 ## Download
 
-This branch targets **Minecraft 1.8.9 on Ornithe**, with **Java 25** and **OneConfig v1 1.2.16**. Use the Ornithe/OneClient editions of the dependencies:
+This branch targets **Minecraft 1.8.9 on Ornithe**, with **Java 25** and **OneConfig v1 1.2.13 or newer**. Use the Ornithe/OneClient editions of the dependencies:
 
 - [OneConfig](https://modrinth.com/mod/oneconfig), including its required dependencies (Compose Multiplatform and Fabric Language Kotlin).
 - Pylon 0.1.7 or newer for the LWJGL 3 runtime.
-- Optional: [PolyHitbox](https://modrinth.com/mod/hitbox) 1.3.1, [PolyNametag](https://modrinth.com/mod/polynametag) 1.2.1, and [VanillaHUD](https://modrinth.com/mod/vanillahud) 3.5.4. These are the versions used by the compatibility smoke test.
+- Optional: [PolyHitbox](https://modrinth.com/mod/hitbox) 1.3.1, [PolyNametag](https://modrinth.com/mod/polynametag) 1.2.1, and [VanillaHUD](https://modrinth.com/mod/vanillahud) 3.5.3 or newer. The compatibility smoke tests cover OneClient’s OneConfig 1.2.13 / VanillaHUD 3.5.3 and the newer 1.2.16 / 3.5.4 pair.
 
 Install the **complete OneConfig release jar**; its nested `oneconfigv1` module is required. The Forge editions of Mellow and these mods cannot be used in the Ornithe instance.
 
@@ -73,11 +73,14 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS
 ./gradlew build
 ./gradlew runClient -PclientTest
 ./gradlew runClient -PclientTest -PcompatMods
+./gradlew runClient -PclientTest -PcompatMods -PoneClientBaseline
 ```
 
 The release jar is written to `build/libs/Mellow-1.8.9-ornithe-<version>.jar`. Client smoke tests launch a real client, verify initialization and replay packet round trips, then exit; they require a graphical environment. Their separate configurations live under `build/client-test`. `-PcompatMods` adds the three pinned optional mods. Omit `-PclientTest` for an interactive development client.
 
-The development build unpacks OneConfig's nested modules before Loom remaps them. This prevents the `oneconfigv1 1.2.16 is missing` development launch error. Published compile APIs are pinned to 1.2.10; runtime verification uses the complete 1.2.16 release.
+The development build unpacks OneConfig's nested modules before Loom remaps them. This prevents the `oneconfigv1 1.2.16 is missing` development launch error. Published compile APIs are pinned to 1.2.10; runtime verification covers the complete 1.2.13 and 1.2.16 releases.
+
+If Fabric reports many incompatible OSL variants alongside a Mellow dependency mismatch, update Mellow first. The OSL bundle contains variants for multiple Minecraft versions, and Fabric can list unsuitable alternatives when another mod prevents dependency resolution. Mellow alpha.2 resolves with OneClient’s OSL 0.22.0 bundle; replacing individual OSL modules is unnecessary for that setup.
 
 Development sources retain MCP names using the checked-in `mappings/mcp-1.8.9.tiny` overlay; Loom remaps the release to Ornithe Calamus generation 2. Regenerate the overlay with `python3 tools/generate_mappings.py`. Replay packet identifiers remain the original MCP names so old recordings can be read across the port.
 
