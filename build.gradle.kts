@@ -63,6 +63,11 @@ dependencies.registerTransform(UnpackModBundle::class) {
     to.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, "unpacked-mod-bundle")
 }
 
+// Exercise the dependency versions shipped by OneClient as well as newer releases.
+val oneClientBaseline = providers.gradleProperty("oneClientBaseline").isPresent
+val oneConfigVersion = if (oneClientBaseline) "JmPNe6D8" else "lzo51827"
+val vanillaHudVersion = if (oneClientBaseline) "mIWg3d4V" else "Gpl9yiBF"
+
 dependencies {
     minecraft("com.mojang:minecraft:1.8.9")
     mappings(ploceus.layeredMappings {
@@ -71,7 +76,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:0.19.3")
     ploceus.dependOsl("0.21.1")
     modCompileOnly("org.polyfrost.oneconfig:1.8.9-ornithe:1.2.10")
-    oneConfigBundle("maven.modrinth:oneconfig:lzo51827")
+    oneConfigBundle("maven.modrinth:oneconfig:$oneConfigVersion")
     for (module in listOf("config", "config-impl", "events", "hud", "ui", "utils", "internal", "poly-compose")) {
         compileOnly("org.polyfrost.oneconfig:$module:1.2.10")
     }
@@ -122,7 +127,7 @@ if (providers.gradleProperty("compatMods").isPresent) {
     dependencies {
         modRuntimeOnly("maven.modrinth:hitbox:lF5nB8Es")
         modRuntimeOnly("maven.modrinth:polynametag:U0L3xRrU")
-        modRuntimeOnly("maven.modrinth:vanillahud:Gpl9yiBF")
+        modRuntimeOnly("maven.modrinth:vanillahud:$vanillaHudVersion")
     }
 }
 
@@ -132,7 +137,7 @@ if (providers.gradleProperty("clientTest").isPresent) {
         runtimeClasspath += sourceSets.main.get().runtimeClasspath + output
     }
     loom.mods.register("mellow-client-tests") { sourceSet(clientTest) }
-    val testDirectory = layout.buildDirectory.dir(if (providers.gradleProperty("compatMods").isPresent) "client-test/compat" else "client-test/base").get().asFile
+    val testDirectory = layout.buildDirectory.dir(if (providers.gradleProperty("compatMods").isPresent) "client-test/compat${if (oneClientBaseline) "-oneclient" else ""}" else "client-test/base").get().asFile
     val result = testDirectory.resolve("smoke-result.txt")
     loom.runs.named("client") { runDir(testDirectory.absolutePath) }
     tasks.named<JavaExec>("runClient") {
