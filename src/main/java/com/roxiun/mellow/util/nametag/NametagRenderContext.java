@@ -1,16 +1,21 @@
 package com.roxiun.mellow.util.nametag;
 
-import cc.polyfrost.oneconfig.config.core.OneColor;
+import com.roxiun.mellow.util.RgbaColor;
 import com.roxiun.mellow.api.seraph.SeraphClientType;
 
 public final class NametagRenderContext {
 
     private static final ThreadLocal<State> CURRENT_STATE = new ThreadLocal<>();
 
+    private static final ThreadLocal<String> LABEL = new ThreadLocal<>();
+    public static void beginLabel(String label) { LABEL.set(label); }
+    public static void endLabel() { LABEL.remove(); }
+    public static String getRenderedLabel() { return LABEL.get(); }
+
     private NametagRenderContext() {}
 
     public static void setState(
-        OneColor color,
+        RgbaColor color,
         SeraphClientType clientType,
         boolean clientIconLeft,
         String primaryLabelText
@@ -24,7 +29,7 @@ public final class NametagRenderContext {
         );
     }
 
-    public static OneColor getColor() {
+    public static RgbaColor getColor() {
         State state = CURRENT_STATE.get();
         return state == null ? null : state.color;
     }
@@ -50,17 +55,18 @@ public final class NametagRenderContext {
 
     public static void clear() {
         CURRENT_STATE.remove();
+        LABEL.remove();
     }
 
     private static final class State {
 
-        private final OneColor color;
+        private final RgbaColor color;
         private final SeraphClientType clientType;
         private final boolean clientIconLeft;
         private final String primaryLabelText;
 
         private State(
-            OneColor color,
+            RgbaColor color,
             SeraphClientType clientType,
             boolean clientIconLeft,
             String primaryLabelText

@@ -705,8 +705,8 @@ public class ReplayManager {
 
         private void observeStoredFrame(ReplayPacketFrame frame) {
             if (
-                !S0CPacketSpawnPlayer.class.getName().equals(frame.getClassName()) &&
-                !S13PacketDestroyEntities.class.getName().equals(frame.getClassName())
+                !ReplayPacketCodec.typeName(S0CPacketSpawnPlayer.class).equals(frame.getClassName()) &&
+                !ReplayPacketCodec.typeName(S13PacketDestroyEntities.class).equals(frame.getClassName())
             ) {
                 return;
             }

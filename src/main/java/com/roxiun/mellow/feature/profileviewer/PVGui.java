@@ -576,7 +576,7 @@ public class PVGui extends GuiScreen {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
         super.mouseClicked(mouseX, mouseY, mouseButton);
 
         if (mouseButton != 0) {
@@ -614,7 +614,7 @@ public class PVGui extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void keyTyped(char typedChar, int keyCode) {
         if (!searchActive) {
             super.keyTyped(typedChar, keyCode);
             return;

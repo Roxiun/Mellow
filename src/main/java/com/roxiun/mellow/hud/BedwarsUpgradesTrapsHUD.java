@@ -1,9 +1,10 @@
 package com.roxiun.mellow.hud;
+import org.polyfrost.oneconfig.api.hud.v1.TextHud;
+import org.polyfrost.oneconfig.api.hud.v1.Hud;
 
-import cc.polyfrost.oneconfig.config.annotations.Dropdown;
-import cc.polyfrost.oneconfig.config.annotations.Switch;
-import cc.polyfrost.oneconfig.config.core.OneColor;
-import cc.polyfrost.oneconfig.hud.TextHud;
+import org.polyfrost.oneconfig.api.config.v1.annotations.Dropdown;
+import org.polyfrost.oneconfig.api.config.v1.annotations.Switch;
+import com.roxiun.mellow.util.RgbaColor;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.util.MinecraftColor;
 import java.util.List;
@@ -11,19 +12,19 @@ import java.util.List;
 public class BedwarsUpgradesTrapsHUD extends TextHud {
 
     @Switch(
-        name = "Short Names",
+        title = "Short Names",
         description = "Use short names (Sharp, Prot, FF, Haste, etc.)"
     )
     public boolean shortNames = false;
 
     @Switch(
-        name = "Roman Numerals",
+        title = "Roman Numerals",
         description = "Use Roman numerals (I, II, III, IV) instead of numbers"
     )
     public boolean romanNumerals = true;
 
     @Dropdown(
-        name = "Heading Color",
+        title = "Heading Color",
         description = "Color for section headings (Upgrades/Traps)",
         options = {
             "Black",
@@ -47,7 +48,7 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
     public int headingColorIndex = 5; // Index for dark purple
 
     @Dropdown(
-        name = "Text Color",
+        title = "Text Color",
         description = "Color for upgrade and trap names",
         options = {
             "Black",
@@ -71,22 +72,7 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
     public int textColorIndex = 15; // Index for White (matches original white &f)
 
     public BedwarsUpgradesTrapsHUD() {
-        super(
-            true, // enabled by default
-            5, // x
-            65, // y - placed below emerald and diamond counters
-            1, // normal size
-            false, // no background it's ugly
-            false, // no rounded corners it's also ugly
-            0, // NO rounded corners
-            0, // no x padding why would i want it
-            0, // no y padding for the same reason
-            new OneColor(0, 0, 0, 0), // no background color
-            false, // no border
-            0, // NO border
-            new OneColor(0, 0, 0, 0) // no border color
-        );
-        textType = 1;
+        super("mellow_bedwarsupgradestrapshud", "Upgrades & Traps", Hud.Category.getINFO(), "", "");
     }
 
     @Override
@@ -96,7 +82,6 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
         );
     }
 
-    @Override
     protected void getLines(List<String> lines, boolean example) {
         if (example) {
             lines.add("§d§lUpgrades:");
@@ -130,4 +115,13 @@ public class BedwarsUpgradesTrapsHUD extends TextHud {
             );
         }
     }
+    @Override protected String getText() {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        getLines(lines, !HypixelFeatures.getInstance().isInBedwars());
+        return String.join("\n", lines);
+    }
+    @Override public boolean showByDefault() { return true; }
+    @Override public kotlin.Pair<Float, Float> defaultPosition() { return new kotlin.Pair<>(5f, 65f); }
+    @Override public boolean hasBackground() { return false; }
+    @Override public boolean multipleInstancesAllowed() { return false; }
 }

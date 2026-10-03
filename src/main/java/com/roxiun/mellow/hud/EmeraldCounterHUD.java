@@ -1,29 +1,14 @@
 package com.roxiun.mellow.hud;
+import org.polyfrost.oneconfig.api.hud.v1.TextHud;
+import org.polyfrost.oneconfig.api.hud.v1.Hud;
 
-import cc.polyfrost.oneconfig.config.core.OneColor;
-import cc.polyfrost.oneconfig.hud.SingleTextHud;
+import com.roxiun.mellow.util.RgbaColor;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 
-public class EmeraldCounterHUD extends SingleTextHud {
+public class EmeraldCounterHUD extends TextHud {
 
     public EmeraldCounterHUD() {
-        super(
-            "§2Emeralds", // title is actually useful now
-            false, // enabled obviously
-            5, // x
-            25, // y
-            1, // normal size
-            false, // no background it's ugly
-            false, // no rounded corners it's also ugly
-            0, // NO rounded corners
-            0, // no x padding why would i want it
-            0, // no y padding for the same reason
-            new OneColor(0, 0, 0, 0), // no background color
-            false, // no border
-            0, // NO border
-            new OneColor(0, 0, 0, 0) // no border color
-        );
-        textType = 1;
+        super("mellow_emeraldcounterhud", "Emeralds", Hud.Category.getINFO(), "", "");
     }
 
     @Override
@@ -34,10 +19,13 @@ public class EmeraldCounterHUD extends SingleTextHud {
     }
 
     @Override
-    protected String getText(boolean example) {
-        if (example) return "§2(§f2§2): §715s";
+    protected String getText() {
+        if (!HypixelFeatures.getInstance().isInBedwars()) return "§2(§f2§2): §715s";
         else {
             return HypixelFeatures.getInstance().getEmeraldCounterText();
         }
     }
+    @Override public kotlin.Pair<Float, Float> defaultPosition() { return new kotlin.Pair<>(5f, 25f); }
+    @Override public boolean hasBackground() { return false; }
+    @Override public boolean multipleInstancesAllowed() { return false; }
 }

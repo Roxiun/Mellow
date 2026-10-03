@@ -6,7 +6,7 @@ import com.roxiun.mellow.anticheat.check.Check;
 import com.roxiun.mellow.anticheat.data.ACPlayerData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import com.roxiun.mellow.platform.event.TickEvent;
 
 public class AutoBlockCheck extends Check {
 

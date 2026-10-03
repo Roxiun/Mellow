@@ -1,6 +1,6 @@
 package com.roxiun.mellow.core.event;
 
-import cc.polyfrost.oneconfig.config.core.OneColor;
+import com.roxiun.mellow.util.RgbaColor;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.seraph.SeraphClientType;
 import com.roxiun.mellow.config.MellowOneConfig;
@@ -8,8 +8,8 @@ import com.roxiun.mellow.util.hitbox.TeamHitboxColorResolver;
 import com.roxiun.mellow.util.nametag.NametagRenderContext;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraftforge.client.event.RenderLivingEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import com.roxiun.mellow.platform.event.RenderLivingEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 
 public class NametagColorRouter {
 
@@ -19,7 +19,7 @@ public class NametagColorRouter {
         this.config = config;
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onPreRenderNametag(
         RenderLivingEvent.Specials.Pre<EntityLivingBase> event
     ) {
@@ -29,7 +29,7 @@ public class NametagColorRouter {
             return;
         }
 
-        OneColor color = resolveNametagColor(event.entity);
+        RgbaColor color = resolveNametagColor(event.entity);
         SeraphClientType clientType = resolveClientType(event.entity);
         if (color != null || clientType != null) {
             NametagRenderContext.setState(
@@ -41,14 +41,14 @@ public class NametagColorRouter {
         }
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onPostRenderNametag(
         RenderLivingEvent.Specials.Post<EntityLivingBase> event
     ) {
         NametagRenderContext.clear();
     }
 
-    private OneColor resolveNametagColor(EntityLivingBase entity) {
+    private RgbaColor resolveNametagColor(EntityLivingBase entity) {
         if (!config.coloredNametagBackgrounds) {
             return null;
         }

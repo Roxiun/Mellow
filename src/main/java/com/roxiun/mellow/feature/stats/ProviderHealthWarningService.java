@@ -4,9 +4,9 @@ import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.util.ChatUtils;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.polyfrost.oneconfig.api.event.v1.EventManager;
+import com.roxiun.mellow.platform.event.EntityJoinWorldEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 
 public final class ProviderHealthWarningService {
 
@@ -24,10 +24,10 @@ public final class ProviderHealthWarningService {
         if (!INITIALIZED.compareAndSet(false, true)) {
             return;
         }
-        MinecraftForge.EVENT_BUS.register(INSTANCE);
+        EventManager.INSTANCE.register(INSTANCE);
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
         if (hasWarnedThisLaunch) {
             return;

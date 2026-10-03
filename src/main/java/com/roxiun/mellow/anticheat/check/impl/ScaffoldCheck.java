@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.util.MathHelper;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import com.roxiun.mellow.platform.event.TickEvent;
 
 public class ScaffoldCheck extends Check {
 

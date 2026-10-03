@@ -5,8 +5,8 @@ import com.roxiun.mellow.feature.nicks.NickUtils;
 import com.roxiun.mellow.feature.nicks.NumberDenicker;
 import com.roxiun.mellow.feature.replay.ReplayManager;
 import com.roxiun.mellow.feature.stats.PregameStats;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import com.roxiun.mellow.platform.event.WorldEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 
 public class WorldLifecycleRouter {
 
@@ -24,7 +24,7 @@ public class WorldLifecycleRouter {
         this.nickUtils = nickUtils;
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onWorldLoad(WorldEvent.Load event) {
         numberDenicker.onWorldChange();
         pregameStats.onWorldChange();

@@ -1,6 +1,6 @@
 package com.roxiun.mellow.feature.requestpopup;
 
-import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
+import com.roxiun.mellow.platform.HypixelServer;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.util.ChatUtils;
 import java.util.Locale;
@@ -35,7 +35,7 @@ public class RequestPopupService {
             config == null ||
             popupManager == null ||
             !config.requestPopupsEnabled ||
-            !HypixelUtils.INSTANCE.isHypixel()
+            !HypixelServer.isHypixel()
         ) {
             return;
         }

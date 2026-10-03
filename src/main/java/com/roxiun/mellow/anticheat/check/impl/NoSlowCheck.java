@@ -9,7 +9,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemSword;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import com.roxiun.mellow.platform.event.TickEvent;
 
 public class NoSlowCheck extends Check {
 

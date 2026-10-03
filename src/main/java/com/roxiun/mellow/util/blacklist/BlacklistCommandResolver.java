@@ -1,6 +1,6 @@
 package com.roxiun.mellow.util.blacklist;
 
-import net.minecraftforge.fml.common.Loader;
+import net.fabricmc.loader.api.FabricLoader;
 
 public final class BlacklistCommandResolver {
 
@@ -17,6 +17,6 @@ public final class BlacklistCommandResolver {
     }
 
     public static boolean isSeraphLoaded() {
-        return Loader.isModLoaded(SERAPH_MOD_ID);
+        return FabricLoader.getInstance().isModLoaded(SERAPH_MOD_ID);
     }
 }

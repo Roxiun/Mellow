@@ -5,10 +5,10 @@ import com.roxiun.mellow.anticheat.AnticheatManager;
 import com.roxiun.mellow.anticheat.data.ACPlayerData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import com.roxiun.mellow.platform.event.EntityJoinWorldEvent;
+import com.roxiun.mellow.platform.event.WorldEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
+import com.roxiun.mellow.platform.event.TickEvent;
 
 public class AnticheatListener {
 
@@ -19,14 +19,14 @@ public class AnticheatListener {
         this.manager = manager;
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.START) {
             currentTick++;
         }
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (!Mellow.config.anticheatEnabled) return;
 
@@ -112,7 +112,7 @@ public class AnticheatListener {
         }
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
         if (!Mellow.config.anticheatEnabled) return;
         if (event.entity instanceof EntityPlayer) {
@@ -120,7 +120,7 @@ public class AnticheatListener {
         }
     }
 
-    @SubscribeEvent
+    @Subscribe
     public void onWorldUnload(WorldEvent.Unload event) {
         if (event.world.isRemote) {
             manager.clearPlayers();
