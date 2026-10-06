@@ -5,4 +5,5 @@ public enum ProviderId {
     NADESHIKO,
     ABYSS,
     BORDIC,
+    BEDLIFY,
 }

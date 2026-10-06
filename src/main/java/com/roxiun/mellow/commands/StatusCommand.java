@@ -101,11 +101,11 @@ public class StatusCommand extends CommandBase {
 
         boolean hasHypixelKey = hasValue(getHypixelApiKey());
         boolean hasLunaKey = hasValue(getLunaApiKey());
-        boolean useBordic = useBordicStatusProvider();
-        if (!hasHypixelKey && !hasLunaKey && !useBordic) {
+        boolean useCache = useCacheStatusProvider();
+        if (!hasHypixelKey && !hasLunaKey && !useCache) {
             ChatUtils.sendCommandMessage(
                 sender,
-                "§cSet a Hypixel or Luna API key, or select Bordic as your Stats Provider in OneConfig first."
+                "§cSet a Hypixel or Luna API key, or select Bordic or Bedlify as your Stats Provider in OneConfig first."
             );
             return;
         }
@@ -154,16 +154,16 @@ public class StatusCommand extends CommandBase {
             addHypixelStatus(lines, fetchHypixelStatus(uuid));
         }
 
-        boolean useBordic = useBordicStatusProvider();
+        boolean useCache = useCacheStatusProvider();
         JsonObject playerData = null;
-        if (useBordic) {
-            playerData = fetchBordicPlayer(uuid);
+        if (useCache) {
+            playerData = fetchCachedPlayer(uuid);
         } else if (hasHypixelKey) {
             playerData = fetchHypixelLastLogin(uuid);
         }
 
-        if (useBordic) {
-            addBordicStatus(lines, playerData, !hasHypixelKey);
+        if (useCache) {
+            addCachedStatus(lines, playerData, !hasHypixelKey);
         }
         addHypixelLastLogin(lines, playerData);
 
@@ -217,7 +217,7 @@ public class StatusCommand extends CommandBase {
         }
     }
 
-    private void addBordicStatus(
+    private void addCachedStatus(
         List<String> lines,
         JsonObject json,
         boolean inferOnlineStatus
@@ -237,7 +237,7 @@ public class StatusCommand extends CommandBase {
                 !json.get("lastUpdated").isJsonNull()
             ) {
                 lines.add(
-                    "§7Bordic cache updated: §f" +
+                    "§7" + cacheProviderName() + " cache updated: §f" +
                         formatDateTime(json.get("lastUpdated").getAsLong())
                 );
             }
@@ -334,19 +334,21 @@ public class StatusCommand extends CommandBase {
         );
     }
 
-    private JsonObject fetchBordicPlayer(UUID uuid) {
+    private JsonObject fetchCachedPlayer(UUID uuid) {
         if (uuid == null) {
             return null;
         }
 
         String url =
-            "https://api.bordic.xyz/v3/cache/hypixel?uuid=" + uuid;
+            (useBedlifyStatusProvider()
+                ? "https://api.bedlify.xyz/v1/player/cache?uuid="
+                : "https://api.bordic.xyz/v3/cache/hypixel?uuid=") + uuid;
         Request request = new Request.Builder()
             .url(url)
             .header("User-Agent", "Mellow/" + Mellow.VERSION)
             .build();
         return fetchJsonResponse(
-            buildResponseCacheKey("bordic-player", uuid.toString(), ""),
+            buildResponseCacheKey(cacheProviderName() + "-player", uuid.toString(), ""),
             request,
             true
         );
@@ -497,10 +499,18 @@ public class StatusCommand extends CommandBase {
             : normalizeApiKey(config.lunaPingApiKey);
     }
 
-    private boolean useBordicStatusProvider() {
+    private boolean useBedlifyStatusProvider() {
+        return config != null && config.statsProvider == 4;
+    }
+
+    private String cacheProviderName() {
+        return useBedlifyStatusProvider() ? "Bedlify" : "Bordic";
+    }
+
+    private boolean useCacheStatusProvider() {
         return config == null
             ? bordicStatusProvider
-            : config.statsProvider == 3;
+            : config.statsProvider == 3 || config.statsProvider == 4;
     }
 
     private String getString(JsonObject json, String key) {

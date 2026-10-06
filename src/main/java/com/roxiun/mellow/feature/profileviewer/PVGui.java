@@ -786,6 +786,8 @@ public class PVGui extends GuiScreen {
                 return "Abyss";
             case BORDIC:
                 return "Bordic";
+            case BEDLIFY:
+                return "Bedlify";
             default:
                 return providerId.name();
         }

@@ -354,7 +354,7 @@ public class MellowOneConfig extends Config {
 
     @Dropdown(description = "Hypixel provider requires an API key from developer.hypixel.net. Configure it in API Keys > Hypixel. Other providers do not require a key.",
         title = "Stats Provider",
-        options = { "Hypixel Public API", "Nadeshiko", "Abyss", "Bordic" },
+        options = { "Hypixel Public API", "Nadeshiko", "Abyss", "Bordic", "Bedlify" },
         subcategory = "Stats"
     )
     public int statsProvider = 3; // Bordic
