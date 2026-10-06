@@ -69,6 +69,7 @@ public class SeraphPingService {
     }
 
     public void fetchAsync(String uuid, String apiKey) {
+        if (!SeraphAvailability.isEnabled()) return;
         if (uuid == null || uuid.isEmpty() || apiKey == null || apiKey.trim().isEmpty()) {
             return;
         }
@@ -94,6 +95,7 @@ public class SeraphPingService {
     }
 
     public int fetchPingBlocking(String uuid, String apiKey) throws IOException {
+        if (!SeraphAvailability.isEnabled()) return -1;
         if (apiKey == null || apiKey.trim().isEmpty()) {
             return -1;
         }

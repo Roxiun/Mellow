@@ -280,7 +280,9 @@ public class BlacklistCommand extends CommandBase {
                     String seraphApiKey = normalizeApiKey(
                         config == null ? null : config.seraphKey
                     );
-                    if (seraphApi == null) {
+                    if (!com.roxiun.mellow.api.seraph.SeraphAvailability.isEnabled()) {
+                        seraphSubmissionError = com.roxiun.mellow.api.seraph.SeraphAvailability.DISABLED_MESSAGE;
+                    } else if (seraphApi == null) {
                         seraphSubmissionError =
                             "Seraph integration is unavailable right now.";
                     } else if (seraphApiKey.isEmpty()) {

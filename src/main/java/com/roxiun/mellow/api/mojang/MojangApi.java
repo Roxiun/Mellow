@@ -122,6 +122,7 @@ public class MojangApi {
     }
 
     public MojangProfile fetchSeraphMojang(String nameOrId) {
+        if (!com.roxiun.mellow.api.seraph.SeraphAvailability.isEnabled()) return null;
         if (nameOrId == null || nameOrId.trim().isEmpty()) {
             return null;
         }

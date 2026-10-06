@@ -1025,7 +1025,7 @@ public class MellowOneConfig extends Config {
     public String urchinKey = "";
 
     @Text(
-        name = "Seraph API Key",
+        name = "Seraph API Key (Deprecated)",
         category = "API Keys",
         subcategory = "Seraph",
         secure = true,
@@ -1137,21 +1137,21 @@ public class MellowOneConfig extends Config {
 
     // Seraph Configs
     @Info(
-        text = "Seraph is a community blacklist, allowing you to see potential cheaters in your game",
+        text = "Seraph is deprecated. All Seraph network requests are disabled.",
         size = OptionSize.DUAL,
         type = InfoType.INFO,
         category = "Seraph"
     )
     public static boolean ignoredSeraphDescription;
 
-    @Switch(name = "Enable Seraph", category = "Seraph")
+    @Switch(name = "Enable Seraph (Deprecated)", category = "Seraph")
     public boolean seraph = false;
 
-    @Switch(name = "Show Seraph Tags in Tab", category = "Seraph")
+    @Switch(name = "Show Seraph Tags in Tab (Deprecated)", category = "Seraph")
     public boolean showSeraphTagsInTab = true;
 
     @Info(
-        text = "Enabling Seraph will send requests to them and be subject to their ToS, this could enable tracking of your data (IP, Seraph API Key, Game Info). Configure the key in API Keys > Seraph.",
+        text = "Seraph settings remain for compatibility and perform no requests.",
         size = OptionSize.DUAL,
         type = InfoType.WARNING,
         category = "Seraph"
@@ -1159,7 +1159,7 @@ public class MellowOneConfig extends Config {
     public static boolean ignoredSeraphWarning;
 
     @Info(
-        text = "Seraph does not require a key to view any tags older than 1 week old",
+        text = "Seraph tag lookups and report submissions are disabled.",
         size = OptionSize.DUAL,
         type = InfoType.INFO,
         category = "Seraph"
@@ -1283,7 +1283,7 @@ public class MellowOneConfig extends Config {
     @Dropdown(
         name = "Ping Provider",
         category = "Ping",
-        options = { "None", "Aurora API", "Luna's API", "Seraph API" }
+        options = { "None", "Aurora API", "Luna's API", "Seraph API (Deprecated)" }
     )
     public int pingProvider = 1;
 
@@ -1304,7 +1304,7 @@ public class MellowOneConfig extends Config {
     public static boolean ignoredLunaPingInfo;
 
     @Info(
-        text = "Seraph API provides the latest recorded ping per player UUID. Configure the key in API Keys > Seraph.",
+        text = "Seraph ping lookups are deprecated and disabled.",
         type = InfoType.INFO,
         size = OptionSize.DUAL,
         category = "Ping"
@@ -1395,7 +1395,7 @@ public class MellowOneConfig extends Config {
     @Switch(
         name = "Show Client Icons In Nametags",
         category = "Hitboxes",
-        description = "Shows a Seraph-detected client icon next to in-world player nametags."
+        description = "Deprecated: Seraph client detection is disabled."
     )
     public boolean showClientIconsInNametags = true;
 
