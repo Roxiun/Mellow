@@ -1,9 +1,9 @@
 package com.roxiun.mellow.api.seraph;
 
-/** Seraph is retained for configuration compatibility, but no longer contacted. */
+/** Controls deprecated Seraph APIs; the independent Mowojang lookup remains available. */
 public final class SeraphAvailability {
     public static final String DISABLED_MESSAGE =
-        "Seraph is deprecated in Mellow; all Seraph network requests are disabled.";
+        "Seraph is deprecated in Mellow; blacklist, client, and ping requests are disabled.";
 
     private SeraphAvailability() {}
 

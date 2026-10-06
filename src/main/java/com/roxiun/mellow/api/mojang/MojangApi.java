@@ -30,6 +30,8 @@ public class MojangApi {
         "https://api.minecraftservices.com/minecraft/profile/lookup/name/";
     private static final String SERAPH_MOJANG_URL =
         "https://mowojang.seraph.si/";
+    private static final String ALTERNATIVE_MOWOJANG_URL =
+        "https://mowojang.matdoes.dev/";
     private static final String MINETOOLS_UUID_URL =
         "https://api.minetools.eu/uuid/";
 
@@ -85,6 +87,23 @@ public class MojangApi {
     }
 
     private String fetchUuidUncached(String username, String cacheKey) {
+        MojangProfile seraphProfile = fetchSeraphMojang(username);
+        if (seraphProfile != null) {
+            return cacheUuid(cacheKey, toUndashedUuid(seraphProfile.uuid));
+        }
+
+        try {
+            HttpResult result = executeGetRequest(
+                new URL(ALTERNATIVE_MOWOJANG_URL + username)
+            );
+            if (result.statusCode == HttpURLConnection.HTTP_OK) {
+                String uuid = extractUuid(result.body);
+                if (!uuid.isEmpty()) {
+                    return cacheUuid(cacheKey, uuid);
+                }
+            }
+        } catch (Exception ignored) {}
+
         try {
             HttpResult result = executeGetRequest(
                 new URL(MINECRAFT_PROFILE_URL + username)
@@ -99,11 +118,6 @@ public class MojangApi {
                 return cacheUuid(cacheKey, "ERROR");
             }
         } catch (Exception ignored) {}
-
-        MojangProfile seraphProfile = fetchSeraphMojang(username);
-        if (seraphProfile != null) {
-            return cacheUuid(cacheKey, toUndashedUuid(seraphProfile.uuid));
-        }
 
         try {
             HttpResult result = executeGetRequest(
@@ -122,7 +136,7 @@ public class MojangApi {
     }
 
     public MojangProfile fetchSeraphMojang(String nameOrId) {
-        if (!com.roxiun.mellow.api.seraph.SeraphAvailability.isEnabled()) return null;
+        // Mowojang remains available independently of the deprecated Seraph APIs.
         if (nameOrId == null || nameOrId.trim().isEmpty()) {
             return null;
         }

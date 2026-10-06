@@ -46,12 +46,10 @@ public class SeraphApiTest {
     }
 
     @Test
-    public void clientAndUuidLookupsDoNotOpenConnections() {
+    public void clientLookupsDoNotOpenConnections() {
         SeraphApi api = offlineSeraph();
         Assert.assertNull(api.fetchClientType(UUID, "saved-api-key"));
         Assert.assertFalse(api.fetchClientTypeResult(UUID, "saved-api-key").isResolved());
-        Assert.assertNull(api.fetchSeraphMojang("Player"));
-        Assert.assertNull(offlineMojang().fetchSeraphMojang("Player"));
     }
 
     @Test
