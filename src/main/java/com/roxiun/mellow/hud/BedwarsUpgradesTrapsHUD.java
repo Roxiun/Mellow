@@ -1,127 +1,72 @@
 package com.roxiun.mellow.hud;
-import org.polyfrost.oneconfig.api.hud.v1.TextHud;
-import org.polyfrost.oneconfig.api.hud.v1.Hud;
 
-import org.polyfrost.oneconfig.api.config.v1.annotations.Dropdown;
-import org.polyfrost.oneconfig.api.config.v1.annotations.Switch;
-import com.roxiun.mellow.util.RgbaColor;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
+import org.polyfrost.oneconfig.api.hud.v1.HudManager;
+import com.roxiun.mellow.module.bedwars.BedwarsUpgradesService;
 import com.roxiun.mellow.util.MinecraftColor;
 import java.util.List;
+import org.polyfrost.compose.render.PolyColor;
+import org.polyfrost.oneconfig.api.config.v1.annotations.Color;
+import org.polyfrost.oneconfig.api.config.v1.annotations.Include;
+import org.polyfrost.oneconfig.api.config.v1.annotations.Switch;
 
-public class BedwarsUpgradesTrapsHUD extends TextHud {
-
-    @Switch(
-        title = "Short Names",
-        description = "Use short names (Sharp, Prot, FF, Haste, etc.)"
-    )
+public class BedwarsUpgradesTrapsHUD extends MellowTextHud {
+    @Switch(title = "Short Names", description = "Use short names (Sharp, Prot, FF, Haste, etc.)")
     public boolean shortNames = false;
 
-    @Switch(
-        title = "Roman Numerals",
-        description = "Use Roman numerals (I, II, III, IV) instead of numbers"
-    )
+    @Switch(title = "Roman Numerals", description = "Use Roman numerals (I, II, III, IV) instead of numbers")
     public boolean romanNumerals = true;
 
-    @Dropdown(
-        title = "Heading Color",
-        description = "Color for section headings (Upgrades/Traps)",
-        options = {
-            "Black",
-            "Dark Blue",
-            "Dark Green",
-            "Dark Aqua",
-            "Dark Red",
-            "Dark Purple",
-            "Gold",
-            "Gray",
-            "Dark Gray",
-            "Blue",
-            "Green",
-            "Aqua",
-            "Red",
-            "Light Purple",
-            "Yellow",
-            "White",
-        }
-    )
-    public int headingColorIndex = 5; // Index for dark purple
+    @Color(title = "Heading Color", description = "Color for section headings (Upgrades/Traps)")
+    public PolyColor headingColor = new PolyColor(0xffaa00aa);
 
-    @Dropdown(
-        title = "Text Color",
-        description = "Color for upgrade and trap names",
-        options = {
-            "Black",
-            "Dark Blue",
-            "Dark Green",
-            "Dark Aqua",
-            "Dark Red",
-            "Dark Purple",
-            "Gold",
-            "Gray",
-            "Dark Gray",
-            "Blue",
-            "Green",
-            "Aqua",
-            "Red",
-            "Light Purple",
-            "Yellow",
-            "White",
-        }
-    )
-    public int textColorIndex = 15; // Index for White (matches original white &f)
+    // Read the earlier Ornithe palette selections once, then use v1's native colour controls.
+    @Include public int headingColorIndex = -1;
+    @Include public int textColorIndex = -1;
+    @Include public boolean colorsMigrated = false;
 
     public BedwarsUpgradesTrapsHUD() {
-        super("mellow_bedwarsupgradestrapshud", "Upgrades & Traps", Hud.Category.getINFO(), "", "");
+        super("mellow_bedwarsupgradestrapshud", "Upgrades & Traps", "");
     }
 
-    @Override
-    public boolean shouldShow() {
-        return (
-            super.shouldShow() && HypixelFeatures.getInstance().isInBedwars()
-        );
-    }
-
-    protected void getLines(List<String> lines, boolean example) {
-        if (example) {
-            lines.add("§d§lUpgrades:");
-            lines.add("§fSharpened Swords §7II");
-            lines.add("§fReinforced Armor §7III");
-            lines.add("§fHeal Pool");
-            lines.add("");
-            lines.add("§d§lTraps:");
-            lines.add("§fCounter-Offensive Trap");
-            lines.add("§fBlindness Trap");
-        } else {
-            lines.clear();
-            MinecraftColor headingColor = MinecraftColor.fromIndex(
-                headingColorIndex
-            );
-            MinecraftColor textColor = MinecraftColor.fromIndex(textColorIndex);
-
-            lines.addAll(
-                HypixelFeatures.getInstance().getBedwarsUpgradesDisplayLines(
-                    shortNames,
-                    romanNumerals,
-                    headingColor.getRed(),
-                    headingColor.getGreen(),
-                    headingColor.getBlue(),
-                    255, // alpha is always 255 for Minecraft colors
-                    textColor.getRed(),
-                    textColor.getGreen(),
-                    textColor.getBlue(),
-                    255 // alpha is always 255 for Minecraft colors
-                )
-            );
+    @Override protected void migrateAppearance() {
+        if (!colorsMigrated) {
+            if (headingColorIndex >= 0) headingColor = new PolyColor(paletteColor(headingColorIndex));
+            if (textColorIndex >= 0) setTextColor(paletteColor(textColorIndex));
+            colorsMigrated = true;
         }
     }
+
+    private static int paletteColor(int index) {
+        MinecraftColor color = MinecraftColor.fromIndex(index);
+        return 0xff000000 | (color.getRed() << 16) | (color.getGreen() << 8) | color.getBlue();
+    }
+
+    @Override protected PolyColor headingColor() { return headingColor; }
+    @Override protected boolean isHeading(String line) {
+        return line.contains("Upgrades:") || line.contains("Traps:");
+    }
+
+    @Override public boolean shouldShow() { return HypixelFeatures.getInstance().isInBedwars(); }
+
+    protected void getLines(List<String> lines, boolean example) {
+        lines.clear();
+        if (example) {
+            lines.addAll(BedwarsUpgradesService.getExampleDisplayLines(shortNames, romanNumerals));
+        } else {
+            lines.addAll(HypixelFeatures.getInstance().getBedwarsUpgradesDisplayLines(
+                shortNames, romanNumerals, 255, 255, 255, 255, 255, 255, 255, 255));
+        }
+        // Colours belong to the HUD renderer, not the game-state strings.
+        lines.replaceAll(line -> line.replaceAll("(?i)§[0-9a-fk-or]", ""));
+    }
+
     @Override protected String getText() {
-        java.util.List<String> lines = new java.util.ArrayList<>();
-        getLines(lines, !HypixelFeatures.getInstance().isInBedwars());
+        List<String> lines = new java.util.ArrayList<>();
+        getLines(lines, HudManager.INSTANCE.isEditing() || !HypixelFeatures.getInstance().isInBedwars());
         return String.join("\n", lines);
     }
+
     @Override public boolean showByDefault() { return true; }
     @Override public kotlin.Pair<Float, Float> defaultPosition() { return new kotlin.Pair<>(5f, 65f); }
-    @Override public boolean hasBackground() { return false; }
-    @Override public boolean multipleInstancesAllowed() { return false; }
 }

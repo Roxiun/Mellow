@@ -336,6 +336,17 @@ public class BedwarsUpgradesService {
         return lines;
     }
 
+    public static List<String> getExampleDisplayLines(boolean shortNames, boolean romanNumerals) {
+        BedwarsUpgradesService example = new BedwarsUpgradesService();
+        example.sharpSwords = 2;
+        example.reinforcedArmor = 3;
+        example.healPool = true;
+        example.activeTraps.add("Counter-Offensive Trap");
+        example.activeTraps.add("Blindness Trap");
+        return example.getDisplayLinesWithFormatting(shortNames, romanNumerals,
+            255, 255, 255, 255, 255, 255, 255, 255);
+    }
+
     private String formatColorCode(int red, int green, int blue, int alpha) {
         // Convert RGB to Minecraft color code
         // We'll use the closest matching color code based on the RGB values

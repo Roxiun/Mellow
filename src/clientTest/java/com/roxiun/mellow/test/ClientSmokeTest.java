@@ -33,6 +33,7 @@ public final class ClientSmokeTest implements ClientModInitializer {
                 orderProperty.setAs(new String[0]);
                 if (Mellow.config.bedwarsStatOrder.length != 0) throw new AssertionError("Cannot disable all stats");
             } finally { orderProperty.setAs(savedOrder); }
+            ConfigMigrationSmokeTest.verify();
             String[] classes = {
                 "net.minecraft.client.network.NetHandlerPlayClient",
                 "net.minecraft.network.NetworkManager",

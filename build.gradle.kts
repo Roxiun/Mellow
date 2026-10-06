@@ -32,6 +32,8 @@ abstract class UnpackModBundle : TransformAction<TransformParameters.None> {
 
 plugins {
     java
+    kotlin("jvm") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
     id("net.fabricmc.fabric-loom-remap") version "1.17.4"
     id("ploceus") version "1.17.4"
 }
@@ -99,6 +101,8 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(25))
     withSourcesJar()
 }
+kotlin { jvmToolchain(25) }
+
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release.set(25)

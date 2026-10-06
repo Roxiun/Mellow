@@ -277,63 +277,63 @@ public class MellowOneConfig extends Config {
     @Checkbox(description = "Toggle separator between stats",
         title = "Between 1st and 2nd",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot12 = false;
 
     @Checkbox(
         title = "Between 2nd and 3rd",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot23 = false;
 
     @Checkbox(
         title = "Between 3rd and 4th",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot34 = true;
 
     @Checkbox(
         title = "Between 4th and 5th",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot45 = true;
 
     @Checkbox(
         title = "Between 5th and 6th",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot56 = true;
 
     @Checkbox(
         title = "Between 6th and 7th",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot67 = true;
 
     @Checkbox(
         title = "Between 7th and 8th",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot78 = true;
 
     @Checkbox(
         title = "Between 8th and 9th",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot89 = true;
 
     @Checkbox(
         title = "Between 9th and 10th",
         category = "Tab Stats",
-        subcategory = "Seperator"
+        subcategory = "Separators"
     )
     public boolean showDot910 = true;
 
@@ -600,7 +600,7 @@ public class MellowOneConfig extends Config {
         options = { "0", "50", "100", "200", "500" },
         category = "Number Denicker"
     )
-    public int finalsRange = 3; // Index for 100
+    public int finalsRange = 3; // Index for 200
 
     @Dropdown(
         title = "Beds Range",
@@ -772,22 +772,31 @@ public class MellowOneConfig extends Config {
 
     public MellowOneConfig() {
         super("mellow-v1.json", Mellow.NAME, Category.HYPIXEL);
-        boolean alreadySaved = java.nio.file.Files.isRegularFile(
-            org.polyfrost.oneconfig.api.config.v1.ConfigManager.active().getFolder().resolve(id));
         initialize(false);
-        boolean migrated = LegacyConfigMigration.importIfNeeded(this, alreadySaved);
-        sanitizeDropdownIndexes();
-        if (!statOrderMigrated) {
-            bedwarsStatOrder = StatOrder.fromLegacy(StatOrder.BEDWARS, new int[] {customStat1,customStat2,customStat3,customStat4,customStat5,customStat6,customStat7,customStat8,customStat9,customStat10});
-            skywarsStatOrder = StatOrder.fromLegacy(StatOrder.SKYWARS, new int[] {skywarsCustomStat1,skywarsCustomStat2,skywarsCustomStat3,skywarsCustomStat4,skywarsCustomStat5,skywarsCustomStat6,skywarsCustomStat7,skywarsCustomStat8,skywarsCustomStat9,skywarsCustomStat10});
-            duelsStatOrder = StatOrder.fromLegacy(StatOrder.DUELS, new int[] {duelsCustomStat1,duelsCustomStat2,duelsCustomStat3,duelsCustomStat4,duelsCustomStat5,duelsCustomStat6,duelsCustomStat7,duelsCustomStat8,duelsCustomStat9,duelsCustomStat10});
-            statOrderMigrated = true;
-            migrated = true;
-        }
-        if (migrated) save();
         org.polyfrost.oneconfig.api.hud.v1.HudManager.INSTANCE.register(emeraldCounterHUD, id);
         org.polyfrost.oneconfig.api.hud.v1.HudManager.INSTANCE.register(diamondCounterHUD, id);
         org.polyfrost.oneconfig.api.hud.v1.HudManager.INSTANCE.register(upgradesTrapsHUD, id);
+    }
+
+    @Override
+    protected void initialize(boolean byConfigManager) {
+        // OneConfig rebuilds the tree when switching profiles. Reattach rules to the new properties.
+        if (tree != null) return;
+        java.nio.file.Path savedPath = org.polyfrost.oneconfig.api.config.v1.ConfigManager.active().getFolder().resolve(id);
+        boolean alreadySaved = java.nio.file.Files.isRegularFile(savedPath);
+        com.google.gson.JsonObject stored = LegacyConfigMigration.readObject(savedPath);
+        super.initialize(byConfigManager);
+        boolean migrated = LegacyConfigMigration.importIfNeeded(this, alreadySaved);
+        // A profile switch can leave a field absent from an older file at its previous value.
+        // Inspect the incoming file's marker and preserve any new-format order already present.
+        if (!alreadySaved || !statOrderMigrated || (stored != null && !stored.has("statOrderMigrated"))) {
+            if (stored == null || !stored.has("bedwarsStatOrder")) bedwarsStatOrder = StatOrder.fromLegacy(StatOrder.BEDWARS, new int[] {customStat1,customStat2,customStat3,customStat4,customStat5,customStat6,customStat7,customStat8,customStat9,customStat10});
+            if (stored == null || !stored.has("skywarsStatOrder")) skywarsStatOrder = StatOrder.fromLegacy(StatOrder.SKYWARS, new int[] {skywarsCustomStat1,skywarsCustomStat2,skywarsCustomStat3,skywarsCustomStat4,skywarsCustomStat5,skywarsCustomStat6,skywarsCustomStat7,skywarsCustomStat8,skywarsCustomStat9,skywarsCustomStat10});
+            if (stored == null || !stored.has("duelsStatOrder")) duelsStatOrder = StatOrder.fromLegacy(StatOrder.DUELS, new int[] {duelsCustomStat1,duelsCustomStat2,duelsCustomStat3,duelsCustomStat4,duelsCustomStat5,duelsCustomStat6,duelsCustomStat7,duelsCustomStat8,duelsCustomStat9,duelsCustomStat10});
+            statOrderMigrated = true;
+            migrated = true;
+        }
+        if (ConfigValidation.sanitize(this) || migrated) save();
 
         hideIf("hitboxHueValue", () -> hitboxHueMode == 0);
         hideIf("hitboxHueOffset", () -> hitboxHueMode != 0);
@@ -797,76 +806,6 @@ public class MellowOneConfig extends Config {
         hideIf("hitboxBrightnessOffset", () -> hitboxBrightnessMode != 0);
     }
 
-    private void sanitizeDropdownIndexes() {
-        // BedWars tab stats dropdowns: Team..Client (15 options)
-        customStat1 = clampIndex(customStat1, 15);
-        customStat2 = clampIndex(customStat2, 15);
-        customStat3 = clampIndex(customStat3, 15);
-        customStat4 = clampIndex(customStat4, 15);
-        customStat5 = clampIndex(customStat5, 15);
-        customStat6 = clampIndex(customStat6, 15);
-        customStat7 = clampIndex(customStat7, 15);
-        customStat8 = clampIndex(customStat8, 15);
-        customStat9 = clampIndex(customStat9, 15);
-        customStat10 = clampIndex(customStat10, 15);
-
-        // SkyWars tab stats dropdowns: Team..Client (12 options)
-        skywarsCustomStat1 = clampIndex(skywarsCustomStat1, 12);
-        skywarsCustomStat2 = clampIndex(skywarsCustomStat2, 12);
-        skywarsCustomStat3 = clampIndex(skywarsCustomStat3, 12);
-        skywarsCustomStat4 = clampIndex(skywarsCustomStat4, 12);
-        skywarsCustomStat5 = clampIndex(skywarsCustomStat5, 12);
-        skywarsCustomStat6 = clampIndex(skywarsCustomStat6, 12);
-        skywarsCustomStat7 = clampIndex(skywarsCustomStat7, 12);
-        skywarsCustomStat8 = clampIndex(skywarsCustomStat8, 12);
-        skywarsCustomStat9 = clampIndex(skywarsCustomStat9, 12);
-        skywarsCustomStat10 = clampIndex(skywarsCustomStat10, 12);
-
-        // Duels tab stats dropdowns: Team..Client (15 options)
-        duelsCustomStat1 = clampIndex(duelsCustomStat1, 15);
-        duelsCustomStat2 = clampIndex(duelsCustomStat2, 15);
-        duelsCustomStat3 = clampIndex(duelsCustomStat3, 15);
-        duelsCustomStat4 = clampIndex(duelsCustomStat4, 15);
-        duelsCustomStat5 = clampIndex(duelsCustomStat5, 15);
-        duelsCustomStat6 = clampIndex(duelsCustomStat6, 15);
-        duelsCustomStat7 = clampIndex(duelsCustomStat7, 15);
-        duelsCustomStat8 = clampIndex(duelsCustomStat8, 15);
-        duelsCustomStat9 = clampIndex(duelsCustomStat9, 15);
-        duelsCustomStat10 = clampIndex(duelsCustomStat10, 15);
-
-        // Misc dropdowns
-        extendedTabStatsTeamColumnMode = clampIndex(
-            extendedTabStatsTeamColumnMode,
-            4
-        );
-        requestPopupPosition = clampIndex(requestPopupPosition, 3);
-        statsProvider = clampIndex(statsProvider, 4);
-        inGameBlacklistWarningDestination = clampIndex(
-            inGameBlacklistWarningDestination,
-            3
-        );
-        pingProvider = clampIndex(pingProvider, 4);
-        winstreakMinStars = clampIndex(winstreakMinStars, 51);
-        winstreakMinFkdr = clampIndex(winstreakMinFkdr, 18);
-        finalsRange = clampIndex(finalsRange, 5);
-        bedsRange = clampIndex(bedsRange, 5);
-        maxResults = clampIndex(maxResults, 3);
-        hitboxHueMode = clampIndex(hitboxHueMode, 2);
-        hitboxSaturationMode = clampIndex(hitboxSaturationMode, 2);
-        hitboxBrightnessMode = clampIndex(hitboxBrightnessMode, 2);
-        nametagClientIconPosition = clampIndex(nametagClientIconPosition, 2);
-    }
-
-    private int clampIndex(int value, int optionCount) {
-        if (optionCount <= 0) {
-            return 0;
-        }
-        if (value < 0) {
-            return 0;
-        }
-        int maxIndex = optionCount - 1;
-        return value > maxIndex ? maxIndex : value;
-    }
     @Button(description = "Manage all service API keys here. Feature-specific toggles remain in their own categories.", title = "Hypixel API Key", text = "Edit Key", category = "API Keys", subcategory = "Hypixel")
     public void editHypixelKey() {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
