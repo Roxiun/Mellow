@@ -50,7 +50,7 @@ public class MellowCommand extends CommandBase {
         sender.addChatMessage(new ChatComponentText(""));
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/bw <username>:§d Manually check bedwars stats of a player.§r"
+                "§r§5/bw <username>:§d Check a player's Bedwars stats and blacklist tags from all enabled APIs and the local blacklist.§r"
             )
         );
         sender.addChatMessage(
