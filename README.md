@@ -54,7 +54,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 ## Download
 
-Download the Ornithe jar from [Releases](https://github.com/Roxiun/Mellow/releases) into your instance's `mods` folder. This branch targets **Minecraft 1.8.9 on Ornithe**, with **Java 25** and **OneConfig v1 1.2.13 or newer**. Use the Ornithe/OneClient editions of the dependencies:
+Download the Ornithe jar from [Modrinth](https://modrinth.com/mod/statsify) into your instance's `mods` folder. This branch targets **Minecraft 1.8.9 on Ornithe**, with **Java 25** and **OneConfig v1 1.2.13 or newer**. Use the Ornithe/OneClient editions of the dependencies:
 
 - [OneConfig](https://modrinth.com/mod/oneconfig), including its required dependencies (Compose Multiplatform and Fabric Language Kotlin).
 - Pylon 0.1.7 or newer for the LWJGL 3 runtime.
