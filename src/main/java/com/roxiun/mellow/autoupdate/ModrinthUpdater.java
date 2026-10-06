@@ -14,7 +14,7 @@ import net.minecraft.event.ClickEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import org.polyfrost.oneconfig.api.event.v1.EventManager;
-import com.roxiun.mellow.platform.event.TickEvent;
+import org.polyfrost.oneconfig.api.event.v1.events.TickEvent;
 import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -259,10 +259,7 @@ public final class ModrinthUpdater {
     }
 
     @Subscribe
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public void onClientTick(TickEvent.End event) {
         if (!isOutdated || hasPromptedThisLaunch) {
             return;
         }

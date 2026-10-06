@@ -40,6 +40,8 @@ import com.roxiun.mellow.feature.requestpopup.RequestPopupService;
 import com.roxiun.mellow.feature.replay.ReplayHudRouter;
 import com.roxiun.mellow.feature.replay.ReplayInputRouter;
 import com.roxiun.mellow.feature.replay.ReplayManager;
+import net.ornithemc.osl.keybinds.api.KeybindEvents;
+import net.ornithemc.osl.keybinds.api.KeybindRegistry;
 import com.roxiun.mellow.feature.stats.InGameTabStatsSyncService;
 import com.roxiun.mellow.feature.stats.PregameStats;
 import com.roxiun.mellow.feature.stats.ProviderHealthWarningService;
@@ -81,9 +83,17 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
     private static AnticheatManager anticheatManager;
 
     private ProviderManager providerManager;
+    private KeyBinding requestAcceptKeybind;
+    private KeyBinding requestDenyKeybind;
 
     @Override
     public void onInitializeClient() {
+        KeybindEvents.REGISTER_KEYBINDS.register(() -> {
+            requestAcceptKeybind = KeybindRegistry.register(
+                "Accept Request", Keyboard.KEY_Y, "Mellow Requests");
+            requestDenyKeybind = KeybindRegistry.register(
+                "Deny Request", Keyboard.KEY_N, "Mellow Requests");
+        });
         EventManager.register(org.polyfrost.oneconfig.api.event.v1.events.InitializationEvent.class, this::initializeFeatures);
     }
 
@@ -172,19 +182,6 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             )
         );
 
-        KeyBinding requestAcceptKeybind = new KeyBinding(
-            "Accept Request",
-            Keyboard.KEY_Y,
-            "Mellow Requests"
-        );
-        KeyBinding requestDenyKeybind = new KeyBinding(
-            "Deny Request",
-            Keyboard.KEY_N,
-            "Mellow Requests"
-        );
-        com.roxiun.mellow.platform.ClientBindings.register(requestAcceptKeybind);
-        com.roxiun.mellow.platform.ClientBindings.register(requestDenyKeybind);
-        net.minecraft.client.Minecraft.getMinecraft().gameSettings.loadOptions();
         EventManager.INSTANCE.register(
             new RequestPopupRouter(
                 config,

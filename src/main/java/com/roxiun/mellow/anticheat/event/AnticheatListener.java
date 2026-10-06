@@ -20,10 +20,8 @@ public class AnticheatListener {
     }
 
     @Subscribe
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.START) {
-            currentTick++;
-        }
+    public void onClientTick(org.polyfrost.oneconfig.api.event.v1.events.TickEvent.Start event) {
+        currentTick++;
     }
 
     @Subscribe

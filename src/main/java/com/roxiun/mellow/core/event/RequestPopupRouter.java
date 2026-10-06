@@ -13,7 +13,7 @@ import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
 import com.roxiun.mellow.platform.event.RenderGameOverlayEvent;
 import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
-import com.roxiun.mellow.platform.event.InputEvent;
+import org.polyfrost.oneconfig.api.event.v1.events.KeyInputEvent;
 import org.lwjgl.input.Keyboard;
 
 public class RequestPopupRouter {
@@ -61,12 +61,12 @@ public class RequestPopupRouter {
     }
 
     @Subscribe
-    public void onKeyInput(InputEvent.KeyInputEvent event) {
+    public void onKeyInput(KeyInputEvent event) {
         if (
             config == null ||
             popupManager == null ||
             !config.requestPopupsEnabled ||
-            !Keyboard.getEventKeyState() ||
+            event.key == 0 || !event.isPressed() ||
             mc == null
         ) {
             return;

@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft;
 import com.roxiun.mellow.platform.event.RenderGameOverlayEvent;
 
 import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
-import com.roxiun.mellow.platform.event.TickEvent;
+import org.polyfrost.oneconfig.api.event.v1.events.TickEvent;
 
 public class TabOverlayRouter {
 
@@ -103,10 +103,7 @@ public class TabOverlayRouter {
     }
 
     @Subscribe
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public void onClientTick(TickEvent.End event) {
 
         boolean tabDown = isTabKeyDown();
         StatScope scope = ExtendedTabStatsMode.resolveScope();
