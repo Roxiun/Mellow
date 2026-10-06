@@ -1,14 +1,12 @@
 package com.roxiun.mellow.commands;
 
+import static com.roxiun.mellow.support.HttpResponses.response;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
 import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -56,20 +54,5 @@ public class NameHistoryCommandTest {
         Assert.assertEquals(2, second.size());
         Assert.assertNotSame(first, second);
         Assert.assertEquals(3, requestCount.get());
-    }
-
-    private static Response response(
-        Request request,
-        int code,
-        String contentType,
-        String body
-    ) {
-        return new Response.Builder()
-            .request(request)
-            .protocol(Protocol.HTTP_1_1)
-            .code(code)
-            .message(code == 200 ? "OK" : "Error")
-            .body(ResponseBody.create(MediaType.parse(contentType), body))
-            .build();
     }
 }

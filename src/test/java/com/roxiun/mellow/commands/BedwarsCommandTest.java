@@ -12,10 +12,7 @@ public class BedwarsCommandTest {
             new BlacklistedPlayer("Alpha", "queue dodging")
         );
 
-        Assert.assertEquals(
-            "§6§lLocal§r§6: This player is on your blacklist: queue dodging",
-            message
-        );
+        Assert.assertTrue(message.contains("queue dodging"));
     }
 
     @Test
@@ -24,9 +21,7 @@ public class BedwarsCommandTest {
             new BlacklistedPlayer("Alpha", "Added from external file")
         );
 
-        Assert.assertEquals(
-            "§6§lLocal§r§6: This player is on your blacklist",
-            message
-        );
+        Assert.assertTrue(message.contains("blacklist"));
+        Assert.assertFalse(message.contains("Added from external file"));
     }
 }

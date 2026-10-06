@@ -1,13 +1,11 @@
 package com.roxiun.mellow.api.aurora;
 
+import static com.roxiun.mellow.support.HttpResponses.response;
+
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
 import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,15 +29,5 @@ public class AuroraWinstreakServiceTest {
             capturedRequest.get().url().queryParameter("uuid")
         );
         Assert.assertNull(capturedRequest.get().url().queryParameter("key"));
-    }
-
-    private static Response response(Request request, String body) {
-        return new Response.Builder()
-            .request(request)
-            .protocol(Protocol.HTTP_1_1)
-            .code(200)
-            .message("OK")
-            .body(ResponseBody.create(MediaType.parse("application/json"), body))
-            .build();
     }
 }
