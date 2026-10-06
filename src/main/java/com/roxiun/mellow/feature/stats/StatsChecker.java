@@ -273,6 +273,9 @@ public class StatsChecker {
         String playerName,
         ProfileFetchResult result
     ) {
+        if (!config.showAutomaticStatsErrors) {
+            return;
+        }
         if (playerName == null || playerName.trim().isEmpty()) {
             return;
         }
@@ -455,7 +458,7 @@ public class StatsChecker {
                 );
                 Mellow.auroraWinstreakService.storeInCache(compactUuid, winstreak);
             } catch (Exception e) {
-                if (!Mellow.auroraWinstreakService.hasShownError()) {
+                if (config.showAutomaticStatsErrors && !Mellow.auroraWinstreakService.hasShownError()) {
                     Mellow.auroraWinstreakService.markErrorShown();
                     String detail = e.getMessage() == null ? "unknown" : e.getMessage();
                     mc.addScheduledTask(() ->

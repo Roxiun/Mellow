@@ -62,7 +62,7 @@ Go to the releases tab and download.
 
 All settings can be configured through OneConfig (press **Right Shift**).
 
-New configurations use **Bordic** for stats; existing provider choices are preserved.
+New configurations use **Bordic** for stats; existing provider choices are preserved. Disable **Show Automatic Stats Errors** to hide background lookup errors; manual commands still report failures.
 
 Enable **Xadia** in OneConfig and set your key under **API Keys > Xadia**. Generate a personal key with `/key generate` in the Xadia Discord bot. Use `/xadia <username>` for a manual lookup. Verified tags show a green check in tab; unverified reports show `?` in tab and `[Unverified]` in chat. Enable **Verified Tags Only** to hide unverified reports. Xadia tags also appear in player stat lookups, pregame/in-game alerts, and party warnings. Automatic lookups are off by default.
 

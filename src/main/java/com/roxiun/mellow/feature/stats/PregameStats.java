@@ -193,7 +193,7 @@ public class PregameStats {
             if (shouldSuppressFailureMessage(result)) {
                 return;
             }
-            if (sendStats) {
+            if (sendStats && config.showAutomaticStatsErrors) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendMessage(
                         "§cFailed to fetch stats for: §r" +
