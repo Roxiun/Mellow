@@ -80,7 +80,7 @@ The release jar is written to `build/libs/Mellow-1.8.9-ornithe-<version>.jar`. C
 
 The development build unpacks OneConfig's nested modules before Loom remaps them. This prevents the `oneconfigv1 1.2.16 is missing` development launch error. Published compile APIs are pinned to 1.2.10; runtime verification covers the complete 1.2.13 and 1.2.16 releases.
 
-If Fabric reports many incompatible OSL variants alongside a Mellow dependency mismatch, update Mellow first. The OSL bundle contains variants for multiple Minecraft versions, and Fabric can list unsuitable alternatives when another mod prevents dependency resolution. Mellow alpha.2 resolves with OneClient’s OSL 0.22.0 bundle; replacing individual OSL modules is unnecessary for that setup.
+If Fabric reports many incompatible OSL variants alongside a Mellow dependency mismatch, update Mellow first. The OSL bundle contains variants for multiple Minecraft versions, and Fabric can list unsuitable alternatives when another mod prevents dependency resolution. Mellow 7.0.0 resolves with OneClient’s OSL 0.22.0 bundle; replacing individual OSL modules is unnecessary for that setup.
 
 Development sources retain MCP names using the checked-in `mappings/mcp-1.8.9.tiny` overlay; Loom remaps the release to Ornithe Calamus generation 2. Regenerate the overlay with `python3 tools/generate_mappings.py`. Replay packet identifiers remain the original MCP names so old recordings can be read across the port.
 
