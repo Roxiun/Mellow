@@ -1,54 +1,36 @@
-package com.roxiun.mellow.core.event;
+package com.roxiun.mellow.util.nametag;
 
 import com.roxiun.mellow.util.RgbaColor;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.seraph.SeraphClientType;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.util.hitbox.TeamHitboxColorResolver;
-import com.roxiun.mellow.util.nametag.NametagRenderContext;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import com.roxiun.mellow.platform.event.RenderLivingEvent;
-import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 
-public class NametagColorRouter {
+public final class NametagContextResolver {
+    private NametagContextResolver() {}
 
-    private final MellowOneConfig config;
-
-    public NametagColorRouter(MellowOneConfig config) {
-        this.config = config;
-    }
-
-    @Subscribe
-    public void onPreRenderNametag(
-        RenderLivingEvent.Specials.Pre<EntityLivingBase> event
-    ) {
+    public static void prepare(EntityLivingBase entity, MellowOneConfig config) {
         NametagRenderContext.clear();
 
         if (config == null) {
             return;
         }
 
-        RgbaColor color = resolveNametagColor(event.entity);
-        SeraphClientType clientType = resolveClientType(event.entity);
+        RgbaColor color = resolveNametagColor(entity, config);
+        SeraphClientType clientType = resolveClientType(entity, config);
         if (color != null || clientType != null) {
             NametagRenderContext.setState(
                 color,
                 clientType,
                 config.nametagClientIconPosition == 0,
-                event.entity.getDisplayName().getFormattedText()
+                entity.getDisplayName().getFormattedText()
             );
         }
     }
 
-    @Subscribe
-    public void onPostRenderNametag(
-        RenderLivingEvent.Specials.Post<EntityLivingBase> event
-    ) {
-        NametagRenderContext.clear();
-    }
-
-    private RgbaColor resolveNametagColor(EntityLivingBase entity) {
+    private static RgbaColor resolveNametagColor(EntityLivingBase entity, MellowOneConfig config) {
         if (!config.coloredNametagBackgrounds) {
             return null;
         }
@@ -56,7 +38,7 @@ public class NametagColorRouter {
         return TeamHitboxColorResolver.resolveTeamHitboxColor(entity, config, 255);
     }
 
-    private SeraphClientType resolveClientType(EntityLivingBase entity) {
+    private static SeraphClientType resolveClientType(EntityLivingBase entity, MellowOneConfig config) {
         if (
             !config.showClientIconsInNametags ||
             !config.seraph ||

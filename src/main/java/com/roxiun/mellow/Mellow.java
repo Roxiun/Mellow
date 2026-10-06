@@ -26,7 +26,6 @@ import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.event.ChatEventRouter;
 import com.roxiun.mellow.core.event.ClientTickRouter;
-import com.roxiun.mellow.core.event.NametagColorRouter;
 import com.roxiun.mellow.core.event.RequestPopupRouter;
 import com.roxiun.mellow.core.event.TabOverlayInputRouter;
 import com.roxiun.mellow.core.event.TabOverlayRouter;
@@ -226,7 +225,6 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
         );
         EventManager.INSTANCE.register(new ReplayHudRouter(replayManager));
         EventManager.INSTANCE.register(new ReplayInputRouter(replayManager));
-        EventManager.INSTANCE.register(new NametagColorRouter(config));
         TabOverlayRouter tabOverlayRouter = new TabOverlayRouter(config);
         EventManager.INSTANCE.register(tabOverlayRouter);
         EventManager.INSTANCE.register(
