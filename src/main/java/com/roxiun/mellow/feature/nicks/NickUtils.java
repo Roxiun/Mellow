@@ -139,7 +139,7 @@ public class NickUtils {
                 + FormattingUtils.formatCoralTags(profile.getCoralTags()));
         }
         if (config.xadia && profile.isXadiaTagged()) {
-            ChatUtils.sendMessage("§c" + realName + " is tagged on §5Xadia§c for: "
+            ChatUtils.sendMessage("§c" + realName + " is tagged on §dXadia§c for: "
                 + FormattingUtils.formatXadiaTags(profile.getXadiaTags()));
         }
         if (config.seraph && profile.isSeraphTagged()) {

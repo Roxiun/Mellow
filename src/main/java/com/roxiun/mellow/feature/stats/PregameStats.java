@@ -280,7 +280,7 @@ public class PregameStats {
         if (shouldPrintXadiaTagAlert) {
             String tags = FormattingUtils.formatXadiaTags(profile.getXadiaTags());
             String xadiaMessage =
-                "§c" + username + " is tagged on §5Xadia§c for: " + tags;
+                "§c" + username + " is tagged on §dXadia§c for: " + tags;
             MainThreadDispatcher.run(() -> ChatUtils.sendMessage(xadiaMessage));
         }
 

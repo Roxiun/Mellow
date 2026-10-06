@@ -791,7 +791,7 @@ public class StatsChecker {
         if (shouldPrintXadiaTagAlert) {
             String tags = FormattingUtils.formatXadiaTags(profile.getXadiaTags());
             String xadiaMessage =
-                "§c" + profile.getName() + " is tagged on §5Xadia§c for: " + tags;
+                "§c" + profile.getName() + " is tagged on §dXadia§c for: " + tags;
             mc.addScheduledTask(() -> ChatUtils.sendMessage(xadiaMessage));
         }
 

@@ -109,7 +109,7 @@ public class SkywarsCommand extends CommandBase {
                 String tags = FormattingUtils.formatXadiaTags(
                     profile.getXadiaTags()
                 );
-                String xadiaMessage = "§5§lXadia§r§5: " + tags;
+                String xadiaMessage = "§d§lXadia§r§d: " + tags;
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendMultilineCommandMessage(sender, xadiaMessage)
                 );
