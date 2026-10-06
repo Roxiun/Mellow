@@ -584,7 +584,7 @@ public class MellowOneConfig extends Config {
         category = "Number Denicker"
     )
     public void auroraLinkButton() {
-        com.roxiun.mellow.platform.DesktopLinks.open(
+        org.polyfrost.oneconfig.utils.v1.NetworkUtils.browseLink(
             "https://discord.com/oauth2/authorize?client_id=1244205279697174539"
         );
     }
