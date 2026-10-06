@@ -342,7 +342,7 @@ public static String formatSeraphTagIcon(SeraphTag tag) {
         if (playerTeam != null && playerTeam.getColorPrefix().length() >= 2) {
             String teamName = playerTeam.getRegisteredName();
             String teamInitial = teamName.substring(0, 1).toUpperCase();
-            String teamColor = playerTeam.getColorPrefix().substring(0, 2);
+            String teamColor = com.roxiun.mellow.util.player.PlayerUtils.getTeamColor(playerTeam.getColorPrefix());
 
             String teamInfo = teamColor + "§l" + teamInitial + " §r";
             String coloredPlayerName = teamColor + tabData[1] + tabData[2];

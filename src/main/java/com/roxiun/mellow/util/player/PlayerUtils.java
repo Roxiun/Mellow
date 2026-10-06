@@ -120,6 +120,26 @@ public class PlayerUtils {
         return hasObfuscatedFormatting(getRawTabListName(info));
     }
 
+    /** Extract a color, never a style such as bold, from the team label prefix. */
+    public static String getTeamColor(String prefix) {
+        String color = "§f";
+        if (prefix == null) {
+            return color;
+        }
+        for (int i = 0; i + 1 < prefix.length(); i += 2) {
+            if (prefix.charAt(i) != '§') {
+                break;
+            }
+            char code = Character.toLowerCase(prefix.charAt(i + 1));
+            if ("0123456789abcdef".indexOf(code) >= 0) {
+                color = "§" + code;
+            } else if (code == 'r') {
+                color = "§f";
+            }
+        }
+        return color;
+    }
+
     public static String getTabDisplayName(String playerName) {
         ScorePlayerTeam playerTeam = Minecraft.getMinecraft()
             .theWorld.getScoreboard()
