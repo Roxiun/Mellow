@@ -88,17 +88,19 @@ public class NickUtils {
                                     PlayerProfile profile = result.getProfile();
 
                                     if (profile == null) {
-                                        MainThreadDispatcher.run(() ->
-                                            ChatUtils.sendMessage(
-                                                "§cFailed to fetch stats for: §r" +
-                                                    finalRealName +
-                                                    "§c (" +
-                                                    StatsFetchFailureFormatter.describe(
-                                                        result
-                                                    ) +
-                                                    ")"
-                                            )
-                                        );
+                                        if (config.showAutomaticStatsErrors) {
+                                            MainThreadDispatcher.run(() ->
+                                                ChatUtils.sendMessage(
+                                                    "§cFailed to fetch stats for: §r" +
+                                                        finalRealName +
+                                                        "§c (" +
+                                                        StatsFetchFailureFormatter.describe(
+                                                            result
+                                                        ) +
+                                                        ")"
+                                                )
+                                            );
+                                        }
                                         return;
                                     }
 

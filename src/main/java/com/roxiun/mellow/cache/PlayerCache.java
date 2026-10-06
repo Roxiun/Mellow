@@ -687,6 +687,9 @@ public class PlayerCache {
     }
 
     private void maybeWarnMissingApiKey(String providerName) {
+        if (!config.showAutomaticStatsErrors) {
+            return;
+        }
         if (!hasWarnedMissingApiKey.compareAndSet(false, true)) {
             return;
         }

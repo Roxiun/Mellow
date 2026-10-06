@@ -28,6 +28,13 @@ public class MellowOneConfig extends Config {
     @Switch(title = "Print Stats to Chat", subcategory = "General")
     public boolean printStats = false;
 
+    @Switch(
+        title = "Show Automatic Stats Errors",
+        description = "Show chat errors when background stats, denick stats, or hidden winstreak lookups fail. Manual commands still report lookup failures.",
+        subcategory = "General"
+    )
+    public boolean showAutomaticStatsErrors = true;
+
     @Switch(title = "Auto Update Check", subcategory = "General")
     public boolean autoUpdateCheck = true;
 
