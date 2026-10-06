@@ -30,10 +30,10 @@ public class BlacklistManager {
     );
 
     public BlacklistManager() {
-        File configDir = new File(
-            Minecraft.getMinecraft().mcDataDir,
-            "config/mellow"
-        );
+        this(new File(Minecraft.getMinecraft().mcDataDir, "config/mellow"));
+    }
+
+    BlacklistManager(File configDir) {
         if (!configDir.exists()) {
             configDir.mkdirs();
         }
@@ -239,11 +239,30 @@ public class BlacklistManager {
         return true; // Player added successfully
     }
 
-    public void removePlayer(UUID uuid) {
-        if (blacklist.remove(uuid) != null) {
-            saveBlacklist();
-            saveToTxtFile(); // Also update the txt file
+    /** Finds a saved name without depending on a current online profile. */
+    public UUID findPlayerByName(String name) {
+        UUID match = null;
+        for (Map.Entry<UUID, BlacklistedPlayer> entry : blacklist.entrySet()) {
+            if (name.equalsIgnoreCase(entry.getValue().getName())) {
+                if (match != null) {
+                    throw new IllegalArgumentException(
+                        "Multiple blacklist entries match " + name +
+                        ". Use the remove action in the blacklist list."
+                    );
+                }
+                match = entry.getKey();
+            }
         }
+        return match;
+    }
+
+    public boolean removePlayer(UUID uuid) {
+        if (blacklist.remove(uuid) == null) {
+            return false;
+        }
+        saveBlacklist();
+        saveToTxtFile();
+        return true;
     }
 
     public boolean isBlacklisted(UUID uuid) {

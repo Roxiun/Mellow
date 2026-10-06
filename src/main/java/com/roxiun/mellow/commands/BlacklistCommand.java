@@ -27,6 +27,8 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChatStyle;
+import net.minecraft.event.ClickEvent;
 
 public class BlacklistCommand extends CommandBase {
 
@@ -106,8 +108,8 @@ public class BlacklistCommand extends CommandBase {
             }
 
             // Convert the map values to a list for pagination
-            List<BlacklistedPlayer> players = new java.util.ArrayList<>(
-                blacklist.values()
+            List<Map.Entry<UUID, BlacklistedPlayer>> players = new ArrayList<>(
+                blacklist.entrySet()
             );
             int totalPlayers = players.size();
             int totalPages = (int) Math.ceil((double) totalPlayers / pageSize);
@@ -131,12 +133,18 @@ public class BlacklistCommand extends CommandBase {
                 "§aBlacklisted players (Page " + page + "/" + totalPages + "):"
             );
             for (int i = startIndex; i < endIndex; i++) {
-                BlacklistedPlayer player = players.get(i);
-                sender.addChatMessage(
-                    new ChatComponentText(
-                        "§r- " + player.getName() + ": " + player.getReason()
-                    )
+                Map.Entry<UUID, BlacklistedPlayer> entry = players.get(i);
+                BlacklistedPlayer player = entry.getValue();
+                ChatComponentText line = new ChatComponentText(
+                    "§r- " + player.getName() + ": " + player.getReason()
                 );
+                line.appendSibling(new ChatComponentText(" §c[Remove]").setChatStyle(
+                    new ChatStyle().setChatClickEvent(new ClickEvent(
+                        ClickEvent.Action.SUGGEST_COMMAND,
+                        getCommandPrefix() + " remove " + entry.getKey()
+                    ))
+                ));
+                sender.addChatMessage(line);
             }
 
             // Show navigation help if there are multiple pages
@@ -250,6 +258,26 @@ public class BlacklistCommand extends CommandBase {
         }
 
         AsyncExecutor.getInstance().command(() -> {
+            if ("remove".equalsIgnoreCase(subCommand)) {
+                UUID storedUuid;
+                try {
+                    storedUuid = UUIDUtils.fromString(playerName);
+                } catch (IllegalArgumentException invalidUuid) {
+                    try {
+                        storedUuid = blacklistManager.findPlayerByName(playerName);
+                    } catch (IllegalArgumentException ambiguousName) {
+                        MainThreadDispatcher.run(() -> ChatUtils.sendCommandMessage(
+                            sender, "§c" + ambiguousName.getMessage()
+                        ));
+                        return;
+                    }
+                }
+                if (storedUuid != null) {
+                    removePlayer(sender, storedUuid, playerName);
+                    return;
+                }
+            }
+
             String uuidString = mojangApi.getUUIDFromName(playerName);
             if (uuidString == null) {
                 uuidString = mojangApi.fetchUUID(playerName);
@@ -360,13 +388,7 @@ public class BlacklistCommand extends CommandBase {
                     );
                 }
             } else if ("remove".equalsIgnoreCase(subCommand)) {
-                blacklistManager.removePlayer(uuid);
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendCommandMessage(
-                        sender,
-                        "§aRemoved " + playerName + " from the blacklist."
-                    )
-                );
+                removePlayer(sender, uuid, playerName);
             } else {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
@@ -453,6 +475,17 @@ public class BlacklistCommand extends CommandBase {
     @Override
     public int getRequiredPermissionLevel() {
         return 0;
+    }
+
+    private void removePlayer(ICommandSender sender, UUID uuid, String input) {
+        BlacklistedPlayer player = blacklistManager.getBlacklistedPlayer(uuid);
+        boolean removed = blacklistManager.removePlayer(uuid);
+        String name = player == null ? input : player.getName();
+        MainThreadDispatcher.run(() -> ChatUtils.sendCommandMessage(
+            sender,
+            removed ? "§aRemoved " + name + " from the blacklist."
+                : "§c" + input + " is not on your blacklist."
+        ));
     }
 
     private String getCommandPrefix() {
