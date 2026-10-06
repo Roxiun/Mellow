@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
@@ -28,7 +27,7 @@ public class NickUtils {
 
     private final Set<String> nickedPlayers = new HashSet<>();
     private final Map<String, ResolvedNickProfile> resolvedNickProfiles =
-        new ConcurrentHashMap<>();
+        new HashMap<>();
     private final Minecraft mc = Minecraft.getMinecraft();
     private final PlayerCache playerCache;
     private final MellowOneConfig config;
@@ -56,7 +55,7 @@ public class NickUtils {
             ) {
                 UUID uuid = playerInfo.getGameProfile().getId();
                 if (uuid.version() == 1) {
-                    if (nickedPlayers.add(player)) {
+                    if (nickedPlayers.add(normalize(player))) {
                         String nickedPlayerDisplay =
                             FormattingUtils.formatNickedPlayerName(player);
 
@@ -76,141 +75,7 @@ public class NickUtils {
                                         realName
                                 );
 
-                                final String finalRealName = realName;
-                                AsyncExecutor.getInstance().profileIo(() -> {
-                                    ProfileFetchResult result =
-                                        playerCache.getScopedProfileResult(
-                                            finalRealName,
-                                            StatScope.BEDWARS,
-                                            ProfileFetchContext.GENERAL,
-                                            true
-                                        );
-                                    PlayerProfile profile = result.getProfile();
-
-                                    if (profile == null) {
-                                        if (config.showAutomaticStatsErrors) {
-                                            MainThreadDispatcher.run(() ->
-                                                ChatUtils.sendMessage(
-                                                    "§cFailed to fetch stats for: §r" +
-                                                        finalRealName +
-                                                        "§c (" +
-                                                        StatsFetchFailureFormatter.describe(
-                                                            result
-                                                        ) +
-                                                        ")"
-                                                )
-                                            );
-                                        }
-                                        return;
-                                    }
-
-                                    resolvedNickProfiles.put(
-                                        player,
-                                        new ResolvedNickProfile(
-                                            finalRealName,
-                                            profile
-                                        )
-                                    );
-
-                                    BedwarsPlayer bwPlayer =
-                                        profile.getBedwarsPlayer();
-                                    if (bwPlayer != null) {
-                                        String statsMessage =
-                                            bwPlayer.getStars() +
-                                            " §r" +
-                                            bwPlayer.getFormattedNameWithRank() +
-                                            " §7|§r FKDR: " +
-                                            bwPlayer.getFkdrColor() +
-                                            bwPlayer.getFormattedFkdr();
-
-                                        MainThreadDispatcher.run(() ->
-                                            ChatUtils.sendMessage(statsMessage)
-                                        );
-                                    }
-
-                                    if (
-                                        config.isCoralEnabled() &&
-                                        profile.isCoralTagged()
-                                    ) {
-                                        String tags =
-                                            FormattingUtils.formatCoralTags(
-                                                profile.getCoralTags()
-                                            );
-                                        String coralMessage =
-                                            "§c" +
-                                            finalRealName +
-                                            " is tagged on §5Coral§c for: " +
-                                            tags;
-                                        MainThreadDispatcher.run(() ->
-                                            ChatUtils.sendMessage(coralMessage)
-                                        );
-                                    }
-
-                                    if (
-                                        config.xadia &&
-                                        profile.isXadiaTagged()
-                                    ) {
-                                        String tags =
-                                            FormattingUtils.formatXadiaTags(
-                                                profile.getXadiaTags()
-                                            );
-                                        String xadiaMessage =
-                                            "§c" +
-                                            finalRealName +
-                                            " is tagged on §5Xadia§c for: " +
-                                            tags;
-                                        MainThreadDispatcher.run(() ->
-                                            ChatUtils.sendMessage(xadiaMessage)
-                                        );
-                                    }
-
-                                    if (
-                                        config.seraph &&
-                                        profile.isSeraphTagged()
-                                    ) {
-                                        String formattedTags =
-                                            FormattingUtils.formatSeraphTags(
-                                                profile.getSeraphTags()
-                                            );
-                                        // Split the formatted tags by the newline separator and send as separate messages
-                                        String[] tagMessages =
-                                            formattedTags.split("\n§c");
-                                        if (
-                                            tagMessages.length > 0 &&
-                                            !tagMessages[0].trim().isEmpty()
-                                        ) {
-                                            // Send the first tag with the main message
-                                            String firstMessage =
-                                                "§c" +
-                                                finalRealName +
-                                                " is tagged on §3Seraph§c for: " +
-                                                tagMessages[0];
-                                            MainThreadDispatcher.run(() ->
-                                                ChatUtils.sendMessage(
-                                                    firstMessage
-                                                )
-                                            );
-                                            // Send additional tags as separate messages
-                                            for (
-                                                int i = 1;
-                                                i < tagMessages.length;
-                                                i++
-                                            ) {
-                                                if (
-                                                    !tagMessages[i].trim().isEmpty()
-                                                ) {
-                                                    String additionalMessage =
-                                                        "§c" + tagMessages[i];
-                                                    MainThreadDispatcher.run(() ->
-                                                        ChatUtils.sendMessage(
-                                                            additionalMessage
-                                                        )
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                });
+                                resolveNick(player, realName, ResolutionSource.SKIN);
                             }
                         }
                     }
@@ -219,8 +84,82 @@ public class NickUtils {
         }
     }
 
+    public enum ResolutionSource { SKIN, NUMBER }
+
+    // Called on the client thread. Identity is independent of stats availability.
+    public boolean resolveNick(String nickName, String realName, ResolutionSource source) {
+        return resolveNick(nickName, realName, source, true);
+    }
+
+    public boolean resolveNick(String nickName, String realName, ResolutionSource source, boolean automatic) {
+        if (nickName == null || realName == null || realName.trim().isEmpty()
+            || nickName.equalsIgnoreCase(realName)) return false;
+        String key = normalize(nickName);
+        ResolvedNickProfile previous = resolvedNickProfiles.get(key);
+        if (previous != null && (source == ResolutionSource.NUMBER
+            || previous.source == ResolutionSource.SKIN)) return false;
+
+        NetworkPlayerInfo playerInfo = mc.getNetHandler() == null
+            ? null : mc.getNetHandler().getPlayerInfo(nickName);
+        if (playerInfo == null) return false;
+        ResolvedNickProfile resolved = new ResolvedNickProfile(realName, source);
+        nickedPlayers.add(key);
+        resolvedNickProfiles.put(key, resolved);
+        AsyncExecutor.getInstance().profileIo(() -> {
+            ProfileFetchResult result = playerCache.getScopedProfileResult(
+                realName, StatScope.BEDWARS, ProfileFetchContext.GENERAL, automatic
+            );
+            MainThreadDispatcher.run(() -> {
+                // Clearing the map or replacing this identity invalidates its pending fetch.
+                if (resolvedNickProfiles.get(key) != resolved || mc.getNetHandler() == null
+                    || mc.getNetHandler().getPlayerInfo(nickName) != playerInfo) return;
+                PlayerProfile profile = result.getProfile();
+                if (profile == null) {
+                    if (!automatic || config.showAutomaticStatsErrors) {
+                        ChatUtils.sendMessage("§cFailed to fetch stats for: §r" + realName
+                            + "§c (" + StatsFetchFailureFormatter.describe(result) + ")");
+                    }
+                    return;
+                }
+                resolved.profile = profile;
+                announceProfile(realName, profile);
+            });
+        });
+        return true;
+    }
+
+    private void announceProfile(String realName, PlayerProfile profile) {
+        BedwarsPlayer player = profile.getBedwarsPlayer();
+        if (player != null) {
+            ChatUtils.sendMessage(player.getStars() + " §r" + player.getFormattedNameWithRank()
+                + " §7|§r FKDR: " + player.getFkdrColor() + player.getFormattedFkdr());
+        }
+        if (config.isCoralEnabled() && profile.isCoralTagged()) {
+            ChatUtils.sendMessage("§c" + realName + " is tagged on §5Coral§c for: "
+                + FormattingUtils.formatCoralTags(profile.getCoralTags()));
+        }
+        if (config.xadia && profile.isXadiaTagged()) {
+            ChatUtils.sendMessage("§c" + realName + " is tagged on §5Xadia§c for: "
+                + FormattingUtils.formatXadiaTags(profile.getXadiaTags()));
+        }
+        if (config.seraph && profile.isSeraphTagged()) {
+            String[] tags = FormattingUtils.formatSeraphTags(profile.getSeraphTags()).split("\n§c");
+            for (int i = 0; i < tags.length; i++) {
+                if (!tags[i].trim().isEmpty()) {
+                    ChatUtils.sendMessage(i == 0
+                        ? "§c" + realName + " is tagged on §3Seraph§c for: " + tags[i]
+                        : "§c" + tags[i]);
+                }
+            }
+        }
+    }
+
+    private static String normalize(String name) {
+        return name.toLowerCase(java.util.Locale.ROOT);
+    }
+
     public boolean isNicked(String playerName) {
-        return nickedPlayers.contains(playerName);
+        return playerName != null && nickedPlayers.contains(normalize(playerName));
     }
 
     public TabStats getResolvedTabStatsForNick(String nickName, StatScope scope) {
@@ -228,7 +167,7 @@ public class NickUtils {
             return null;
         }
 
-        ResolvedNickProfile resolved = resolvedNickProfiles.get(nickName);
+        ResolvedNickProfile resolved = resolvedNickProfiles.get(normalize(nickName));
         if (resolved == null || resolved.profile == null) {
             return null;
         }
@@ -241,7 +180,7 @@ public class NickUtils {
             return null;
         }
 
-        ResolvedNickProfile resolved = resolvedNickProfiles.get(nickName);
+        ResolvedNickProfile resolved = resolvedNickProfiles.get(normalize(nickName));
         return resolved == null ? null : resolved.realName;
     }
 
@@ -253,11 +192,12 @@ public class NickUtils {
     private static class ResolvedNickProfile {
 
         private final String realName;
-        private final PlayerProfile profile;
+        private final ResolutionSource source;
+        private PlayerProfile profile;
 
-        private ResolvedNickProfile(String realName, PlayerProfile profile) {
+        private ResolvedNickProfile(String realName, ResolutionSource source) {
             this.realName = realName;
-            this.profile = profile;
+            this.source = source;
         }
     }
 }

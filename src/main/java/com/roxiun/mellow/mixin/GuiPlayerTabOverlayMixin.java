@@ -48,7 +48,7 @@ public class GuiPlayerTabOverlayMixin {
         String resolvedRealName = Mellow.nickUtils == null
             ? null
             : Mellow.nickUtils.getResolvedRealNameForNick(playerName);
-        if (stats == null && isNicked && Mellow.nickUtils != null) {
+        if (resolvedRealName != null && Mellow.nickUtils != null) {
             stats = Mellow.nickUtils.getResolvedTabStatsForNick(
                 playerName,
                 scope

@@ -827,7 +827,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             : Mellow.nickUtils.getResolvedRealNameForNick(playerName);
         boolean isNicked =
             Mellow.nickUtils != null && Mellow.nickUtils.isNicked(playerName);
-        if (stats == null && isNicked && Mellow.nickUtils != null) {
+        if (resolvedRealName != null && Mellow.nickUtils != null) {
             stats = Mellow.nickUtils.getResolvedTabStatsForNick(playerName, scope);
         }
 

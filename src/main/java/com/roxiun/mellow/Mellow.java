@@ -255,7 +255,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             new DenickCommand(config, auroraApi)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
-            new SkinDenickCommand(playerCache)
+            new SkinDenickCommand(nickUtils)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
             new BlacklistCommand(blacklistManager, mojangApi, seraphApi, config)
