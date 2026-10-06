@@ -23,7 +23,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 - See other players' ping. Recommended to use with [VanillaHUD](https://modrinth.com/mod/vanillahud)
  to view ping numerically instead of as bars.
 
-- Supports [Coral API](https://api.urchin.gg/) Tags
+- Supports [Coral API](https://api.urchin.gg/) tags (API key required)
 
 - Seraph integration is deprecated. Settings and legacy code remain, but all Seraph requests (tags, reports, ping, client detection, and UUID fallback) are disabled.
 
@@ -31,7 +31,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 - Import your own local blacklist
 
-- Check any player's BedWars stats with `/bw`
+- Check BedWars stats and blacklist tags from all enabled APIs and your local blacklist with `/bw`
 
 - Supports skin denicking and finals/beds denicking.
 
@@ -50,13 +50,11 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 <img width="1440" height="900" alt="Settings" src="https://github.com/user-attachments/assets/3da167f9-8748-48b6-80eb-f10d1c3aabd2" />
 <img width="1440" height="900" alt="Authie" src="https://github.com/user-attachments/assets/209a7730-6e93-4896-bf9b-3a98d2b8e432" />
 
-
-</div>
 </details>
 
 ## Download
 
-This branch targets **Minecraft 1.8.9 on Ornithe**, with **Java 25** and **OneConfig v1 1.2.13 or newer**. Use the Ornithe/OneClient editions of the dependencies:
+Download the Ornithe jar from [Releases](https://github.com/Roxiun/Mellow/releases) into your instance's `mods` folder. This branch targets **Minecraft 1.8.9 on Ornithe**, with **Java 25** and **OneConfig v1 1.2.13 or newer**. Use the Ornithe/OneClient editions of the dependencies:
 
 - [OneConfig](https://modrinth.com/mod/oneconfig), including its required dependencies (Compose Multiplatform and Fabric Language Kotlin).
 - Pylon 0.1.7 or newer for the LWJGL 3 runtime.
@@ -80,58 +78,48 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS
 
 The release jar is written to `build/libs/Mellow-1.8.9-ornithe-<version>.jar`. Client smoke tests launch a real client, verify initialization and replay packet round trips, then exit; they require a graphical environment. Their separate configurations live under `build/client-test`. `-PcompatMods` adds the three pinned optional mods. Omit `-PclientTest` for an interactive development client.
 
-The development build unpacks OneConfig's nested modules before Loom remaps them. This prevents the `oneconfigv1 1.2.16 is missing` development launch error. Published compile APIs are pinned to 1.2.10; runtime verification covers the complete 1.2.13 and 1.2.16 releases.
-
-If Fabric reports many incompatible OSL variants alongside a Mellow dependency mismatch, update Mellow first. The OSL bundle contains variants for multiple Minecraft versions, and Fabric can list unsuitable alternatives when another mod prevents dependency resolution. Mellow 7.0.0 resolves with OneClient’s OSL 0.22.0 bundle; replacing individual OSL modules is unnecessary for that setup.
-
-Development sources retain MCP names using the checked-in `mappings/mcp-1.8.9.tiny` overlay; Loom remaps the release to Ornithe Calamus generation 2. Regenerate the overlay with `python3 tools/generate_mappings.py`. Replay packet identifiers remain the original MCP names so old recordings can be read across the port.
-
 ## Usage
 
-All settings can be configured through OneConfig (press **Right Shift**). New configurations use **Bordic** for stats; existing provider choices are preserved.
+Open OneConfig with **Right Shift**. New configurations use **Bordic** for keyless stats; existing provider choices are preserved. Disable **Show Automatic Stats Errors** to hide background errors.
 
-Under **Tab Stats**, drag entries in each game's stat list to change the order, and uncheck entries to hide them. Existing numeric slot selections migrate once into the lists. Duplicate selections collapse into a single entry; hidden slots are omitted. All available stats can now be enabled, beyond the old ten-slot limit.
+Match stats fetch automatically. `/who` is optional; use `/refresh` to re-fetch stats during a supported live match.
+
+Enable Coral or Xadia and add their keys under **API Keys**. Xadia keys come from `/key generate` in its Discord bot; **Verified Tags Only** hides unverified reports. Number denicking requires an Aurora key and its feature toggle.
+
+Under **Tab Stats**, drag entries to reorder them and uncheck entries to hide them. Configure HUDs in the OneConfig HUD editor.
 
 ### Commands
 
-To display **help command** type `/mellow`
+`<player>` means a username; `[player]` is optional. Run `/mellow` or `/st` for in-game help and aliases.
 
-To **check the stats of players in your game**, type `/who` in-game, or enable Auto Who in settings
+| Command | Purpose |
+| --- | --- |
+| `/bw <player>` | BedWars stats and blacklist tags from all enabled APIs and your local blacklist |
+| `/sw <player>` | SkyWars stats |
+| `/pv [player]` | Profile viewer (defaults to yourself) |
+| `/coral <player>`, `/xadia <player>` | Provider tag lookups |
+| `/blacklist add/remove/list/import` | Manage your local blacklist; `/bl` also works |
+| `/annoylist add/remove/list/import` | Manage your annoy list |
+| `/tagignore add/remove/list/import` | Suppress Coral/Xadia tag alerts for selected players |
+| `/skindenick <player>` | Skin-based denicking |
+| `/denick <finals/beds> <number>` | Number-based denicking |
+| `/refresh` | Refresh stats in a live match |
+| `/mstatus <player>` | Online status, last login, and Luna lobby data |
+| `/namehistory <player>` | Name history |
+| `/winstreak <player>` | Visible BedWars winstreak, with Aurora fallback if enabled |
+| `/clearcache` | Clear cached player data |
+| `/mdebug <all/state/scoreboard/pregame>` | Game-state diagnostics |
+| `/mreplay` | Open the replay browser |
 
-To check an **individual player’s** BedWars stats, type `/bw <username>`
+List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. With the Seraph mod installed, use `/mblacklist` or `/bl` instead of `/blacklist`.
 
-Enable **Xadia** in OneConfig and set your key under **API Keys > Xadia**. Generate a personal key with `/key generate` in the Xadia Discord bot. Use `/xadia <username>` for a manual lookup. Verified tags show a green check in tab; unverified reports show `?` in tab and `[Unverified]` in chat. Enable **Verified Tags Only** to hide unverified reports. Xadia tags also appear in player stat lookups, pregame/in-game alerts, and party warnings. Automatic lookups are off by default.
+Replay subcommands: `list`, `open <id/index>`, `info <id/index>`, `delete <id/index>`, and `tp <player>` (also `spectate`).
 
-To add a player to your **blacklist**, type `/blacklist add <username>`
+Seraph requests are disabled; `/seraph`, `/client`, and legacy Seraph reporting remain deprecated.
 
-The legacy Seraph report syntax remains available, but report submission is disabled. Use `/blacklist add <username>` for your local blacklist.
+## Community
 
-You can **import** your own **blacklist** by doing, type `/blacklist import <filename>`, place the file in `.minecraft/config/mellow`
-
-To add a player to your **annoy list**, type `/annoylist add <username>`
-
-You can **import** your own **annoy list** by doing, type `/annoylist import <filename>`, place the file in `.minecraft/config/mellow`
-
-To suppress Coral/Seraph tag alert lines for a player, type `/tagignore add <username>`
-
-To check a player's **Coral tags**, type `/coral <username>` (legacy `/urchin` aliases are also supported)
-
-You can **import** your own **tag ignore list** by doing, type `/tagignore import <filename>`, place the file in `.minecraft/config/mellow`
-
-To **skin denick** type `/skindenick <username>`
-
-To use the **number denicker** add your Aurora API key
-
-- You can obtain one [here](https://discord.com/oauth2/authorize?client_id=1244205279697174539)
-- After setup, denicking happens automatically during games, but you can also manually run: `/denick <finals | beds> <number>`
-
-## Known issues
-
-- Occasionally stats fail to fetch due to rate limits. You can either try switching the stats provider in settings or try running `/who` again after a while.
-- Does not work on some VPNs
-
-If any other issues or bugs are found please report them [here](https://github.com/Roxiun/Mellow)
-
+[Join the Discord](https://discord.gg/psbdtEKkxa) · [Report a bug](https://github.com/Roxiun/Mellow/issues)
 
 ## Credits
 Original Creator: `melissalmao` - Melissa (fwrina)

@@ -42,7 +42,7 @@ public class MellowCommand extends CommandBase {
         sender.addChatMessage(new ChatComponentText(""));
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§7Settings can be found in the OneConfig menu"
+                "§r§7Settings: OneConfig menu. Help: /mellow or /st."
             )
         );
         sender.addChatMessage(new ChatComponentText(""));
@@ -60,30 +60,30 @@ public class MellowCommand extends CommandBase {
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/pv [username]:§d Open the profile viewer UI for a player (self by default).§r"
+                "§r§5/pv [username] (aliases: /profileviewer, /bedwarsprofileviewer, /bwprofileviewer):§d Open the profile viewer UI for a player (self by default).§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
                 "§r§5" +
                     BlacklistCommandResolver.getCommandPrefix() +
-                    " <add | remove | list | import>:§d Add/remove/sync a player to your local blacklist. Use §fseraph <type> <reason>§d after the username to also report to Seraph.§r"
+                    " <add | remove | list | import> (alias: /bl):§d Manage your local blacklist. Seraph reporting is disabled.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/annoylist <add | remove | list | import>:§d Add/remove/sync a player to your local annoy list.§r"
+                "§r§5/annoylist <add | remove | list | import> (alias: /annoy):§d Add/remove/sync a player to your local annoy list.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/tagignore <add | remove | list | import>:§d Suppress Coral/Seraph tag alert lines for selected players.§r"
+                "§r§5/tagignore <add | remove | list | import> (alias: /tignore):§d Suppress Coral/Xadia tag alert lines for selected players.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
                 "§r§5" +
-                    "/coral|/urchin <username>" +
+                    "/coral|/urchin|/murchin <username>" +
                     ":§d View a player's Coral tags.§r"
             )
         );
@@ -93,7 +93,12 @@ public class MellowCommand extends CommandBase {
                     (BlacklistCommandResolver.isSeraphLoaded()
                         ? "/seraph|/mseraph <username>"
                         : "/seraph <username>") +
-                    ":§d View a player's seraph tags.§r"
+                    ":§d Deprecated; Seraph tag requests are disabled.§r"
+            )
+        );
+        sender.addChatMessage(
+            new ChatComponentText(
+                "§r§5/xadia|/mxadia <username>:§d View a player's Xadia tags.§r"
             )
         );
         sender.addChatMessage(
@@ -123,7 +128,7 @@ public class MellowCommand extends CommandBase {
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/client <username>:§d Show the player's detected client using Seraph data.§r"
+                "§r§5/client <username>:§d Deprecated; Seraph client detection is disabled.§r"
             )
         );
         sender.addChatMessage(
@@ -138,12 +143,12 @@ public class MellowCommand extends CommandBase {
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/mdebug <all|state|scoreboard|pregame>:§d Debug Mod API and game-state detection.§r"
+                "§r§5/mdebug <all|state|scoreboard|pregame> (alias: /mellowdebug; board = scoreboard):§d Debug Mod API and game-state detection.§r"
             )
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/mreplay [list|open|info|delete|tp]:§d Open the replay browser and manage saved Bedwars replays.§r"
+                "§r§5/mreplay (alias: /mellowreplay):§d Open the replay browser. Use list, open/info/delete <id|index>, or tp/spectate <player>.§r"
             )
         );
         sender.addChatMessage(
