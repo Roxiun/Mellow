@@ -220,6 +220,7 @@ public class PregameStats {
         boolean tagsIgnored =
             tagIgnoreManager != null && tagIgnoreManager.isTagIgnored(uuid);
         boolean coralTagged = config.isCoralEnabled() && profile.isCoralTagged();
+        boolean shouldPrintXadiaTagAlert = config.xadia && profile.isXadiaTagged() && !tagsIgnored;
         boolean seraphTagged = config.seraph && profile.isSeraphTagged();
         boolean shouldPrintCoralTagAlert = coralTagged && !tagsIgnored;
         boolean shouldPrintSeraphTagAlert = seraphTagged && !tagsIgnored;
@@ -276,6 +277,13 @@ public class PregameStats {
             MainThreadDispatcher.run(() -> ChatUtils.sendMessage(coralMessage));
         }
 
+        if (shouldPrintXadiaTagAlert) {
+            String tags = FormattingUtils.formatXadiaTags(profile.getXadiaTags());
+            String xadiaMessage =
+                "§c" + username + " is tagged on §5Xadia§c for: " + tags;
+            MainThreadDispatcher.run(() -> ChatUtils.sendMessage(xadiaMessage));
+        }
+
         if (shouldPrintSeraphTagAlert) {
             String formattedTags = FormattingUtils.formatSeraphTags(
                 profile.getSeraphTags()
@@ -299,6 +307,7 @@ public class PregameStats {
         if (
             blacklisted ||
             annoylisted ||
+            shouldPrintXadiaTagAlert ||
             shouldPrintCoralTagAlert ||
             shouldPrintSeraphTagAlert
         ) {

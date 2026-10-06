@@ -1,10 +1,23 @@
 package com.roxiun.mellow.data;
 
+import com.roxiun.mellow.api.xadia.XadiaTag;
 import com.roxiun.mellow.api.seraph.SeraphTag;
 import com.roxiun.mellow.api.coral.CoralTag;
 import java.util.List;
 
 public class TabStats {
+
+    private List<XadiaTag> xadiaTags = java.util.Collections.emptyList();
+
+    public TabStats withXadiaTags(List<XadiaTag> tags) {
+        TabStats copy = new TabStats(coralTags, seraphTags, formattedNameWithRank, stars, fkdr,
+            winstreak, wlr, bblr, wins, losses, kills, deaths, beds, finals);
+        copy.xadiaTags = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(tags));
+        return copy;
+    }
+
+    public List<XadiaTag> getXadiaTags() { return xadiaTags; }
+    public boolean isXadiaTagged() { return !xadiaTags.isEmpty(); }
 
     private final List<CoralTag> coralTags;
     private final List<SeraphTag> seraphTags;

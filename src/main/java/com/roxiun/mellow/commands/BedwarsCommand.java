@@ -146,6 +146,32 @@ public class BedwarsCommand extends CommandBase {
                 }
             }
 
+            if (config.xadia && profile.isXadiaTagged()) {
+                List<String> xadiaMessages = new ArrayList<>();
+                profile.getXadiaTags().forEach(tag -> {
+                    String formattedTag = FormattingUtils.formatXadiaTag(tag);
+                    if (formattedTag == null || formattedTag.trim().isEmpty()) {
+                        return;
+                    }
+
+                    if (xadiaMessages.isEmpty()) {
+                        xadiaMessages.add("§5§lXadia§r§5: " + formattedTag);
+                        return;
+                    }
+
+                    xadiaMessages.add(formattedTag);
+                });
+
+                if (!xadiaMessages.isEmpty()) {
+                    MainThreadDispatcher.run(() ->
+                        ChatUtils.sendMultilineCommandMessage(
+                            sender,
+                            xadiaMessages
+                        )
+                    );
+                }
+            }
+
             if (config.seraph && profile.isSeraphTagged()) {
                 String formattedTags = FormattingUtils.formatSeraphTags(
                     profile.getSeraphTags()

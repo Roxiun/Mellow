@@ -1,5 +1,6 @@
 package com.roxiun.mellow.mixin;
 
+import com.roxiun.mellow.api.xadia.XadiaTag;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.provider.model.StatScope;
@@ -198,6 +199,12 @@ public class GuiPlayerTabOverlayMixin {
             for (CoralTag tag : stats.getCoralTags()) {
                 newDisplayName +=
                     " " + FormattingUtils.formatCoralTagIcon(tag);
+            }
+        }
+
+        if (Mellow.config.xadia && Mellow.config.showXadiaTagsInTab && stats.isXadiaTagged()) {
+            for (XadiaTag tag : stats.getXadiaTags()) {
+                newDisplayName += " " + FormattingUtils.formatXadiaTagIcon(tag);
             }
         }
 

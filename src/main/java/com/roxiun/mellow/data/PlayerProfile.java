@@ -1,5 +1,6 @@
 package com.roxiun.mellow.data;
 
+import com.roxiun.mellow.api.xadia.XadiaTag;
 import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
 import com.roxiun.mellow.api.buildbattle.BuildBattlePlayer;
 import com.roxiun.mellow.api.duels.DuelsPlayer;
@@ -22,6 +23,7 @@ public class PlayerProfile {
     private final TntRunPlayer tntRunPlayer;
     private final List<CoralTag> coralTags;
     private final List<SeraphTag> seraphTags;
+    private final List<XadiaTag> xadiaTags;
     private final long lastUpdated;
 
     public static PlayerProfile identity(String uuid, String name) {
@@ -100,6 +102,15 @@ public class PlayerProfile {
         List<CoralTag> coralTags,
         List<SeraphTag> seraphTags
     ) {
+        this(uuid, name, bedwarsPlayer, skywarsPlayer, duelsPlayer, buildBattlePlayer,
+            tntRunPlayer, coralTags, seraphTags, java.util.Collections.emptyList());
+    }
+
+    public PlayerProfile(String uuid, String name, BedwarsPlayer bedwarsPlayer,
+        SkywarsPlayer skywarsPlayer, DuelsPlayer duelsPlayer, BuildBattlePlayer buildBattlePlayer,
+        TntRunPlayer tntRunPlayer, List<CoralTag> coralTags, List<SeraphTag> seraphTags,
+        List<XadiaTag> xadiaTags) {
+        this.xadiaTags = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(xadiaTags));
         this.uuid = uuid;
         this.name = name;
         this.bedwarsPlayer = bedwarsPlayer;
@@ -165,8 +176,18 @@ public class PlayerProfile {
             buildBattlePlayer,
             tntRunPlayer,
             updatedCoralTags,
-            updatedSeraphTags
+            updatedSeraphTags,
+            xadiaTags
         );
+    }
+
+    public List<XadiaTag> getXadiaTags() { return xadiaTags; }
+
+    public boolean isXadiaTagged() { return !xadiaTags.isEmpty(); }
+
+    public PlayerProfile withXadiaTags(List<XadiaTag> tags) {
+        return new PlayerProfile(uuid, name, bedwarsPlayer, skywarsPlayer, duelsPlayer,
+            buildBattlePlayer, tntRunPlayer, coralTags, seraphTags, tags);
     }
 
     public boolean isCoralTagged() {
@@ -182,6 +203,10 @@ public class PlayerProfile {
     }
 
     public TabStats getTabStats(StatScope scope) {
+        return buildTabStats(scope).withXadiaTags(xadiaTags);
+    }
+
+    private TabStats buildTabStats(StatScope scope) {
         if (scope == StatScope.SKYWARS && skywarsPlayer != null) {
             return new TabStats(
                 coralTags,

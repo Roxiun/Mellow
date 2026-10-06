@@ -1,5 +1,6 @@
 package com.roxiun.mellow.util.formatting;
 
+import com.roxiun.mellow.api.xadia.XadiaTag;
 import com.roxiun.mellow.api.seraph.SeraphTag;
 import com.roxiun.mellow.api.coral.CoralTag;
 import java.util.List;
@@ -63,6 +64,32 @@ public class FormattingUtils {
             color = "§b";
         }
         return color + text;
+    }
+
+    public static String formatXadiaTags(List<XadiaTag> tags) {
+        return tags.stream().map(FormattingUtils::formatXadiaTag).collect(Collectors.joining(", "));
+    }
+
+    public static String formatXadiaTag(XadiaTag tag) {
+        String text = "§d" + tag.getLabel();
+        if (Boolean.FALSE.equals(tag.getVerified())) text += " §e[Unverified]";
+        if (Boolean.TRUE.equals(tag.getVerified())) text += " §a[Verified]";
+        if (tag.getReason() != null && !tag.getReason().trim().isEmpty()) text += " §7(" + tag.getReason() + ")";
+        return text;
+    }
+
+    public static String formatXadiaTagIcon(XadiaTag tag) {
+        String icon;
+        switch (tag.getType()) {
+            case "hacker": icon = "H"; break;
+            case "sniper": icon = "S"; break;
+            case "caution": icon = "C"; break;
+            case "possibly_cheating": icon = "R"; break;
+            case "legit_sniper": icon = "LS"; break;
+            case "alt": icon = "A"; break;
+            default: icon = tag.getLabel();
+        }
+        return "§dX:" + icon + (Boolean.FALSE.equals(tag.getVerified()) ? "§e?" : Boolean.TRUE.equals(tag.getVerified()) ? "§a✔" : "") + "§r";
     }
 
     public static String formatCoralTags(List<CoralTag> tags) {

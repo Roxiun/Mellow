@@ -1122,6 +1122,19 @@ public class MellowOneConfig extends Config {
         return showUrchinTagsInTab;
     }
 
+    @Switch(name = "Enable Xadia", category = "Xadia",
+        description = "Look up player tags on xadia.sniped.me. Requires a personal key from the Xadia Discord bot (/key generate). Configure it in API Keys > Xadia.")
+    public boolean xadia = false;
+
+    @Switch(name = "Show Xadia Tags in Tab", category = "Xadia")
+    public boolean showXadiaTagsInTab = true;
+
+    @Switch(name = "Verified Tags Only", category = "Xadia", description = "Hide unverified public reports.")
+    public boolean xadiaVerifiedOnly = false;
+
+    @Text(name = "Xadia API Key", category = "API Keys", subcategory = "Xadia", secure = true, multiline = false)
+    public String xadiaKey = "";
+
     // Seraph Configs
     @Info(
         text = "Seraph is a community blacklist, allowing you to see potential cheaters in your game",

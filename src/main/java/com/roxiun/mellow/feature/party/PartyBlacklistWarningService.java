@@ -31,6 +31,7 @@ public class PartyBlacklistWarningService {
     private enum FlagSource {
         LOCAL("§cLocal"),
         CORAL("§5Coral"),
+        XADIA("§dXadia"),
         SERAPH("§3Seraph");
 
         private final String coloredLabel;
@@ -149,11 +150,12 @@ public class PartyBlacklistWarningService {
             return;
         }
 
+        boolean shouldCheckXadia = config.xadia;
         boolean shouldCheckCoral = config.isCoralEnabled();
         boolean shouldCheckSeraph = config.seraph;
         long evaluationId = ++evaluationVersion;
 
-        if ((!shouldCheckCoral && !shouldCheckSeraph) || playerCache == null) {
+        if ((!shouldCheckCoral && !shouldCheckSeraph && !shouldCheckXadia) || playerCache == null) {
             applyDetectionResult(evaluationId, localFlags);
             return;
         }
@@ -191,6 +193,14 @@ public class PartyBlacklistWarningService {
                     detection.setDetail(
                         FlagSource.CORAL,
                         formatCoralTagDetails(profile)
+                    );
+                }
+
+                if (shouldCheckXadia && profile.isXadiaTagged()) {
+                    detection.addSource(FlagSource.XADIA);
+                    detection.setDetail(
+                        FlagSource.XADIA,
+                        formatXadiaTagDetails(profile)
                     );
                 }
                 if (shouldCheckSeraph && profile.isSeraphTagged()) {
@@ -319,6 +329,14 @@ public class PartyBlacklistWarningService {
                 formatDetailWithFallback(detection.getDetail(FlagSource.CORAL))
             );
         }
+
+        if (detection.sources.contains(FlagSource.XADIA)) {
+            sourceDetails.add(
+                FlagSource.XADIA.coloredLabel +
+                "§7: " +
+                formatDetailWithFallback(detection.getDetail(FlagSource.XADIA))
+            );
+        }
         if (detection.sources.contains(FlagSource.SERAPH)) {
             sourceDetails.add(
                 FlagSource.SERAPH.coloredLabel +
@@ -350,6 +368,12 @@ public class PartyBlacklistWarningService {
     private String formatCoralTagDetails(PlayerProfile profile) {
         return normalizeDetailText(
             FormattingUtils.formatCoralTags(profile.getCoralTags())
+        );
+    }
+
+    private String formatXadiaTagDetails(PlayerProfile profile) {
+        return normalizeDetailText(
+            FormattingUtils.formatXadiaTags(profile.getXadiaTags())
         );
     }
 
@@ -390,6 +414,10 @@ public class PartyBlacklistWarningService {
         }
         if (sources.contains(FlagSource.CORAL)) {
             labels.add(FlagSource.CORAL.coloredLabel);
+        }
+
+        if (sources.contains(FlagSource.XADIA)) {
+            labels.add(FlagSource.XADIA.coloredLabel);
         }
         if (sources.contains(FlagSource.SERAPH)) {
             labels.add(FlagSource.SERAPH.coloredLabel);

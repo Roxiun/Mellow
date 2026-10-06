@@ -1,5 +1,6 @@
 package com.roxiun.mellow.cache;
 
+import com.roxiun.mellow.api.xadia.XadiaApi;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
 import com.roxiun.mellow.api.buildbattle.BuildBattlePlayer;
@@ -41,6 +42,8 @@ public class PlayerCache {
         new ConcurrentHashMap<>();
     private final MojangApi mojangApi;
     private final ProviderManager providerManager;
+    private final XadiaApi xadiaApi;
+    private volatile String lastXadiaSettings = "";
     private final CoralApi coralApi;
     private final SeraphApi seraphApi;
     private final MellowOneConfig config;
@@ -56,6 +59,14 @@ public class PlayerCache {
         SeraphApi seraphApi,
         MellowOneConfig config
     ) {
+        this(mojangApi, providerManager, coralApi, seraphApi,
+            new XadiaApi(), config);
+    }
+
+    public PlayerCache(MojangApi mojangApi, ProviderManager providerManager,
+        CoralApi coralApi, SeraphApi seraphApi,
+        XadiaApi xadiaApi, MellowOneConfig config) {
+        this.xadiaApi = xadiaApi;
         this.mojangApi = mojangApi;
         this.providerManager = providerManager;
         this.coralApi = coralApi;
@@ -293,7 +304,14 @@ public class PlayerCache {
             } catch (IOException ignored) {}
         }
 
-        return profile.withTags(coralTags, seraphTags);
+        profile = profile.withTags(coralTags, seraphTags);
+        if (config.xadia) {
+            try {
+                return profile.withXadiaTags(xadiaApi.fetchXadiaTags(
+                    uuid, profile.getName(), config.xadiaKey, config.xadiaVerifiedOnly));
+            } catch (IOException ignored) {}
+        }
+        return profile.withXadiaTags(java.util.Collections.emptyList());
     }
 
     public StatsProvider getSelectedProvider() {
@@ -684,6 +702,7 @@ public class PlayerCache {
     }
 
     public void clearCache() {
+        xadiaApi.clearCache();
         cache.clear();
         rawDataCache.clear();
         if (mojangApi != null) {
@@ -720,6 +739,7 @@ public class PlayerCache {
             return;
         }
 
+        xadiaApi.clearPlayer(null, playerName);
         clearPlayerStats(playerName);
         if (mojangApi != null) {
             mojangApi.clearPlayer(playerName);
@@ -737,6 +757,7 @@ public class PlayerCache {
         }
 
         String fullUuid = trustedTabUuid.toString();
+        xadiaApi.clearPlayer(fullUuid, playerName);
         String compactUuid = fullUuid.replace("-", "");
         if (Mellow.auroraPingService != null) {
             Mellow.auroraPingService.clearPlayer(compactUuid);
@@ -782,7 +803,10 @@ public class PlayerCache {
 
         boolean coralChanged = !currentCoralApiKey.equals(lastCoralApiKey);
         boolean seraphChanged = !currentSeraphApiKey.equals(lastSeraphApiKey);
-        if (!coralChanged && !seraphChanged) {
+        String xadiaSettings = normalizeApiKey(config.xadiaKey) + "|" + config.xadia + "|" + config.xadiaVerifiedOnly;
+        boolean xadiaChanged = !xadiaSettings.equals(lastXadiaSettings);
+        lastXadiaSettings = xadiaSettings;
+        if (!coralChanged && !seraphChanged && !xadiaChanged) {
             return;
         }
 
