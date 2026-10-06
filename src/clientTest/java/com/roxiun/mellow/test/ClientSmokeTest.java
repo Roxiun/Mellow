@@ -34,6 +34,7 @@ public final class ClientSmokeTest implements ClientModInitializer {
                 if (Mellow.config.bedwarsStatOrder.length != 0) throw new AssertionError("Cannot disable all stats");
             } finally { orderProperty.setAs(savedOrder); }
             ConfigMigrationSmokeTest.verify();
+            verifyPlatformIntegration();
             String[] classes = {
                 "net.minecraft.client.network.NetHandlerPlayClient",
                 "net.minecraft.network.NetworkManager",
@@ -69,6 +70,18 @@ public final class ClientSmokeTest implements ClientModInitializer {
             org.apache.logging.log4j.LogManager.getLogger("MellowTests").error("MELLOW CLIENT SMOKE FAIL", failure);
         } finally {
             Minecraft.getMinecraft().shutdown();
+        }
+    }
+
+    private void verifyPlatformIntegration() {
+        String[] completions = org.polyfrost.oneconfig.internal.legacy.command.ClientCommandInternals
+            .getCompletions("/mel").join();
+        if (!java.util.Arrays.asList(completions).contains("/mellow"))
+            throw new AssertionError("Mellow commands missing from OneConfig dispatcher");
+        for (String name : new String[]{"Accept Request", "Deny Request"}) {
+            long count = java.util.Arrays.stream(Minecraft.getMinecraft().gameSettings.keyBindings)
+                .filter(binding -> name.equals(binding.getKeyDescription())).count();
+            if (count != 1) throw new AssertionError("Expected one registered binding for " + name + ", got " + count);
         }
     }
 

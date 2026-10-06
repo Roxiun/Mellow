@@ -24,9 +24,7 @@
     "platform.TabEventsMixin",
     "platform.NametagEventsMixin",
     "platform.ChatPacketAccessor",
-    "platform.ChatEventsMixin",
-    "platform.ClientCommandsMixin",
-    "platform.ClientChatCompletionMixin"
+    "platform.ChatEventsMixin"
   ],
   "mixins": [
     "compat.polynametag.PolyNametagRenderingMixin"
