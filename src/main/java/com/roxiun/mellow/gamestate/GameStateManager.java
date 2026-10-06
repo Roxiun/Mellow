@@ -132,6 +132,7 @@ public class GameStateManager implements GameContext {
     }
 
     private void handleLocationPacket(ClientboundLocationPacket packet) {
+        HypixelServer.confirmConnection();
         GameSnapshot current = snapshot.get();
 
         GameType gameType = null;
