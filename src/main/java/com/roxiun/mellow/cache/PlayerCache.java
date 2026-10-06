@@ -295,7 +295,7 @@ public class PlayerCache {
         }
 
         List<SeraphTag> seraphTags = profile.getSeraphTags();
-        if (config.seraph) {
+        if (config.seraph && com.roxiun.mellow.api.seraph.SeraphAvailability.isEnabled()) {
             try {
                 seraphTags = seraphApi.fetchSeraphTags(
                     uuid,

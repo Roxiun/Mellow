@@ -25,7 +25,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 - Supports [Coral API](https://api.urchin.gg/) Tags
 
-- Supports Seraph API Tags
+- Seraph integration is deprecated. Settings and legacy code remain, but all Seraph requests (tags, reports, ping, client detection, and UUID fallback) are disabled.
 
 - Supports [Xadia API](https://xadia.sniped.me/) tags, including verified and unverified reports
 
@@ -104,7 +104,7 @@ Enable **Xadia** in OneConfig and set your key under **API Keys > Xadia**. Gener
 
 To add a player to your **blacklist**, type `/blacklist add <username>`
 
-To add a player to your **blacklist** and also submit a Seraph report, type `/blacklist add <username> seraph <cc|bc|s|ps|ls|a|bot|c|al> <reason>` after setting your Seraph API key in OneConfig
+The legacy Seraph report syntax remains available, but report submission is disabled. Use `/blacklist add <username>` for your local blacklist.
 
 You can **import** your own **blacklist** by doing, type `/blacklist import <filename>`, place the file in `.minecraft/config/mellow`
 

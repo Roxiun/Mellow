@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class SeraphApi {
 
     private static final long CLIENT_CACHE_TTL_MS = 300_000L;
@@ -61,6 +62,7 @@ public class SeraphApi {
     }
 
     public MojangApi.MojangProfile fetchSeraphMojang(String nameOrId) {
+        if (!SeraphAvailability.isEnabled()) return null;
         return mojangApi == null ? null : mojangApi.fetchSeraphMojang(nameOrId);
     }
 
@@ -72,6 +74,7 @@ public class SeraphApi {
         String uuid,
         String seraphApiKey
     ) {
+        if (!SeraphAvailability.isEnabled()) return new ClientTypeLookupResult(null, false, 0L);
         String normalizedUuid = normalizeUuid(uuid);
         String normalizedApiKey = normalizeApiKey(seraphApiKey);
         String cacheKey = buildCacheKey(normalizedUuid, normalizedApiKey);
@@ -142,6 +145,7 @@ public class SeraphApi {
 
     public List<SeraphTag> fetchSeraphTags(String uuid, String seraphApiKey)
         throws IOException {
+        if (!SeraphAvailability.isEnabled()) throw new IOException(SeraphAvailability.DISABLED_MESSAGE);
         String normalizedUuid = normalizeUuid(uuid);
         String normalizedApiKey = normalizeApiKey(seraphApiKey);
         if (normalizedUuid.isEmpty()) {
@@ -205,6 +209,7 @@ public class SeraphApi {
         SeraphBlacklistReportType reportType,
         String reason
     ) throws IOException {
+        if (!SeraphAvailability.isEnabled()) throw new IOException(SeraphAvailability.DISABLED_MESSAGE);
         String normalizedUuid = normalizeUuid(uuid);
         String normalizedApiKey = normalizeApiKey(seraphApiKey);
         String normalizedReason = reason == null ? "" : reason.trim();
@@ -490,6 +495,7 @@ public class SeraphApi {
     }
 
     private void acquireRequestPermit() throws IOException {
+        if (!SeraphAvailability.isEnabled()) throw new IOException(SeraphAvailability.DISABLED_MESSAGE);
         if (requestLimiter.tryAcquire()) {
             return;
         }

@@ -57,6 +57,10 @@ public class SeraphCommand extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
+        if (!com.roxiun.mellow.api.seraph.SeraphAvailability.isEnabled()) {
+            ChatUtils.sendCommandMessage(sender, "§e" + com.roxiun.mellow.api.seraph.SeraphAvailability.DISABLED_MESSAGE);
+            return;
+        }
         if (args.length != 1) {
             ChatUtils.sendCommandMessage(
                 sender,

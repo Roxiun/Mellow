@@ -12,7 +12,7 @@ import org.junit.Test;
 public class MojangApiTest {
 
     @Test
-    public void fetchUuidFallsBackToSeraphMojang() {
+    public void fetchUuidSkipsSeraphAndFallsBackToMinetools() {
         Queue<FakeHttpURLConnection> connections = new ArrayDeque<>();
         connections.add(connection(429, null));
         connections.add(
@@ -36,7 +36,7 @@ public class MojangApiTest {
                     );
                 } else {
                     Assert.assertEquals(
-                        "https://mowojang.seraph.si/Notch",
+                        "https://api.minetools.eu/uuid/Notch",
                         url.toString()
                     );
                 }
@@ -52,26 +52,14 @@ public class MojangApiTest {
     }
 
     @Test
-    public void fetchSeraphMojangAcceptsLegacyUuidField() {
+    public void fetchSeraphMojangIsDisabled() {
         MojangApi api = new MojangApi() {
             @Override
             protected HttpURLConnection openConnection(URL url) {
-                return connection(
-                    200,
-                    "{\"uuid\":\"069a79f4-44e9-4726-a5be-fca90e38aaf5\"," +
-                    "\"name\":\"Notch\"}"
-                );
+                throw new AssertionError("Seraph must not be contacted");
             }
         };
-
-        MojangApi.MojangProfile profile = api.fetchSeraphMojang("Notch");
-
-        Assert.assertNotNull(profile);
-        Assert.assertEquals("Notch", profile.getName());
-        Assert.assertEquals(
-            "069a79f4-44e9-4726-a5be-fca90e38aaf5",
-            profile.getUuid().toString()
-        );
+        Assert.assertNull(api.fetchSeraphMojang("Notch"));
     }
 
     @Test
@@ -103,7 +91,7 @@ public class MojangApiTest {
 
         Assert.assertEquals("ERROR", api.fetchUUID("UnavailablePlayer"));
         Assert.assertEquals("ERROR", api.fetchUUID("unavailableplayer"));
-        Assert.assertEquals(3, openedConnections.get());
+        Assert.assertEquals(2, openedConnections.get());
     }
 
     private static FakeHttpURLConnection connection(

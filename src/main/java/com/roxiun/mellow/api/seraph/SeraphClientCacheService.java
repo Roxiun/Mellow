@@ -58,6 +58,7 @@ public class SeraphClientCacheService {
     }
 
     public void refreshClientAsync(String playerName, String uuid) {
+        if (!SeraphAvailability.isEnabled()) return;
         if (
             playerName == null ||
             playerName.trim().isEmpty() ||
@@ -85,6 +86,7 @@ public class SeraphClientCacheService {
     }
 
     public void refreshClient(String playerName, String uuid) {
+        if (!SeraphAvailability.isEnabled()) return;
         String normalizedName = normalizePlayerName(playerName);
         if (
             normalizedName.isEmpty() ||

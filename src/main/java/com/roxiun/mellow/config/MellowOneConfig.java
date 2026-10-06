@@ -465,10 +465,10 @@ public class MellowOneConfig extends Config {
 
     // Seraph Configs
 
-    @Switch(description = "Seraph is a community blacklist, allowing you to see potential cheaters in your game Enabling Seraph will send requests to them and be subject to their ToS, this could enable tracking of your data (IP, Seraph API Key, Game Info). Configure the key in API Keys > Seraph. Seraph does not require a key to view any tags older than 1 week old", title = "Enable Seraph", category = "Seraph")
+    @Switch(description = "Deprecated: all Seraph network requests are disabled, regardless of this setting. Retained for compatibility.", title = "Enable Seraph (Deprecated)", category = "Seraph")
     public boolean seraph = false;
 
-    @Switch(title = "Show Seraph Tags in Tab", category = "Seraph")
+    @Switch(title = "Show Seraph Tags in Tab (Deprecated)", category = "Seraph")
     public boolean showSeraphTagsInTab = true;
 
     // Winstreaks Configs
@@ -562,10 +562,10 @@ public class MellowOneConfig extends Config {
     public int winstreakMinFkdr = 0;
 
     // Ping Configs
-    @Dropdown(description = "Aurora API provides historical ping averages per player UUID without requiring or sending an API key. Luna's API provides ping averages per player UUID. Configure the key in API Keys > Luna. Seraph API provides the latest recorded ping per player UUID. Configure the key in API Keys > Seraph.",
+    @Dropdown(description = "Aurora API provides historical ping averages per player UUID without requiring or sending an API key. Luna's API provides ping averages per player UUID. Configure the key in API Keys > Luna. Seraph is deprecated and performs no requests.",
         title = "Ping Provider",
         category = "Ping",
-        options = { "None", "Aurora API", "Luna's API", "Seraph API" }
+        options = { "None", "Aurora API", "Luna's API", "Seraph API (Deprecated)" }
     )
     public int pingProvider = 1;
 
@@ -636,7 +636,7 @@ public class MellowOneConfig extends Config {
     @Switch(
         title = "Show Client Icons In Nametags",
         category = "Hitboxes",
-        description = "Shows a Seraph-detected client icon next to in-world player nametags."
+        description = "Deprecated: Seraph client detection is disabled."
     )
     public boolean showClientIconsInNametags = true;
 
@@ -896,7 +896,7 @@ public class MellowOneConfig extends Config {
         })));
     }
 
-    @Button(title = "Seraph API Key", text = "Edit Key", category = "API Keys", subcategory = "Seraph")
+    @Button(title = "Seraph API Key (Deprecated)", text = "Edit Key", category = "API Keys", subcategory = "Seraph")
     public void editSeraphKey() {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
         mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Seraph API Key", seraphKey, value -> {
