@@ -22,9 +22,14 @@ public final class ClientCommands {
   catch(CommandException e) {player.addChatMessage(new ChatComponentText("§c"+e.getMessage()));}
   return true;
  }
+ public static List<String> completeCommandName(String input) {
+  if (!input.startsWith("/") || input.chars().anyMatch(Character::isWhitespace)) return List.of();
+  String prefix = input.substring(1);
+  return COMMANDS.keySet().stream().filter(name -> name.startsWith(prefix)).map(name -> "/" + name).toList();
+ }
  public static List<String> complete(String input) {
   String[] parts=input.replaceFirst("^/", "").split("\\s+",-1);
-  if(parts.length==1) return COMMANDS.keySet().stream().filter(n->n.startsWith(parts[0])).map(n->"/"+n).toList();
+  if(parts.length==1) return completeCommandName(input);
   ICommand command=COMMANDS.get(parts[0]);
   if(command==null) return List.of();
   var player=Minecraft.getMinecraft().thePlayer;
