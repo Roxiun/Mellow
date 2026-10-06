@@ -151,6 +151,8 @@ public class HypixelApiUtils {
             providerId = ProviderId.NADESHIKO;
         } else if ("Bordic".equalsIgnoreCase(provider)) {
             providerId = ProviderId.BORDIC;
+        } else if ("Bedlify".equalsIgnoreCase(provider)) {
+            providerId = ProviderId.BEDLIFY;
         } else {
             providerId = ProviderId.HYPIXEL_PUBLIC;
         }
@@ -787,7 +789,8 @@ public class HypixelApiUtils {
 
         if (
             providerId == ProviderId.HYPIXEL_PUBLIC ||
-            providerId == ProviderId.BORDIC
+            providerId == ProviderId.BORDIC ||
+            providerId == ProviderId.BEDLIFY
         ) {
             if (!getBoolean(root, "success", false)) {
                 return null;

@@ -968,7 +968,7 @@ public class MellowOneConfig extends Config {
 
     @Dropdown(
         name = "Stats Provider",
-        options = { "Hypixel Public API", "Nadeshiko", "Abyss", "Bordic" },
+        options = { "Hypixel Public API", "Nadeshiko", "Abyss", "Bordic", "Bedlify" },
         subcategory = "Stats"
     )
     public int statsProvider = 3; // Bordic
