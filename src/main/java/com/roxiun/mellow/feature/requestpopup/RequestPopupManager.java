@@ -1,6 +1,6 @@
 package com.roxiun.mellow.feature.requestpopup;
 
-import com.roxiun.mellow.platform.HypixelServer;
+import org.polyfrost.oneconfig.api.hypixel.v1.HypixelUtils;
 import com.roxiun.mellow.config.MellowOneConfig;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -235,7 +235,7 @@ public class RequestPopupManager {
         return (
             config != null &&
             config.requestPopupsEnabled &&
-            HypixelServer.isHypixel()
+            HypixelUtils.isHypixel()
         );
     }
 

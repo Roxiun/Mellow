@@ -1,6 +1,6 @@
 package com.roxiun.mellow.gamestate;
 
-import com.roxiun.mellow.platform.HypixelServer;
+import org.polyfrost.oneconfig.api.hypixel.v1.HypixelUtils;
 import com.roxiun.mellow.gamestate.query.GameContext;
 import com.roxiun.mellow.util.scoreboard.ScoreboardUtils;
 import java.util.HashMap;
@@ -56,6 +56,8 @@ public class GameStateManager implements GameContext {
             return;
         }
 
+        // Register OneConfig's hello/disconnect handlers before the first server connection.
+        HypixelUtils.getLocation();
         HypixelModAPI api = HypixelModAPI.getInstance();
         api.registerHandler(ClientboundLocationPacket.class, this::handleLocationPacket);
         api.registerHandler(ClientboundPartyInfoPacket.class, this::handlePartyInfoPacket);
@@ -82,7 +84,7 @@ public class GameStateManager implements GameContext {
         }
 
         GameSnapshot current = snapshot.get();
-        boolean onHypixel = HypixelServer.isHypixel();
+        boolean onHypixel = HypixelUtils.isHypixel();
 
         if (!onHypixel) {
             if (current.isOnHypixel()) {
@@ -132,7 +134,6 @@ public class GameStateManager implements GameContext {
     }
 
     private void handleLocationPacket(ClientboundLocationPacket packet) {
-        HypixelServer.confirmConnection();
         GameSnapshot current = snapshot.get();
 
         GameType gameType = null;

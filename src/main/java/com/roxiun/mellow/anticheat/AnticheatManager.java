@@ -1,6 +1,6 @@
 package com.roxiun.mellow.anticheat;
 
-import com.roxiun.mellow.platform.HypixelServer;
+import org.polyfrost.oneconfig.api.hypixel.v1.HypixelUtils;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.anticheat.check.Check;
 import com.roxiun.mellow.anticheat.check.impl.AutoBlockCheck;
@@ -113,7 +113,7 @@ public class AnticheatManager {
                 );
 
                 // Add WDR button if on Hypixel
-                if (HypixelServer.isHypixel()) {
+                if (HypixelUtils.isHypixel()) {
                     String plainName = player.getName().replaceAll("§.", "").trim();
                     boolean shouldBlockOnClick =
                         Mellow.nickUtils != null && Mellow.nickUtils.isNicked(plainName);
