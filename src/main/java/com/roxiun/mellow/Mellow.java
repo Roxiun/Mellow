@@ -40,6 +40,7 @@ import com.roxiun.mellow.feature.requestpopup.RequestPopupService;
 import com.roxiun.mellow.feature.replay.ReplayHudRouter;
 import com.roxiun.mellow.feature.replay.ReplayInputRouter;
 import com.roxiun.mellow.feature.replay.ReplayManager;
+import com.roxiun.mellow.feature.replay.ReplayPacketRouter;
 import net.ornithemc.osl.keybinds.api.KeybindEvents;
 import net.ornithemc.osl.keybinds.api.KeybindRegistry;
 import com.roxiun.mellow.feature.stats.InGameTabStatsSyncService;
@@ -169,6 +170,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             requestPopupManager
         );
         ReplayManager replayManager = ReplayManager.getInstance();
+        EventManager.INSTANCE.register(new ReplayPacketRouter(replayManager));
         Runtime.getRuntime().addShutdownHook(
             new Thread(
                 new Runnable() {
