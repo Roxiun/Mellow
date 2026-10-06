@@ -54,7 +54,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 ## Download
 
-Download the **Minecraft 1.8.9 Forge** jar from [Releases](https://github.com/Roxiun/Mellow/releases) and place it in your instance's `mods` folder. This edition targets Java 8 and uses OneConfig; Ornithe jars are for a separate loader.
+Download the **Minecraft 1.8.9 Forge** jar from [Modrinth](https://modrinth.com/mod/statsify) and place it in your instance's `mods` folder. This edition targets Java 8 and uses OneConfig; Ornithe jars are for a separate loader.
 
 ## Building
 
