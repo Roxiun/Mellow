@@ -967,7 +967,7 @@ public class MellowOneConfig extends Config {
         options = { "Hypixel Public API", "Nadeshiko", "Abyss", "Bordic" },
         subcategory = "Stats"
     )
-    public int statsProvider = 2;
+    public int statsProvider = 3; // Bordic
 
     @Info(
         text = "Hypixel provider requires an API key from developer.hypixel.net. Configure it in API Keys > Hypixel. Other providers do not require a key.",

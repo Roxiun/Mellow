@@ -60,6 +60,8 @@ Go to the releases tab and download.
 
 All settings can be configured through OneConfig (press **Right Shift**).
 
+New configurations use **Bordic** for stats; existing provider choices are preserved.
+
 ### Commands
 
 To display **help command** type `/mellow`
