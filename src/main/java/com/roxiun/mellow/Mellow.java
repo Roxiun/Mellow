@@ -252,7 +252,7 @@ public class Mellow {
             new DenickCommand(config, auroraApi)
         );
         ClientCommandHandler.instance.registerCommand(
-            new SkinDenickCommand(playerCache)
+            new SkinDenickCommand(nickUtils)
         );
         ClientCommandHandler.instance.registerCommand(
             new BlacklistCommand(blacklistManager, mojangApi, seraphApi, config)

@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 
 public class NumberDenicker {
@@ -79,6 +78,8 @@ public class NumberDenicker {
                     if (
                         isPlayerInGame(nickName) &&
                         nickUtils.isNicked(nickName) &&
+                        nickUtils.getResolvedRealNameForNick(nickName) == null &&
+                        !player.finalsInFlight &&
                         (!player.finalsChecked ||
                             player.fuzzy_finals_potentials == null)
                     ) {
@@ -111,6 +112,8 @@ public class NumberDenicker {
             if (
                 isPlayerInGame(nickName) &&
                 nickUtils.isNicked(nickName) &&
+                nickUtils.getResolvedRealNameForNick(nickName) == null &&
+                !player.bedsInFlight &&
                 (!player.bedsChecked || player.fuzzy_beds_potentials == null)
             ) {
                 mc.addScheduledTask(() ->
@@ -129,7 +132,11 @@ public class NumberDenicker {
 
     private void processNumbers(String type, String nickName, String number) {
         PotentialNick player = nickToPotentials.get(nickName);
-        if (player == null) return;
+        if (player == null || mc.getNetHandler() == null) return;
+        NetworkPlayerInfo playerInfo = mc.getNetHandler().getPlayerInfo(nickName);
+        if (playerInfo == null) return;
+        if (type.equals("finals")) player.finalsInFlight = true;
+        else player.bedsInFlight = true;
 
         AsyncExecutor.getInstance().profileIo(() -> {
             try {
@@ -157,120 +164,104 @@ public class NumberDenicker {
                     config.auroraApiKey
                 );
 
-                if (response != null && response.success) {
-                    // Fuzzy Matching Logic
-                    List<String> fuzzy_matches = response.data
-                        .stream()
-                        .filter(p -> p.distance <= range)
-                        .map(p -> p.name)
-                        .collect(Collectors.toList());
+                mc.addScheduledTask(() -> {
+                    if (nickToPotentials.get(nickName) != player) return;
+                    if (type.equals("finals")) player.finalsInFlight = false;
+                    else player.bedsInFlight = false;
+                    if (mc.getNetHandler() == null
+                        || mc.getNetHandler().getPlayerInfo(nickName) != playerInfo
+                        || nickUtils.getResolvedRealNameForNick(nickName) != null) return;
+                    if (response != null && response.success) {
+                        // Fuzzy Matching Logic
+                        List<String> fuzzy_matches = response.data
+                            .stream()
+                            .filter(p -> p.distance <= range)
+                            .map(p -> p.name)
+                            .collect(Collectors.toList());
 
-                    String fuzzy_players_log = response.data
-                        .stream()
-                        .filter(p -> p.distance <= range)
-                        .map(
-                            p ->
-                                "§a" +
-                                p.name +
-                                " §7(distance: " +
-                                p.distance +
-                                ")"
-                        )
-                        .collect(Collectors.joining(", "));
+                        String fuzzy_players_log = response.data
+                            .stream()
+                            .filter(p -> p.distance <= range)
+                            .map(
+                                p ->
+                                    "§a" +
+                                    p.name +
+                                    " §7(distance: " +
+                                    p.distance +
+                                    ")"
+                            )
+                            .collect(Collectors.joining(", "));
 
-                    if (config.numberDenickerFuzzy) {
-                        mc.addScheduledTask(() ->
+                        if (config.numberDenickerFuzzy) {
                             ChatUtils.sendMessage(
                                 "§aFound potential " +
                                     type +
                                     " players: " +
                                     fuzzy_players_log
-                            )
-                        );
-                    }
+                            );
+                        }
 
-                    if (type.equals("finals")) {
-                        player.fuzzy_finals_potentials = fuzzy_matches;
-                    } else if (type.equals("beds")) {
-                        player.fuzzy_beds_potentials = fuzzy_matches;
-                    }
+                        if (type.equals("finals")) {
+                            player.fuzzy_finals_potentials = fuzzy_matches;
+                        } else if (type.equals("beds")) {
+                            player.fuzzy_beds_potentials = fuzzy_matches;
+                        }
 
-                    if (
-                        player.fuzzy_finals_potentials != null &&
-                        player.fuzzy_beds_potentials != null
-                    ) {
-                        List<String> intersection = new ArrayList<>(
-                            player.fuzzy_finals_potentials
-                        );
-                        intersection.retainAll(player.fuzzy_beds_potentials);
+                        if (
+                            player.fuzzy_finals_potentials != null &&
+                            player.fuzzy_beds_potentials != null
+                        ) {
+                            List<String> intersection = new ArrayList<>(
+                                player.fuzzy_finals_potentials
+                            );
+                            intersection.retainAll(player.fuzzy_beds_potentials);
 
-                        if (intersection.isEmpty()) {
-                            mc.addScheduledTask(() ->
+                            if (intersection.isEmpty()) {
                                 ChatUtils.sendMessage(
                                     "§cNo fuzzy match found for " + nickName
-                                )
-                            );
-                        } else {
-                            mc.addScheduledTask(() ->
+                                );
+                            } else {
                                 ChatUtils.sendMessage(
                                     "§aFound fuzzy matches for " +
                                         nickName +
                                         ": " +
                                         String.join(", ", intersection)
-                                )
-                            );
+                                );
+                            }
                         }
-                    }
 
-                    // Exact Matching Logic
-                    List<String> matches = response.data
-                        .stream()
-                        .filter(p -> p.distance <= 0)
-                        .map(p -> p.name)
-                        .collect(Collectors.toList());
+                        // Exact Matching Logic
+                        List<String> matches = response.data
+                            .stream()
+                            .filter(p -> p.distance == 0)
+                            .map(p -> p.name)
+                            .collect(Collectors.toList());
 
-                    if (matches.isEmpty()) {
-                        if (type.equals("finals")) player.finalsChecked = true;
-                        if (type.equals("beds")) player.bedsChecked = true;
-                        player.setPotentials(new ArrayList<>());
-                        return;
-                    }
+                        player.recordMatches(type, matches);
 
-                    if (
-                        player.potentials.isEmpty() &&
-                        (!player.bedsChecked && !player.finalsChecked)
-                    ) {
-                        player.setPotentials(matches);
-                    } else {
-                        player.potentials.retainAll(matches);
-                    }
-
-                    if (type.equals("finals")) player.finalsChecked = true;
-                    if (type.equals("beds")) player.bedsChecked = true;
-
-                    if (player.finalsChecked && player.bedsChecked) {
-                        if (!player.potentials.isEmpty()) {
-                            String realName = player.potentials.get(0);
-                            mc.addScheduledTask(() -> {
-                                sendAlert(nickName, realName);
-                                setNickDisplayName(nickName, realName + "?");
-                            });
-                        } else {
-                            mc.addScheduledTask(() ->
+                        if (player.finalsChecked && player.bedsChecked) {
+                            if (player.getMatch() != null) {
+                                String realName = player.getMatch();
+                                if (nickUtils.resolveNick(nickName, realName, NickUtils.ResolutionSource.NUMBER)) {
+                                    sendAlert(nickName, realName);
+                                }
+                            } else {
                                 ChatUtils.sendMessage(
                                     "§cNo definitive name found for " + nickName
-                                )
-                            );
+                                );
+                            }
                         }
                     }
-                }
-            } catch (IOException e) {
+                });
+            } catch (IOException | RuntimeException e) {
                 e.printStackTrace();
-                mc.addScheduledTask(() ->
-                    ChatUtils.sendMessage(
-                        "§cError fetching data from Aurora API."
-                    )
-                );
+                mc.addScheduledTask(() -> {
+                    if (nickToPotentials.get(nickName) != player
+                        || nickUtils.getResolvedRealNameForNick(nickName) != null) return;
+                    if (type.equals("finals")) player.finalsInFlight = false;
+                    else player.bedsInFlight = false;
+                    ChatUtils.sendMessage("§cError fetching data from Aurora API.");
+                });
             }
         });
     }
@@ -292,6 +283,7 @@ public class NumberDenicker {
     }
 
     private boolean isPlayerInGame(String name) {
+        if (mc.getNetHandler() == null) return false;
         return mc
             .getNetHandler()
             .getPlayerInfoMap()
@@ -299,28 +291,33 @@ public class NumberDenicker {
             .anyMatch(info -> info.getGameProfile().getName().equals(name));
     }
 
-    private void setNickDisplayName(String nickName, String realName) {
-        for (NetworkPlayerInfo playerInfo : mc
-            .getNetHandler()
-            .getPlayerInfoMap()) {
-            if (playerInfo.getGameProfile().getName().equals(nickName)) {
-                playerInfo.setDisplayName(new ChatComponentText(realName));
-                break;
-            }
-        }
-    }
-
-    private static class PotentialNick {
+    static class PotentialNick {
 
         List<String> potentials = new ArrayList<>();
+        boolean finalsInFlight = false;
+        boolean bedsInFlight = false;
         boolean finalsChecked = false;
         boolean bedsChecked = false;
 
         List<String> fuzzy_finals_potentials = null;
         List<String> fuzzy_beds_potentials = null;
 
-        void setPotentials(List<String> potentials) {
-            this.potentials = potentials;
+        String getMatch() {
+            return finalsChecked && bedsChecked && potentials.size() == 1 ? potentials.get(0) : null;
+        }
+
+        void recordMatches(String type, List<String> matches) {
+            if (!finalsChecked && !bedsChecked) {
+                for (String match : matches) {
+                    if (potentials.stream().noneMatch(p -> p.equalsIgnoreCase(match))) {
+                        potentials.add(match);
+                    }
+                }
+            } else {
+                potentials.removeIf(p -> matches.stream().noneMatch(p::equalsIgnoreCase));
+            }
+            if (type.equals("finals")) finalsChecked = true;
+            else bedsChecked = true;
         }
     }
 }

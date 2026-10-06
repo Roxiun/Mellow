@@ -251,46 +251,52 @@ public class SkinUtils {
     );
 
     public static String getRealName(NetworkPlayerInfo playerInfo) {
-        GameProfile gameProfile = playerInfo.getGameProfile();
-        Property textures = gameProfile
-            .getProperties()
-            .get("textures")
-            .iterator()
-            .next();
-        if (textures == null) {
+        if (playerInfo == null) return null;
+        try {
+            GameProfile gameProfile = playerInfo.getGameProfile();
+            if (gameProfile == null || gameProfile.getProperties().get("textures").isEmpty()) return null;
+            Property textures = gameProfile
+                .getProperties()
+                .get("textures")
+                .iterator()
+                .next();
+            if (textures == null) {
+                return null;
+            }
+            String value = textures.getValue();
+            byte[] decoded = Base64.getDecoder().decode(value);
+            String json = new String(decoded, StandardCharsets.UTF_8);
+
+            SkinProfile skinProfile = gson.fromJson(json, SkinProfile.class);
+
+            if (
+                skinProfile == null ||
+                skinProfile.textures == null ||
+                skinProfile.textures.skin == null ||
+                skinProfile.textures.skin.url == null
+            ) {
+                return null;
+            }
+
+            String url = skinProfile.textures.skin.url;
+            String[] parts = url.split("/");
+            if (parts.length < 5) {
+                return null;
+            }
+            String hash = parts[parts.length - 1];
+
+            if (nicks.contains(hash)) {
+                return null;
+            }
+
+            if (skinProfile.profileName != null) {
+                return skinProfile.profileName;
+            }
+
+            return null;
+        } catch (IllegalArgumentException | com.google.gson.JsonParseException e) {
             return null;
         }
-        String value = textures.getValue();
-        byte[] decoded = Base64.getDecoder().decode(value);
-        String json = new String(decoded, StandardCharsets.UTF_8);
-
-        SkinProfile skinProfile = gson.fromJson(json, SkinProfile.class);
-
-        if (
-            skinProfile == null ||
-            skinProfile.textures == null ||
-            skinProfile.textures.skin == null ||
-            skinProfile.textures.skin.url == null
-        ) {
-            return null;
-        }
-
-        String url = skinProfile.textures.skin.url;
-        String[] parts = url.split("/");
-        if (parts.length < 5) {
-            return null;
-        }
-        String hash = parts[parts.length - 1];
-
-        if (nicks.contains(hash)) {
-            return null;
-        }
-
-        if (skinProfile.profileName != null) {
-            return skinProfile.profileName;
-        }
-
-        return null;
     }
 
     private static class SkinProfile {
