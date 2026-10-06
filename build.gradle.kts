@@ -54,7 +54,7 @@ loom {
             "client" {
                 programArgs(
                         "--tweakClass",
-                        "cc.polyfrost.oneconfig.loader.stage0.LaunchWrapperTweaker"
+                        "com.roxiun.mellow.launch.MellowTweaker"
                 )
                 property(
                         "mixin.debug.export",
@@ -75,6 +75,7 @@ loom {
 // having to add them separately.
 val shade: Configuration by
         configurations.creating { configurations.implementation.get().extendsFrom(this) }
+val hypixelBundle: Configuration by configurations.creating { isTransitive = false }
 val modShade: Configuration by
         configurations.creating { configurations.modImplementation.get().extendsFrom(this) }
 
@@ -93,7 +94,8 @@ configurations { shade }
 // Configures the libraries/dependencies for your mod.
 dependencies {
     shade("com.squareup.okhttp3:okhttp:4.9.3") { exclude(group = "org.jetbrains.kotlin") }
-    shade("net.hypixel:mod-api:1.0.2")
+    modImplementation("net.hypixel:mod-api-forge:1.0.2") { isTransitive = false }
+    hypixelBundle("net.hypixel:mod-api-forge-tweaker:1.0.2")
     shade("org.tukaani:xz:1.9")
     testImplementation("junit:junit:4.13.2")
     // Adds the OneConfig library, so we can develop with it.
@@ -121,6 +123,14 @@ tasks {
     // replaces
     // the mod id, name and version with the ones in `gradle.properties`
     processResources {
+        // The Forge Maven artifact uses development names. The official tweaker carries
+        // the SRG-mapped runtime jar; extract only that payload, not the upstream tweaker.
+        // Keep it opaque to Shadow, which otherwise expands .jar inputs.
+        from({ zipTree(hypixelBundle.singleFile) }) {
+            include("HypixelModAPI-1.0.2.jar")
+            into("META-INF/mellow")
+            rename { "HypixelModAPI-1.0.2.bin" }
+        }
         inputs.property("id", mod_id)
         inputs.property("name", mod_name)
         val java =
@@ -206,7 +216,7 @@ tasks {
                             // configuration, so we specify it
                             // here.
                             "TweakClass" to
-                                    "cc.polyfrost.oneconfig.loader.stage0.LaunchWrapperTweaker" // Loads the OneConfig launch wrapper.
+                                    "com.roxiun.mellow.launch.MellowTweaker" // Coordinates OneConfig and the bundled Hypixel API.
                     )
         }
         dependsOn(shadowJar)

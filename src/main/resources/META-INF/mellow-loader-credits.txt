@@ -1,0 +1,9 @@
+Mellow's combined OneConfig/Hypixel API startup and local-installation compatibility
+approach was informed by Yedelo's YedelMod:
+https://github.com/Yedelo/YedelMod (LGPL-3.0).
+
+HypixelModAPITweaker is adapted from HypixelDev/ForgeModAPI:
+https://github.com/HypixelDev/ForgeModAPI (MIT).
+Its MIT licence is included at META-INF/licenses/Hypixel-ForgeModAPI-MIT.txt.
+Mellow changes include version parsing, a private bundle resource path, and
+coordination with standalone API installations. Mellow remains GPL-3.0.

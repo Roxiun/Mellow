@@ -57,8 +57,8 @@ public class GameStateManager implements GameContext {
         }
 
         HypixelModAPI api = HypixelModAPI.getInstance();
-        api.registerHandler(ClientboundLocationPacket.class, this::handleLocationPacket);
-        api.registerHandler(ClientboundPartyInfoPacket.class, this::handlePartyInfoPacket);
+        api.createHandler(ClientboundLocationPacket.class, this::handleLocationPacket);
+        api.createHandler(ClientboundPartyInfoPacket.class, this::handlePartyInfoPacket);
         api.subscribeToEventPacket(ClientboundLocationPacket.class);
 
         initialized = true;
