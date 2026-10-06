@@ -105,6 +105,16 @@ public class SkywarsCommand extends CommandBase {
                 );
             }
 
+            if (config.xadia && profile.isXadiaTagged()) {
+                String tags = FormattingUtils.formatXadiaTags(
+                    profile.getXadiaTags()
+                );
+                String xadiaMessage = "§5§lXadia§r§5: " + tags;
+                MainThreadDispatcher.run(() ->
+                    ChatUtils.sendMultilineCommandMessage(sender, xadiaMessage)
+                );
+            }
+
             if (config.seraph && profile.isSeraphTagged()) {
                 String formattedTags = FormattingUtils.formatSeraphTags(
                     profile.getSeraphTags()

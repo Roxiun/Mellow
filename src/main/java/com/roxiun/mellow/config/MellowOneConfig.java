@@ -442,6 +442,27 @@ public class MellowOneConfig extends Config {
         return showUrchinTagsInTab;
     }
 
+    @Switch(description = "Look up player tags on xadia.sniped.me. Requires a personal key from the Xadia Discord bot (/key generate). Configure it in API Keys > Xadia.", title = "Enable Xadia", category = "Xadia")
+    public boolean xadia = false;
+
+    @Switch(title = "Show Xadia Tags in Tab", category = "Xadia")
+    public boolean showXadiaTagsInTab = true;
+
+    @Switch(description = "Hide unverified public reports.", title = "Verified Tags Only", category = "Xadia")
+    public boolean xadiaVerifiedOnly = false;
+
+    @org.polyfrost.oneconfig.api.config.v1.annotations.Include
+    public String xadiaKey = "";
+
+    @Button(title = "Xadia API Key", text = "Edit Key", category = "API Keys", subcategory = "Xadia")
+    public void editXadiaKey() {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Xadia API Key", xadiaKey, value -> {
+            xadiaKey = value;
+            save();
+        })));
+    }
+
     // Seraph Configs
 
     @Switch(description = "Seraph is a community blacklist, allowing you to see potential cheaters in your game Enabling Seraph will send requests to them and be subject to their ToS, this could enable tracking of your data (IP, Seraph API Key, Game Info). Configure the key in API Keys > Seraph. Seraph does not require a key to view any tags older than 1 week old", title = "Enable Seraph", category = "Seraph")

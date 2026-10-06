@@ -256,15 +256,16 @@ public class StatsChecker {
         boolean tabNeedsCoralTags = config.shouldShowCoralTagsInTab() && config.isCoralEnabled();
         boolean tabNeedsSeraphTags = config.showSeraphTagsInTab && config.seraph;
         boolean warningNeedsTags =
-            config.printBlacklistTags && (config.isCoralEnabled() || config.seraph);
-        return tabNeedsCoralTags || tabNeedsSeraphTags || warningNeedsTags;
+            config.printBlacklistTags && (config.isCoralEnabled() || config.seraph || config.xadia);
+        return tabNeedsCoralTags || tabNeedsSeraphTags || (config.xadia && config.showXadiaTagsInTab) || warningNeedsTags;
     }
 
     private boolean shouldShowRemoteTagsInTab() {
         return (
             config != null &&
             ((config.shouldShowCoralTagsInTab() && config.isCoralEnabled()) ||
-                (config.showSeraphTagsInTab && config.seraph))
+                (config.showSeraphTagsInTab && config.seraph) ||
+                (config.xadia && config.showXadiaTagsInTab))
         );
     }
 
@@ -328,7 +329,7 @@ public class StatsChecker {
         ) {
             return true;
         }
-        return config.printBlacklistTags && (config.isCoralEnabled() || config.seraph);
+        return config.printBlacklistTags && (config.isCoralEnabled() || config.seraph || config.xadia);
     }
 
     private void warmSupplementalCaches(
@@ -779,6 +780,18 @@ public class StatsChecker {
             mc.addScheduledTask(() -> ChatUtils.sendMessage(coralMessage));
         }
 
+        boolean xadiaTagged =
+            config.xadia &&
+            config.printBlacklistTags &&
+            profile.isXadiaTagged();
+        boolean shouldPrintXadiaTagAlert = xadiaTagged && !tagsIgnored;
+        if (shouldPrintXadiaTagAlert) {
+            String tags = FormattingUtils.formatXadiaTags(profile.getXadiaTags());
+            String xadiaMessage =
+                "§c" + profile.getName() + " is tagged on §5Xadia§c for: " + tags;
+            mc.addScheduledTask(() -> ChatUtils.sendMessage(xadiaMessage));
+        }
+
         boolean seraphTagged =
             config.seraph &&
             config.printBlacklistTags &&
@@ -852,7 +865,8 @@ public class StatsChecker {
                 tabPlayerName,
                 blacklisted,
                 shouldPrintCoralTagAlert,
-                shouldPrintSeraphTagAlert
+                shouldPrintSeraphTagAlert,
+                shouldPrintXadiaTagAlert
             )
         ) {
             sendOutboundOpponentWarning(
@@ -861,13 +875,15 @@ public class StatsChecker {
                 blacklistedPlayer,
                 blacklisted,
                 shouldPrintCoralTagAlert,
-                shouldPrintSeraphTagAlert
+                shouldPrintSeraphTagAlert,
+                shouldPrintXadiaTagAlert
             );
         }
 
         if (
             blacklisted ||
             annoylisted ||
+            shouldPrintXadiaTagAlert ||
             shouldPrintCoralTagAlert ||
             shouldPrintSeraphTagAlert
         ) {
@@ -882,12 +898,13 @@ public class StatsChecker {
         String tabPlayerName,
         boolean blacklisted,
         boolean coralTagged,
-        boolean seraphTagged
+        boolean seraphTagged,
+        boolean xadiaTagged
     ) {
         if (uuid == null) {
             return false;
         }
-        if (!blacklisted && !coralTagged && !seraphTagged) {
+        if (!blacklisted && !coralTagged && !seraphTagged && !xadiaTagged) {
             return false;
         }
         if (!isInBedwarsMatch()) {
@@ -915,7 +932,8 @@ public class StatsChecker {
         BlacklistedPlayer blacklistedPlayer,
         boolean blacklisted,
         boolean coralTagged,
-        boolean seraphTagged
+        boolean seraphTagged,
+        boolean xadiaTagged
     ) {
         InGameBlacklistWarningDestination destination = resolveWarningDestination();
         String commandPrefix = destination.getCommandPrefix();
@@ -936,6 +954,10 @@ public class StatsChecker {
         if (coralTagged) {
             sourceLabels.add("Coral");
         }
+
+        if (xadiaTagged) {
+            sourceLabels.add("Xadia");
+        }
         if (seraphTagged) {
             sourceLabels.add("Seraph");
         }
@@ -951,6 +973,15 @@ public class StatsChecker {
                 "Coral: " +
                 normalizeOutboundDetail(
                     FormattingUtils.formatCoralTags(profile.getCoralTags())
+                )
+            );
+        }
+
+        if (xadiaTagged) {
+            detailParts.add(
+                "Xadia: " +
+                normalizeOutboundDetail(
+                    FormattingUtils.formatXadiaTags(profile.getXadiaTags())
                 )
             );
         }

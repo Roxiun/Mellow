@@ -1,5 +1,7 @@
 package com.roxiun.mellow;
 
+import com.roxiun.mellow.commands.XadiaCommand;
+import com.roxiun.mellow.api.xadia.XadiaApi;
 import com.roxiun.mellow.anticheat.AnticheatManager;
 import com.roxiun.mellow.api.aurora.AuroraApi;
 import com.roxiun.mellow.api.aurora.AuroraPingService;
@@ -69,6 +71,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
     public static SeraphClientCacheService seraphClientCacheService;
     public static SeraphPingService seraphPingService;
     public static MojangApi mojangApi;
+    public static XadiaApi xadiaApi;
     public static CoralApi coralApi;
     public static SeraphApi seraphApi;
     public static PlayerCache playerCache;
@@ -111,6 +114,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
         providerManager.register(new BordicApi(mojangApi));
 
         coralApi = new CoralApi();
+        xadiaApi = new XadiaApi();
         seraphApi = new SeraphApi(mojangApi);
         seraphClientCacheService = new SeraphClientCacheService(seraphApi, config);
         auroraApi = new AuroraApi();
@@ -120,6 +124,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             providerManager,
             coralApi,
             seraphApi,
+            xadiaApi,
             config
         );
         PartyBlacklistWarningService partyBlacklistWarningService =
@@ -260,6 +265,9 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
         );
         com.roxiun.mellow.platform.ClientCommands.register(
             new TagIgnoreCommand(tagIgnoreManager, mojangApi)
+        );
+        com.roxiun.mellow.platform.ClientCommands.register(
+            new XadiaCommand(xadiaApi, config)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
             new CoralCommand(coralApi, config)

@@ -27,6 +27,8 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 - Supports Seraph API Tags
 
+- Supports [Xadia API](https://xadia.sniped.me/) tags, including verified and unverified reports
+
 - Import your own local blacklist
 
 - Check any player's BedWars stats with `/bw`
@@ -97,6 +99,8 @@ To display **help command** type `/mellow`
 To **check the stats of players in your game**, type `/who` in-game, or enable Auto Who in settings
 
 To check an **individual player’s** BedWars stats, type `/bw <username>`
+
+Enable **Xadia** in OneConfig and set your key under **API Keys > Xadia**. Generate a personal key with `/key generate` in the Xadia Discord bot. Use `/xadia <username>` for a manual lookup. Verified tags show a green check in tab; unverified reports show `?` in tab and `[Unverified]` in chat. Enable **Verified Tags Only** to hide unverified reports. Xadia tags also appear in player stat lookups, pregame/in-game alerts, and party warnings. Automatic lookups are off by default.
 
 To add a player to your **blacklist**, type `/blacklist add <username>`
 

@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.stats.tab;
 
+import com.roxiun.mellow.api.xadia.XadiaTag;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.mojang.authlib.GameProfile;
@@ -1215,6 +1216,12 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             }
         }
 
+        if (Mellow.config.xadia && Mellow.config.showXadiaTagsInTab && stats.isXadiaTagged()) {
+            for (XadiaTag tag : stats.getXadiaTags()) {
+                safe += " " + FormattingUtils.formatXadiaTagIcon(tag);
+            }
+        }
+
         if (Mellow.config.showSeraphTagsInTab && stats.isSeraphTagged()) {
             for (SeraphTag tag : stats.getSeraphTags()) {
                 safe += " " + FormattingUtils.formatSeraphTagIcon(tag);
@@ -1243,7 +1250,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         String playerName = info.getGameProfile().getName();
         if (playerName != null) {
             TabStats stats = Mellow.tabStats.get(playerName);
-            if (stats != null && (stats.isCoralTagged() || stats.isSeraphTagged())) {
+            if (stats != null && (stats.isCoralTagged() || stats.isSeraphTagged() || (Mellow.config.xadia && stats.isXadiaTagged()))) {
                 return true;
             }
         }
@@ -1296,6 +1303,15 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
                         builder.append(" ");
                     }
                     builder.append(FormattingUtils.formatCoralTagIcon(tag));
+                }
+            }
+
+            if (Mellow.config.xadia && Mellow.config.showXadiaTagsInTab && stats.isXadiaTagged()) {
+                for (XadiaTag tag : stats.getXadiaTags()) {
+                    if (builder.length() > 0) {
+                        builder.append(" ");
+                    }
+                    builder.append(FormattingUtils.formatXadiaTagIcon(tag));
                 }
             }
             if (Mellow.config.showSeraphTagsInTab && stats.isSeraphTagged()) {

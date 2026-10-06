@@ -145,6 +145,24 @@ public class NickUtils {
                                     }
 
                                     if (
+                                        config.xadia &&
+                                        profile.isXadiaTagged()
+                                    ) {
+                                        String tags =
+                                            FormattingUtils.formatXadiaTags(
+                                                profile.getXadiaTags()
+                                            );
+                                        String xadiaMessage =
+                                            "§c" +
+                                            finalRealName +
+                                            " is tagged on §5Xadia§c for: " +
+                                            tags;
+                                        MainThreadDispatcher.run(() ->
+                                            ChatUtils.sendMessage(xadiaMessage)
+                                        );
+                                    }
+
+                                    if (
                                         config.seraph &&
                                         profile.isSeraphTagged()
                                     ) {
