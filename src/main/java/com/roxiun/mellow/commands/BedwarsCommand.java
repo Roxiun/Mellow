@@ -155,7 +155,7 @@ public class BedwarsCommand extends CommandBase {
                     }
 
                     if (xadiaMessages.isEmpty()) {
-                        xadiaMessages.add("§5§lXadia§r§5: " + formattedTag);
+                        xadiaMessages.add("§d§lXadia§r§d: " + formattedTag);
                         return;
                     }
 
