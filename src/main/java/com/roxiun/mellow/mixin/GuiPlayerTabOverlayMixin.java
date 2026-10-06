@@ -75,9 +75,7 @@ public class GuiPlayerTabOverlayMixin {
             if (tabData != null && tabData.length >= 2) {
                 String team = tabData[0];
                 String name = tabData[1];
-                String teamColor = team.length() >= 2
-                    ? team.substring(0, 2)
-                    : "";
+                String teamColor = PlayerUtils.getTeamColor(team);
 
                 // Create a minimal TabStats object for the nick case
                 TabStats emptyStats = new TabStats(
@@ -110,9 +108,7 @@ public class GuiPlayerTabOverlayMixin {
                     playerName
                 );
                 String name = playerName;
-                String teamColor = team.length() >= 2
-                    ? team.substring(0, 2)
-                    : "";
+                String teamColor = PlayerUtils.getTeamColor(team);
 
                 // Create a minimal TabStats object for the nick case
                 TabStats emptyStats = new TabStats(
@@ -164,7 +160,7 @@ public class GuiPlayerTabOverlayMixin {
         String team = tabData[0];
         String name = tabData[1];
 
-        String teamColor = team.length() >= 2 ? team.substring(0, 2) : "";
+        String teamColor = PlayerUtils.getTeamColor(team);
         return formatDisplayNameWithStats(
             playerInfo,
             team,

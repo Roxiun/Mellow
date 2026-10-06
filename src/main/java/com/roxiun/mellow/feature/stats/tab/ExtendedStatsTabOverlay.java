@@ -845,7 +845,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         String team = tabData != null && tabData.length > 0 ? tabData[0] : "";
         String name = tabData != null && tabData.length > 1 ? tabData[1] : playerName;
         String suffix = tabData != null && tabData.length > 2 ? tabData[2] : "";
-        String teamColor = team.length() >= 2 ? team.substring(0, 2) : "§f";
+        String teamColor = PlayerUtils.getTeamColor(team);
 
         if (column == 4 && scope == StatScope.BEDWARS) {
             return buildBedwarsWinstreakValue(stats, isNicked, info);

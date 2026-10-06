@@ -20,6 +20,7 @@ import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -95,7 +96,7 @@ public class HypixelApiUtils {
             }
 
             BufferedReader in = new BufferedReader(
-                new InputStreamReader(connection.getInputStream())
+                new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)
             );
             StringBuilder response = new StringBuilder();
             String inputLine;
