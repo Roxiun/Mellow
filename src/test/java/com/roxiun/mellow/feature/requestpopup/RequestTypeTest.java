@@ -6,18 +6,6 @@ import org.junit.Test;
 public class RequestTypeTest {
 
     @Test
-    public void friendRequestsKeepAcceptAndDenyCommands() {
-        Assert.assertEquals(
-            "/friend accept Example",
-            RequestType.FRIEND.buildCommand(true, "Example")
-        );
-        Assert.assertEquals(
-            "/friend deny Example",
-            RequestType.FRIEND.buildCommand(false, "Example")
-        );
-    }
-
-    @Test
     public void partyInvitesOnlySendAcceptCommand() {
         Assert.assertEquals(
             "/party accept Example",

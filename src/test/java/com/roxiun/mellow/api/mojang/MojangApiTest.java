@@ -1,11 +1,8 @@
 package com.roxiun.mellow.api.mojang;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import com.roxiun.mellow.support.FakeHttpURLConnection;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -121,48 +118,6 @@ public class MojangApiTest {
             );
         } catch (Exception e) {
             throw new AssertionError(e);
-        }
-    }
-
-    private static final class FakeHttpURLConnection extends HttpURLConnection {
-
-        private final int responseCode;
-        private final byte[] responseBody;
-
-        private FakeHttpURLConnection(
-            URL url,
-            int responseCode,
-            String responseBody
-        ) {
-            super(url);
-            this.responseCode = responseCode;
-            this.responseBody = responseBody == null
-                ? new byte[0]
-                : responseBody.getBytes(StandardCharsets.UTF_8);
-        }
-
-        @Override
-        public void disconnect() {}
-
-        @Override
-        public boolean usingProxy() {
-            return false;
-        }
-
-        @Override
-        public void connect() {}
-
-        @Override
-        public int getResponseCode() {
-            return responseCode;
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException {
-            if (responseCode < 200 || responseCode >= 300) {
-                throw new IOException("HTTP " + responseCode);
-            }
-            return new ByteArrayInputStream(responseBody);
         }
     }
 }

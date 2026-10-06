@@ -1,15 +1,11 @@
 package com.roxiun.mellow.api.coral;
 
+import com.roxiun.mellow.support.FakeHttpURLConnection;
 import com.roxiun.mellow.Mellow;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
@@ -172,72 +168,6 @@ public class CoralApiTest {
         } catch (IOException e) {
             Assert.assertTrue(e.getMessage().contains("429"));
             Assert.assertTrue(e.getMessage().contains("rate limit exceeded"));
-        }
-    }
-
-    private static final class FakeHttpURLConnection
-        extends HttpURLConnection {
-
-        private final int responseCode;
-        private final byte[] responseBody;
-        private final byte[] errorBody;
-        private final Map<String, String> requestProperties = new HashMap<>();
-
-        private FakeHttpURLConnection(
-            URL url,
-            int responseCode,
-            String responseBody,
-            String errorBody
-        ) {
-            super(url);
-            this.responseCode = responseCode;
-            this.responseBody = responseBody == null
-                ? new byte[0]
-                : responseBody.getBytes(StandardCharsets.UTF_8);
-            this.errorBody = errorBody == null
-                ? null
-                : errorBody.getBytes(StandardCharsets.UTF_8);
-        }
-
-        @Override
-        public void disconnect() {}
-
-        @Override
-        public boolean usingProxy() {
-            return false;
-        }
-
-        @Override
-        public void connect() {}
-
-        @Override
-        public void setRequestProperty(String key, String value) {
-            requestProperties.put(key, value);
-        }
-
-        @Override
-        public String getRequestProperty(String key) {
-            return requestProperties.get(key);
-        }
-
-        @Override
-        public int getResponseCode() {
-            return responseCode;
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException {
-            if (responseCode < 200 || responseCode >= 300) {
-                throw new IOException("HTTP " + responseCode);
-            }
-            return new ByteArrayInputStream(responseBody);
-        }
-
-        @Override
-        public InputStream getErrorStream() {
-            return errorBody == null
-                ? null
-                : new ByteArrayInputStream(errorBody);
         }
     }
 }
