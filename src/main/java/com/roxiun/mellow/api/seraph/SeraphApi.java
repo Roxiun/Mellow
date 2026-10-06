@@ -62,7 +62,6 @@ public class SeraphApi {
     }
 
     public MojangApi.MojangProfile fetchSeraphMojang(String nameOrId) {
-        if (!SeraphAvailability.isEnabled()) return null;
         return mojangApi == null ? null : mojangApi.fetchSeraphMojang(nameOrId);
     }
 
