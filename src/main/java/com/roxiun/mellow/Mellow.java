@@ -64,6 +64,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
     public static final String VERSION = net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(MODID).map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("development");
 
     public static MellowOneConfig config;
+    public static TabOverlayRouter tabOverlayRouter;
     public static final Map<String, TabStats> tabStats = new ConcurrentHashMap<>();
     public static NickUtils nickUtils;
 
@@ -227,7 +228,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
         );
         EventManager.INSTANCE.register(new ReplayHudRouter(replayManager));
         EventManager.INSTANCE.register(new ReplayInputRouter(replayManager));
-        TabOverlayRouter tabOverlayRouter = new TabOverlayRouter(config);
+        tabOverlayRouter = new TabOverlayRouter(config);
         EventManager.INSTANCE.register(tabOverlayRouter);
         EventManager.INSTANCE.register(
             new TabOverlayInputRouter(tabOverlayRouter)

@@ -16,7 +16,6 @@
     "PingMixin",
     "replay.NetworkManagerReplayCaptureMixin",
     "replay.NetHandlerPlayClientAccessor",
-    "VanillaHudTabBackgroundCompatMixin",
     "platform.MinecraftEventsMixin",
     "platform.PlayerTickMixin",
     "platform.WorldEntityMixin",
@@ -24,7 +23,11 @@
     "platform.TabEventsMixin",
     "nametag.NametagContextMixin",
     "platform.ChatPacketAccessor",
-    "platform.ChatEventsMixin"
+    "platform.ChatEventsMixin",
+    "PlayerTabOverlayAccessor",
+    "ExtendedPlayerTabMixin",
+    "VanillaHudTabLayoutMixin",
+    "PlayerTabVisibilityMixin"
   ],
   "mixins": [
     "compat.polynametag.PolyNametagRenderingMixin"

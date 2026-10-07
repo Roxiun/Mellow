@@ -67,8 +67,9 @@ dependencies.registerTransform(UnpackModBundle::class) {
 
 // Exercise the dependency versions shipped by OneClient as well as newer releases.
 val oneClientBaseline = providers.gradleProperty("oneClientBaseline").isPresent
-val oneConfigVersion = if (oneClientBaseline) "JmPNe6D8" else "lzo51827"
-val vanillaHudVersion = if (oneClientBaseline) "mIWg3d4V" else "Gpl9yiBF"
+val oneClientCurrent = providers.gradleProperty("oneClientCurrent").isPresent
+val oneConfigVersion = if (oneClientCurrent) "sArr1CT5" else if (oneClientBaseline) "JmPNe6D8" else "lzo51827"
+val vanillaHudVersion = if (oneClientCurrent) "85IIZdpz" else if (oneClientBaseline) "mIWg3d4V" else "Gpl9yiBF"
 
 dependencies {
     minecraft("com.mojang:minecraft:1.8.9")
@@ -82,7 +83,7 @@ dependencies {
     for (module in listOf("config", "config-impl", "events", "hud", "ui", "utils", "internal", "poly-compose")) {
         compileOnly("org.polyfrost.oneconfig:$module:1.2.10")
     }
-    modImplementation("pl.tomgirl:pylon:0.1.7")
+    modImplementation("pl.tomgirl:pylon:${if (oneClientCurrent) "0.2.0" else "0.1.7"}")
     modImplementation("net.fabricmc:fabric-language-kotlin:1.13.13+kotlin.2.4.10")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
     include("com.squareup.okhttp3:okhttp:4.9.3")
@@ -126,6 +127,16 @@ tasks.test { useJUnit() }
 // Resolve through Gradle's cached transform before Loom constructs its mod classpath.
 oneConfigBundle.files.forEach { dependencies.add("modRuntimeOnly", files(it)) }
 
+// Optional locally supplied rendering optimizer for reproducing OneClient combinations.
+providers.gradleProperty("argentumJar").orNull?.let { argentumJar ->
+    val optimizerBundle = configurations.create("optimizerBundle") {
+        isTransitive = false
+        attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, "unpacked-mod-bundle")
+    }
+    dependencies.add(optimizerBundle.name, files(argentumJar))
+    optimizerBundle.files.forEach { dependencies.add("modRuntimeOnly", files(it)) }
+}
+
 // Optional compatibility matrix: ./gradlew runClient -PcompatMods
 if (providers.gradleProperty("compatMods").isPresent) {
     dependencies {
@@ -141,7 +152,7 @@ if (providers.gradleProperty("clientTest").isPresent) {
         runtimeClasspath += sourceSets.main.get().runtimeClasspath + output
     }
     loom.mods.register("mellow-client-tests") { sourceSet(clientTest) }
-    val testDirectory = layout.buildDirectory.dir(if (providers.gradleProperty("compatMods").isPresent) "client-test/compat${if (oneClientBaseline) "-oneclient" else ""}" else "client-test/base").get().asFile
+    val testDirectory = layout.buildDirectory.dir(if (providers.gradleProperty("compatMods").isPresent) "client-test/compat${if (oneClientCurrent) "-current" else if (oneClientBaseline) "-oneclient" else ""}" else "client-test/base").get().asFile
     val result = testDirectory.resolve("smoke-result.txt")
     loom.runs.named("client") { runDir(testDirectory.absolutePath) }
     tasks.named<JavaExec>("runClient") {

@@ -7,7 +7,7 @@ import com.roxiun.mellow.feature.stats.tab.ExtendedStatsTabOverlay;
 import com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsMode;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import net.minecraft.client.Minecraft;
-import com.roxiun.mellow.platform.event.RenderGameOverlayEvent;
+import com.roxiun.mellow.feature.stats.tab.VanillaHudTabIntegration;
 
 import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
 import org.polyfrost.oneconfig.api.event.v1.events.TickEvent;
@@ -35,71 +35,17 @@ public class TabOverlayRouter {
         this.config = config;
     }
 
-    @Subscribe(priority = -100)
-    public void onRenderPlayerList(RenderGameOverlayEvent.Pre event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.PLAYER_LIST) {
-            return;
-        }
-
+    /** Called from the real player-list pass, including VanillaHUD animation frames. */
+    public ExtendedStatsTabOverlay prepareOverlay() {
         StatScope scope = ExtendedTabStatsMode.resolveScope();
-        if (!isExtendedModeActive(scope)) {
-            clearDoubleTapState();
-            resetIfNeeded();
-            return;
-        }
-
-        if (!isTabKeyDown()) {
-            if (pinnedByDoubleTap) {
-                // Suppress any third-party trailing tab animation frames while pinned mode is active.
-                event.setCanceled(true);
-                return;
-            }
-
-            resetIfNeeded();
-            // Suppress any third-party trailing tab animation frames while extended mode is active.
-            event.setCanceled(true);
-            return;
-        }
-
-        ExtendedStatsTabOverlay statsOverlay = getOverlay();
-        if (statsOverlay == null) {
-            return;
-        }
-
-        if (shouldResetScroll(scope)) {
-            statsOverlay.resetScroll();
-        }
-
-        event.setCanceled(true);
+        if (!isExtendedModeActive(scope)) return null;
+        ExtendedStatsTabOverlay result = getOverlay();
+        if (result != null && shouldResetScroll(scope)) result.resetScroll();
+        return result;
     }
 
-    @Subscribe(priority = -100)
-    public void onRenderPinnedOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) {
-            return;
-        }
-
-        StatScope scope = ExtendedTabStatsMode.resolveScope();
-        if (!isExtendedModeActive(scope)) {
-            clearDoubleTapState();
-            resetIfNeeded();
-            return;
-        }
-
-        if (!pinnedByDoubleTap && !isTabKeyDown()) {
-            return;
-        }
-
-        ExtendedStatsTabOverlay statsOverlay = getOverlay();
-        if (statsOverlay == null) {
-            return;
-        }
-
-        if (shouldResetScroll(scope)) {
-            statsOverlay.resetScroll();
-        }
-
-        statsOverlay.renderExtendedPlayerList(scope);
+    public boolean isPinned() {
+        return isExtendedModeActive() && pinnedByDoubleTap;
     }
 
     @Subscribe
@@ -112,6 +58,16 @@ public class TabOverlayRouter {
             resetIfNeeded();
             tabWasDown = tabDown;
             return;
+        }
+
+        // VanillaHUD toggle mode already owns persistence; do not run two toggles.
+        if (VanillaHudTabIntegration.usesToggle()) {
+            clearDoubleTapState();
+            tabWasDown = tabDown;
+            return;
+        }
+        if (!tabDown && !pinnedByDoubleTap && !VanillaHudTabIntegration.isRendering()) {
+            resetIfNeeded();
         }
 
         long now = System.currentTimeMillis();
@@ -131,12 +87,12 @@ public class TabOverlayRouter {
     }
 
     public boolean isTabOverlayInputActive() {
-        return isExtendedModeActive() && (isTabKeyDown() || pinnedByDoubleTap);
+        return isExtendedModeActive() && (isTabKeyDown() || pinnedByDoubleTap || VanillaHudTabIntegration.isRendering());
     }
 
     public ExtendedStatsTabOverlay getOverlay() {
         if (overlay == null && mc != null && mc.ingameGUI != null && config != null) {
-            overlay = new ExtendedStatsTabOverlay(mc, mc.ingameGUI, config);
+            overlay = new ExtendedStatsTabOverlay(mc, config);
         }
         return overlay;
     }

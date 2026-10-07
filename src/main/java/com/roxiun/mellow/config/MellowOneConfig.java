@@ -126,6 +126,15 @@ public class MellowOneConfig extends Config {
     )
     public boolean extendedTabStatsInLobbies = false;
 
+    @Dropdown(
+        title = "Column Headers",
+        options = {"Bold", "Normal", "Off"},
+        category = "Tab Stats",
+        subcategory = "Extended View",
+        description = "Style of the extended tab's column headings."
+    )
+    public int extendedTabStatsHeaders = 0;
+
     @Switch(
         title = "Extended View Player Heads",
         category = "Tab Stats",

@@ -37,6 +37,6 @@ public class TabOverlayInputRouter {
             return;
         }
 
-        overlay.handleMouseWheel(event.dwheel, mc.getNetHandler().getPlayerInfoMap().size());
+        if (overlay.handleMouseWheel(event.dwheel)) event.setCanceled(true);
     }
 }
