@@ -1,6 +1,8 @@
 package com.roxiun.mellow.feature.nicks;
 
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.api.hypixel.HypixelFeatures;
+import com.roxiun.mellow.feature.stats.StatScopeResolver;
+import com.roxiun.mellow.feature.stats.ChatStatsFormatter;
 import com.roxiun.mellow.api.provider.model.StatScope;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
@@ -105,9 +107,12 @@ public class NickUtils {
         ResolvedNickProfile resolved = new ResolvedNickProfile(realName, source);
         nickedPlayers.add(key);
         resolvedNickProfiles.put(key, resolved);
+        final StatScope scope = StatScopeResolver.resolveInGameScope(
+            HypixelFeatures.getInstance().getGameSnapshot()
+        );
         AsyncExecutor.getInstance().profileIo(() -> {
             ProfileFetchResult result = playerCache.getScopedProfileResult(
-                realName, StatScope.BEDWARS, ProfileFetchContext.GENERAL, automatic
+                realName, scope, ProfileFetchContext.GENERAL, automatic
             );
             MainThreadDispatcher.run(() -> {
                 // Clearing the map or replacing this identity invalidates its pending fetch.
@@ -122,17 +127,16 @@ public class NickUtils {
                     return;
                 }
                 resolved.profile = profile;
-                announceProfile(realName, profile);
+                announceProfile(realName, profile, scope);
             });
         });
         return true;
     }
 
-    private void announceProfile(String realName, PlayerProfile profile) {
-        BedwarsPlayer player = profile.getBedwarsPlayer();
-        if (player != null) {
-            ChatUtils.sendMessage(player.getStars() + " §r" + player.getFormattedNameWithRank()
-                + " §7|§r FKDR: " + player.getFkdrColor() + player.getFormattedFkdr());
+    private void announceProfile(String realName, PlayerProfile profile, StatScope scope) {
+        String stats = ChatStatsFormatter.format(profile, scope);
+        if (!stats.isEmpty()) {
+            ChatUtils.sendMessage(stats);
         }
         if (config.isCoralEnabled() && profile.isCoralTagged()) {
             ChatUtils.sendMessage("§c" + realName + " is tagged on §5Coral§c for: "
