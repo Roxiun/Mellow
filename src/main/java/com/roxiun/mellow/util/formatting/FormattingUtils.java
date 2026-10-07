@@ -89,7 +89,7 @@ public class FormattingUtils {
             case "alt": icon = "A"; break;
             default: icon = tag.getLabel();
         }
-        return getXadiaTagColor(tag.getType()) + "X:" + icon + (Boolean.FALSE.equals(tag.getVerified()) ? "§e?" : Boolean.TRUE.equals(tag.getVerified()) ? "§a✔" : "") + "§r";
+        return "§8[" + getXadiaTagColor(tag.getType()) + icon + "§8]§r";
     }
 
     private static String getXadiaTagColor(String type) {
