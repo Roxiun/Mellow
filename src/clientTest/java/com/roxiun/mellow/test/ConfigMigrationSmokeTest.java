@@ -6,6 +6,7 @@ import com.roxiun.mellow.hud.*;
 import java.util.*;
 import org.polyfrost.compose.node.*;
 import org.polyfrost.compose.render.PolyColor;
+import org.polyfrost.oneconfig.api.config.v1.Config;
 import org.polyfrost.oneconfig.api.config.v1.ConfigManager;
 import org.polyfrost.oneconfig.api.config.v1.Property;
 import org.polyfrost.oneconfig.api.hud.v1.Font;
@@ -14,6 +15,7 @@ import org.polyfrost.oneconfig.api.hud.v1.Font;
 final class ConfigMigrationSmokeTest {
     static void verify() throws Exception {
         MellowOneConfig config = Mellow.config;
+        verifyDenickSearchLabels();
         String[] originalOrder = config.bedwarsStatOrder;
         int originalHueMode = config.hitboxHueMode;
         int originalSaturationMode = config.hitboxSaturationMode;
@@ -21,7 +23,7 @@ final class ConfigMigrationSmokeTest {
         String profile = ConfigManager.activeProfile();
         String temporary = "mellow-migration-test";
         try {
-            config.getTree().getProp("bedwarsStatOrder").setAs(new String[]{"Ping", "Name"});
+            config.getProperty("bedwarsStatOrder").setAs(new String[]{"Ping", "Name"});
             config.save();
             verifyDependencies(config);
             ConfigManager.createProfile(temporary);
@@ -30,6 +32,7 @@ final class ConfigMigrationSmokeTest {
             verifyDependencies(config);
             // Values unrelated to the dependency checks must survive the switch back.
             require(Arrays.equals(config.bedwarsStatOrder, new String[]{"Ping", "Name"}), "Stat order lost after profile switch");
+            verifyFlatProfile(config, profile);
             verifyLegacyProfile(config, profile);
             verifyHuds(config);
             ConfigManager.openProfile(temporary);
@@ -76,7 +79,7 @@ final class ConfigMigrationSmokeTest {
                 "Legacy HUD palette not migrated");
             require(config.upgradesTrapsHUD.shortNames && !config.upgradesTrapsHUD.romanNumerals, "Legacy HUD formatting lost");
             require(java.nio.file.Files.readString(source).equals(legacy), "Legacy profile was modified");
-            config.getTree().getProp("autoWho").setAs(false);
+            config.getProperty("autoWho").setAs(false);
             config.save();
             ConfigManager.openProfile(originalProfile);
             ConfigManager.openProfile(profile);
@@ -91,14 +94,140 @@ final class ConfigMigrationSmokeTest {
     }
 
     private static void verifyDependencies(MellowOneConfig config) {
+        verifyParentDependencies(config);
         for (String component : new String[]{"Hue", "Saturation", "Brightness"}) {
-            var mode = config.getTree().getProp("hitbox" + component + "Mode");
+            var mode = config.getProperty("hitbox" + component + "Mode");
             mode.setAs(0);
-            require(config.getTree().getProp("hitbox" + component + "Value").getDisplay() == Property.Display.HIDDEN, "Static control visible in offset mode");
-            require(config.getTree().getProp("hitbox" + component + "Offset").canDisplay(), "Offset control hidden");
+            require(config.getProperty("hitbox" + component + "Value").getDisplay() == Property.Display.HIDDEN, "Static control visible in offset mode");
+            require(config.getProperty("hitbox" + component + "Offset").canDisplay(), "Offset control hidden");
             mode.setAs(1);
-            require(config.getTree().getProp("hitbox" + component + "Value").canDisplay(), "Static control stayed hidden after mode change");
-            require(config.getTree().getProp("hitbox" + component + "Offset").getDisplay() == Property.Display.HIDDEN, "Offset control stayed visible");
+            require(config.getProperty("hitbox" + component + "Value").canDisplay(), "Static control stayed hidden after mode change");
+            require(config.getProperty("hitbox" + component + "Offset").getDisplay() == Property.Display.HIDDEN, "Offset control stayed visible");
+        }
+    }
+
+    private static void verifyParentDependencies(MellowOneConfig config) {
+        Map<String, Object> saved = new LinkedHashMap<>();
+        for (String name : new String[]{"requestPopupsEnabled", "tabStats", "extendedTabStatsView",
+            "extendedTabStatsTeamColumnMode", "numberDenicker", "pregameStats", "autoLeaveBlacklistedPregameChat",
+            "coloredHitboxes", "coloredNametagBackgrounds", "showHiddenWinstreaks", "anticheatEnabled"}) {
+            saved.put(name, config.getProperty(name).get());
+        }
+        try {
+            boolean friendSetting = config.friendRequestPopupsEnabled;
+            config.getProperty("requestPopupsEnabled").setAs(false);
+            require(config.getProperty("friendRequestPopupsEnabled").getDisplay() == Property.Display.DISABLED,
+                "Request child stayed editable with parent off");
+            require(config.friendRequestPopupsEnabled == friendSetting, "Disabling a parent erased its child value");
+            config.getProperty("requestPopupsEnabled").setAs(true);
+            require(config.getProperty("friendRequestPopupsEnabled").getDisplay() == Property.Display.SHOWN,
+                "Request child did not reenable");
+
+            config.getProperty("tabStats").setAs(false);
+            config.getProperty("extendedTabStatsView").setAs(true);
+            require(config.getProperty("extendedTabStatsHeaders").getDisplay() == Property.Display.DISABLED,
+                "Nested dependency ignored tab stats master switch");
+            config.getProperty("tabStats").setAs(true);
+            require(config.getProperty("extendedTabStatsHeaders").getDisplay() == Property.Display.SHOWN,
+                "Extended options did not reenable");
+            config.getProperty("extendedTabStatsView").setAs(false);
+            require(config.getProperty("highlightTaggedPlayers").getDisplay() == Property.Display.DISABLED,
+                "Extended-only highlight stayed enabled");
+            require(config.getProperty("showDot12").getDisplay() == Property.Display.SHOWN,
+                "Standard separators wrongly depend on extended view");
+            config.getProperty("extendedTabStatsView").setAs(true);
+            config.getProperty("extendedTabStatsTeamColumnMode").setAs(1);
+            require(config.getProperty("extendedTabStatsStripCombinedTeamPadding").getDisplay() == Property.Display.HIDDEN,
+                "Combined padding visible for a separate team column");
+            config.getProperty("extendedTabStatsTeamColumnMode").setAs(3);
+            require(config.getProperty("extendedTabStatsStripCombinedTeamPadding").getDisplay() == Property.Display.SHOWN,
+                "Combined padding did not return");
+
+            config.getProperty("numberDenicker").setAs(false);
+            require(config.getProperty("numberDenickerFuzzy").getDisplay() == Property.Display.DISABLED,
+                "Automatic denicker child stayed enabled");
+            require(config.getProperty("finalsRange").getDisplay() == Property.Display.SHOWN,
+                "Manual denick search settings were disabled");
+            config.getProperty("autoLeaveBlacklistedPregameChat").setAs(true);
+            config.getProperty("pregameStats").setAs(false);
+            require(config.getProperty("autoLeaveBlacklistedPregameCommand").getDisplay() == Property.Display.DISABLED,
+                "Auto leave ignored its pregame prerequisite");
+            require(config.getProperty("mentionLobbyStats").getDisplay() == Property.Display.SHOWN,
+                "Independent lobby trigger was disabled");
+
+            config.getProperty("coloredHitboxes").setAs(false);
+            config.getProperty("coloredNametagBackgrounds").setAs(false);
+            require(config.getProperty("hitboxHueMode").getDisplay() == Property.Display.DISABLED,
+                "Unused colour settings stayed editable");
+            config.getProperty("coloredNametagBackgrounds").setAs(true);
+            require(config.getProperty("hitboxHueMode").getDisplay() == Property.Display.SHOWN,
+                "Nametags could not independently enable shared colours");
+            config.getProperty("showHiddenWinstreaks").setAs(false);
+            require(config.getProperty("winstreakMinStars").getDisplay() == Property.Display.DISABLED,
+                "Winstreak filter ignored its master switch");
+            config.getProperty("anticheatEnabled").setAs(false);
+            require(config.getProperty("anticheatVl").getDisplay() == Property.Display.DISABLED,
+                "Accordion alert option ignored its master switch");
+            config.getProperty("anticheatEnabled").setAs(true);
+            require(config.getProperty("anticheatVl").getDisplay() == Property.Display.SHOWN,
+                "Accordion alert option did not reenable");
+        } finally {
+            saved.forEach((name, value) -> config.getProperty(name).setAs(value));
+        }
+    }
+
+    private static void verifyDenickSearchLabels() throws Exception {
+        for (String field : new String[]{"finalsRange", "bedsRange", "maxResults"}) {
+            String[] labels = MellowOneConfig.class.getField(field)
+                .getAnnotation(org.polyfrost.oneconfig.api.config.v1.annotations.Dropdown.class).options();
+            for (int index = 0; index < labels.length; index++) {
+                int actual = field.equals("maxResults")
+                    ? com.roxiun.mellow.feature.nicks.DenickSearchOptions.limit(index)
+                    : com.roxiun.mellow.feature.nicks.DenickSearchOptions.range(index);
+                require(actual == Integer.parseInt(labels[index]), "Denick lookup value disagrees with " + field + " label");
+            }
+        }
+    }
+
+    private static void verifyFlatProfile(MellowOneConfig config, String originalProfile) throws Exception {
+        String profile = "mellow-flat-layout-test";
+        ConfigManager.createProfile(profile);
+        var file = ConfigManager.active().getFolder().resolve(config.id);
+        ConfigManager.openProfile(originalProfile);
+        java.nio.file.Files.writeString(file, """
+            {"statOrderMigrated":true,"bedwarsStatOrder":["Ping","Client","Name"],
+             "showDot12":true,"hitboxHueMode":1,"hitboxHueValue":130,"winstreakMinStars":7,
+             "finalsRange":2,"denickerSearch":{"finalsRange":4},"anticheatVl":23,
+             "anticheatCooldown":"malformed","pingProvider":3,"seraphKey":"retained-test-key"}
+            """);
+        try {
+            ConfigManager.openProfile(profile);
+            require(Arrays.equals(config.bedwarsStatOrder, new String[]{"Ping", "Name"}),
+                "Flat stat order lost or deprecated Client column survived migration");
+            require(config.showDot12 && config.hitboxHueValue == 130 && config.winstreakMinStars == 7
+                && config.anticheatVl == 23, "Flat accordion values were not migrated");
+            require(config.finalsRange == 4, "Stale flat value overwrote a newer nested preference");
+            require(config.pingProvider == 0 && config.seraphKey.equals("retained-test-key"),
+                "Retired provider was not disabled or its saved credential was discarded");
+            require(config.anticheatCooldown == 5, "Malformed moved preference did not keep its default");
+            require(config.getTree().getProp("showDot12") == null, "Stale flat preference remained in the UI");
+            require(Boolean.TRUE.equals(config.getTree().getChild("tabSeparators").getMetadata("collapsed")),
+                "Separators are not initially collapsed");
+            verifyDependencies(config);
+            config.getProperty("showDot12").setAs(false);
+            config.getProperty("finalsRange").setAs(0);
+            config.save();
+            ConfigManager.openProfile(originalProfile);
+            ConfigManager.openProfile(profile);
+            require(!config.showDot12 && config.finalsRange == 0 && config.anticheatVl == 23,
+                "Accordion edits were lost or old flat values reimported on profile switch");
+            // OneConfig's reset action must still use code defaults, not migrated user values.
+            Config.restoreCapturedDefaults(config.getTree());
+            require(config.hitboxHueValue == 0 && config.finalsRange == 3 && config.anticheatVl == 10,
+                "Accordion reset restored migrated values instead of code defaults");
+        } finally {
+            ConfigManager.openProfile(originalProfile);
+            if (ConfigManager.profiles().contains(profile)) ConfigManager.deleteProfile(profile);
         }
     }
 

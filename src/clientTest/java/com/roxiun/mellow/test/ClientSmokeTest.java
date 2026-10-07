@@ -23,7 +23,7 @@ public final class ClientSmokeTest implements ClientModInitializer {
     private void verify() {
         try {
             if (Mellow.config == null) throw new AssertionError("Mellow not initialized");
-            var orderProperty = Mellow.config.getTree().getProp("bedwarsStatOrder");
+            var orderProperty = Mellow.config.getProperty("bedwarsStatOrder");
             String[] savedOrder = Mellow.config.bedwarsStatOrder;
             try {
                 orderProperty.setAs(new String[]{"Ping", "Name"});

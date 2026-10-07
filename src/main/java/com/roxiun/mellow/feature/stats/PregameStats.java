@@ -393,7 +393,7 @@ public class PregameStats {
     }
 
     private void maybeAutoLeavePregameForBlacklistedChat(String username) {
-        if (!config.autoLeaveBlacklistedPregameChat || autoLeaveTriggeredThisPregame) {
+        if (!config.pregameStats || !config.autoLeaveBlacklistedPregameChat || autoLeaveTriggeredThisPregame) {
             return;
         }
 
