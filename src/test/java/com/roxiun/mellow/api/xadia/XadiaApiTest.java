@@ -52,8 +52,8 @@ public class XadiaApiTest {
         Assert.assertNull(tags.get(1).getReason());
         Assert.assertTrue(FormattingUtils.formatXadiaTag(tags.get(1)).contains("[Unverified]"));
         Assert.assertFalse(FormattingUtils.formatXadiaTag(tags.get(2)).contains("[Unverified]"));
-        Assert.assertTrue(FormattingUtils.formatXadiaTagIcon(tags.get(0)).contains("§a✔"));
-        Assert.assertTrue(FormattingUtils.formatXadiaTagIcon(tags.get(1)).contains("?"));
+        Assert.assertEquals("§8[§4S§8]§r", FormattingUtils.formatXadiaTagIcon(tags.get(0)));
+        Assert.assertEquals("§8[§cH§8]§r", FormattingUtils.formatXadiaTagIcon(tags.get(1)));
     }
 
     @Test
