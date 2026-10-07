@@ -605,19 +605,9 @@ public class StatsChecker {
     }
 
     private String formatChatStats(PlayerProfile profile, StatScope scope) {
-        if (scope == StatScope.SKYWARS) {
-            return formatSkywarsChatStats(profile);
-        }
-        if (scope == StatScope.DUELS) {
-            return formatDuelsChatStats(profile);
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return formatBuildBattleChatStats(profile);
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return formatTntRunChatStats(profile);
-        }
-        return formatBedwarsChatStats(profile);
+        return scope == StatScope.BEDWARS
+            ? formatBedwarsChatStats(profile)
+            : ChatStatsFormatter.format(profile, scope);
     }
 
     private String formatBedwarsChatStats(PlayerProfile profile) {
@@ -666,72 +656,6 @@ public class StatsChecker {
                 return String.format("%s §r§7|§r WS: %s§r", base, winstreak);
             }
         }
-    }
-
-    private String formatSkywarsChatStats(PlayerProfile profile) {
-        SkywarsPlayer player = profile.getSkywarsPlayer();
-        if (player == null) {
-            return "";
-        }
-
-        String base = String.format(
-            "%s §r%s§r§7 |§r KDR: %s§r§7 |§r WLR: %s§r",
-            player.getFormattedNameWithRank(),
-            player.getLevelFormatted(),
-            player.getFormattedKdrWithColor(),
-            player.getFormattedWlrWithColor()
-        );
-
-        return base;
-    }
-
-    private String formatDuelsChatStats(PlayerProfile profile) {
-        DuelsPlayer player = profile.getDuelsPlayer();
-        if (player == null) {
-            return "";
-        }
-
-        String modeSuffix = player.getMode() == null || player.getMode().isOverall()
-            ? " §7(Overall)"
-            : " §7(" + player.getMode().getDisplayName() + ")";
-
-        return String.format(
-            "%s §r%s§r%s§7 |§r KDR: %s§r§7 |§r WLR: %s§r§7 |§r WS: %s§r",
-            player.getFormattedNameWithRank(),
-            player.getDivision(),
-            modeSuffix,
-            player.getFormattedKdrWithColor(),
-            player.getFormattedWlrWithColor(),
-            player.getFormattedWinstreakWithColor()
-        );
-    }
-
-    private String formatBuildBattleChatStats(PlayerProfile profile) {
-        BuildBattlePlayer player = profile.getBuildBattlePlayer();
-        if (player == null) {
-            return "";
-        }
-
-        return String.format(
-            "%s §r%s§r§7 |§r WINS: %s§r",
-            player.getFormattedNameWithRank(),
-            player.getFormattedTitle(),
-            player.getFormattedWinsWithColor()
-        );
-    }
-
-    private String formatTntRunChatStats(PlayerProfile profile) {
-        TntRunPlayer player = profile.getTntRunPlayer();
-        if (player == null) {
-            return "";
-        }
-
-        return String.format(
-            "%s §r§7|§r WINS: %s§r§7 |§r RATIO: %s§r",
-            player.getFormattedNameWithRank(),
-            player.getFormattedWinsWithColor(),
-            player.getFormattedRatioWithColor()
-        );
     }
 
     private String buildTagsValue(PlayerProfile profile) {
