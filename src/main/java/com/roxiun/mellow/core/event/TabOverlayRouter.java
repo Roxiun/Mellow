@@ -7,8 +7,8 @@ import com.roxiun.mellow.feature.stats.tab.ExtendedStatsTabOverlay;
 import com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsMode;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
+import com.roxiun.mellow.feature.stats.tab.VanillaHudTabIntegration;
+
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -35,79 +35,22 @@ public class TabOverlayRouter {
         this.config = config;
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-    public void onRenderPlayerList(RenderGameOverlayEvent.Pre event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.PLAYER_LIST) {
-            return;
-        }
-
+    /** Called from the real player-list pass, including VanillaHUD animation frames. */
+    public ExtendedStatsTabOverlay prepareOverlay() {
         StatScope scope = ExtendedTabStatsMode.resolveScope();
-        if (!isExtendedModeActive(scope)) {
-            clearDoubleTapState();
-            resetIfNeeded();
-            return;
-        }
-
-        if (!isTabKeyDown()) {
-            if (pinnedByDoubleTap) {
-                // Suppress any third-party trailing tab animation frames while pinned mode is active.
-                event.setCanceled(true);
-                return;
-            }
-
-            resetIfNeeded();
-            // Suppress any third-party trailing tab animation frames while extended mode is active.
-            event.setCanceled(true);
-            return;
-        }
-
-        ExtendedStatsTabOverlay statsOverlay = getOverlay();
-        if (statsOverlay == null) {
-            return;
-        }
-
-        if (shouldResetScroll(scope)) {
-            statsOverlay.resetScroll();
-        }
-
-        event.setCanceled(true);
-        statsOverlay.renderExtendedPlayerList(scope);
+        if (!isExtendedModeActive(scope)) return null;
+        ExtendedStatsTabOverlay result = getOverlay();
+        if (result != null && shouldResetScroll(scope)) result.resetScroll();
+        return result;
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-    public void onRenderPinnedOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) {
-            return;
-        }
-
-        StatScope scope = ExtendedTabStatsMode.resolveScope();
-        if (!isExtendedModeActive(scope)) {
-            clearDoubleTapState();
-            resetIfNeeded();
-            return;
-        }
-
-        if (!pinnedByDoubleTap || isTabKeyDown()) {
-            return;
-        }
-
-        ExtendedStatsTabOverlay statsOverlay = getOverlay();
-        if (statsOverlay == null) {
-            return;
-        }
-
-        if (shouldResetScroll(scope)) {
-            statsOverlay.resetScroll();
-        }
-
-        statsOverlay.renderExtendedPlayerList(scope);
+    public boolean isPinned() {
+        return isExtendedModeActive() && pinnedByDoubleTap;
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+        if (event.phase != TickEvent.Phase.END) return;
 
         boolean tabDown = isTabKeyDown();
         StatScope scope = ExtendedTabStatsMode.resolveScope();
@@ -116,6 +59,16 @@ public class TabOverlayRouter {
             resetIfNeeded();
             tabWasDown = tabDown;
             return;
+        }
+
+        // VanillaHUD toggle mode already owns persistence; do not run two toggles.
+        if (VanillaHudTabIntegration.usesToggle()) {
+            clearDoubleTapState();
+            tabWasDown = tabDown;
+            return;
+        }
+        if (!tabDown && !pinnedByDoubleTap && !VanillaHudTabIntegration.isRendering()) {
+            resetIfNeeded();
         }
 
         long now = System.currentTimeMillis();
@@ -135,12 +88,12 @@ public class TabOverlayRouter {
     }
 
     public boolean isTabOverlayInputActive() {
-        return isExtendedModeActive() && (isTabKeyDown() || pinnedByDoubleTap);
+        return isExtendedModeActive() && (isTabKeyDown() || pinnedByDoubleTap || VanillaHudTabIntegration.isRendering());
     }
 
     public ExtendedStatsTabOverlay getOverlay() {
         if (overlay == null && mc != null && mc.ingameGUI != null && config != null) {
-            overlay = new ExtendedStatsTabOverlay(mc, mc.ingameGUI, config);
+            overlay = new ExtendedStatsTabOverlay(mc, config);
         }
         return overlay;
     }
@@ -253,12 +206,18 @@ public class TabOverlayRouter {
         return mc.theWorld.provider.getDimensionId();
     }
 
+    private boolean physicalTabDown() {
+        int code = mc.gameSettings.keyBindPlayerList.getKeyCode();
+        return code < 0 ? org.lwjgl.input.Mouse.isButtonDown(code + 100)
+            : code > 0 && org.lwjgl.input.Keyboard.isKeyDown(code);
+    }
+
     private boolean isTabKeyDown() {
         return (
             mc != null &&
             mc.gameSettings != null &&
             mc.gameSettings.keyBindPlayerList != null &&
-            mc.gameSettings.keyBindPlayerList.isKeyDown()
+            physicalTabDown()
         );
     }
 }

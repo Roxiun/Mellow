@@ -130,6 +130,15 @@ public class MellowOneConfig extends Config {
     )
     public boolean extendedTabStatsInLobbies = false;
 
+    @Dropdown(
+        name = "Column Headers",
+        options = {"Bold", "Normal", "Off"},
+        category = "Tab Stats",
+        subcategory = "Extended View",
+        description = "Style of the extended tab's column headings."
+    )
+    public int extendedTabStatsHeaders = 0;
+
     @Switch(
         name = "Extended View Player Heads",
         category = "Tab Stats",
@@ -1577,6 +1586,7 @@ public class MellowOneConfig extends Config {
         duelsCustomStat10 = clampIndex(duelsCustomStat10, 15);
 
         // Misc dropdowns
+        extendedTabStatsHeaders = clampIndex(extendedTabStatsHeaders, 3);
         extendedTabStatsTeamColumnMode = clampIndex(
             extendedTabStatsTeamColumnMode,
             4

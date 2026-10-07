@@ -85,6 +85,7 @@ sourceSets { main { output.setResourcesDir(java.classesDirectory) } }
 // Adds the Polyfrost maven repository so that we can get the libraries necessary to develop the
 // mod.
 repositories {
+    maven("https://api.modrinth.com/maven")
     maven("https://repo.polyfrost.org/releases")
     maven("https://repo.hypixel.net/repository/Hypixel/")
 }
@@ -98,6 +99,10 @@ dependencies {
     hypixelBundle("net.hypixel:mod-api-forge-tweaker:1.0.2")
     shade("org.tukaani:xz:1.9")
     testImplementation("junit:junit:4.13.2")
+    modCompileOnly("maven.modrinth:vanillahud:hvJoY3aU")
+    if (providers.gradleProperty("compatMods").isPresent) {
+        modRuntimeOnly("maven.modrinth:vanillahud:hvJoY3aU")
+    }
     // Adds the OneConfig library, so we can develop with it.
     modCompileOnly("cc.polyfrost:oneconfig-$platform:0.2.2-alpha+")
 
@@ -252,5 +257,42 @@ tasks.named("build") {
         } else {
             println("Built JAR file does not exist: ${finalJar.absolutePath}")
         }
+    }
+}
+
+// Offline client regression fixture. Test classes never enter release artifacts.
+tasks.withType<Jar>().configureEach { exclude("com/roxiun/mellow/test/**") }
+if (providers.gradleProperty("clientTest").isPresent) {
+    sourceSets.main { java.srcDir(rootProject.file("src/clientTest/java")) }
+    val smokeDir = layout.buildDirectory.dir("client-test/${if (providers.gradleProperty("compatMods").isPresent) "compat" else "base"}").get().asFile
+    loom.runConfigs.named("client") {
+        runDir("build/client-test/${if (providers.gradleProperty("compatMods").isPresent) "compat" else "base"}")
+    }
+    tasks.named<JavaExec>("runClient") {
+        javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(8)) })
+        systemProperty("mellow.smokeResult", smokeDir.resolve("smoke-result.txt").absolutePath)
+        // Optional native-compatible LWJGL 2 distribution (e.g. Apple Silicon).
+        providers.gradleProperty("lwjgl2Dir").orNull?.let { directory ->
+            val lwjgl = file(directory)
+            doFirst {
+                classpath = files(classpath.filter { !it.name.startsWith("lwjgl-") && !it.name.startsWith("lwjgl_util-") },
+                    fileTree(lwjgl) { include("*.jar"); exclude("*natives*") })
+                // Loom's launch injector replaces JVM native paths from launch.cfg.
+                // Populate its extracted-native directory after extractNatives completes.
+                copy {
+                    from(lwjgl.resolve("natives"))
+                    into(rootProject.file(".gradle/loom-cache/natives/1.8.9"))
+                }
+            }
+        }
+        systemProperty("mellow.compatTest", providers.gradleProperty("compatMods").isPresent)
+        doFirst {
+            smokeDir.mkdirs()
+            smokeDir.resolve("smoke-result.txt").delete()
+            if (providers.gradleProperty("compatMods").isPresent) {
+                copy { from(classpath.filter { it.name.contains("vanillahud", ignoreCase = true) }); into(smokeDir.resolve("mods")) }
+            }
+        }
+        doLast { check(smokeDir.resolve("smoke-result.txt").readText() == "PASS") { "Client smoke test failed" } }
     }
 }

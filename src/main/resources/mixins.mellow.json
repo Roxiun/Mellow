@@ -14,11 +14,12 @@
     "nametag.RenderNametagColorMixin",
     "nametag.RendererLivingEntityNametagClientIconMixin",
     "nametag.RendererLivingEntityNametagColorMixin",
-    "OverflowAnimationsTabCompatMixin",
     "PingMixin",
     "replay.NetworkManagerReplayCaptureMixin",
     "replay.NetHandlerPlayClientAccessor",
-    "VanillaHudTabBackgroundCompatMixin"
+    "ExtendedPlayerTabMixin",
+    "PlayerTabOverlayAccessor",
+    "PlayerTabVisibilityMixin"
   ],
   "mixins": [
     "compat.polynametag.PolyNametagRenderingMixin",

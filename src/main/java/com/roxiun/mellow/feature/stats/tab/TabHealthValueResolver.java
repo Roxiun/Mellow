@@ -1,9 +1,7 @@
 package com.roxiun.mellow.feature.stats.tab;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -13,16 +11,11 @@ import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.EnumChatFormatting;
 
 public final class TabHealthValueResolver {
 
-    private static final int MAX_CACHE_SIZE = 512;
     private static final String UNKNOWN_HP = "§7--";
-
-    private static final Map<UUID, Integer> LAST_KNOWN_HP_BY_UUID =
-        new HashMap<>();
-    private static final Map<String, Integer> LAST_KNOWN_HP_BY_NAME =
-        new HashMap<>();
 
     private TabHealthValueResolver() {}
 
@@ -58,19 +51,19 @@ public final class TabHealthValueResolver {
         String playerName,
         UUID playerUuid
     ) {
-        Integer fromEntity = resolveFromEntity(mc, playerName, playerUuid);
-        if (fromEntity != null) {
-            remember(playerName, playerUuid, fromEntity);
-            return fromEntity;
-        }
-
         Integer fromScoreboard = resolveFromPlayerListScore(mc, playerName);
-        if (fromScoreboard != null) {
-            remember(playerName, playerUuid, fromScoreboard);
-            return fromScoreboard;
-        }
+        return fromScoreboard != null ? fromScoreboard : resolveFromEntity(mc, playerName, playerUuid);
+    }
 
-        return getLastKnown(playerName, playerUuid);
+    /** Shared by value resolution and layout so only health scores replace our HP column. */
+    public static boolean isHealthObjective(ScoreObjective objective) {
+        if (objective == null) return false;
+        if (objective.getRenderType() == IScoreObjectiveCriteria.EnumRenderType.HEARTS) return true;
+        String label = EnumChatFormatting.getTextWithoutFormattingCodes(objective.getDisplayName());
+        if (label == null) return false;
+        // Hypixel sends numeric health with a coloured heart as the objective's label.
+        label = label.replace("\uFE0F", "").trim().toLowerCase(Locale.ROOT);
+        return label.equals("♥") || label.equals("❤") || label.equals("hp") || label.equals("health");
     }
 
     private static Integer resolveFromEntity(
@@ -118,16 +111,9 @@ public final class TabHealthValueResolver {
         ScoreObjective playerListObjective = scoreboard.getObjectiveInDisplaySlot(
             0
         );
-        if (playerListObjective == null) {
-            return null;
-        }
-        if (
-            playerListObjective.getRenderType() !=
-            IScoreObjectiveCriteria.EnumRenderType.HEARTS
-        ) {
-            return null;
-        }
+        if (!isHealthObjective(playerListObjective)) return null;
 
+        // Read existing scores only: getValueFromObjective would create a zero for missing players.
         Collection<Score> scores = scoreboard.getSortedScores(playerListObjective);
         if (scores == null || scores.isEmpty()) {
             return null;
@@ -141,49 +127,6 @@ public final class TabHealthValueResolver {
                 return Math.max(0, score.getScorePoints());
             }
         }
-        return null;
-    }
-
-    private static synchronized void remember(
-        String playerName,
-        UUID playerUuid,
-        int health
-    ) {
-        if (playerUuid != null) {
-            LAST_KNOWN_HP_BY_UUID.put(playerUuid, health);
-            if (LAST_KNOWN_HP_BY_UUID.size() > MAX_CACHE_SIZE) {
-                LAST_KNOWN_HP_BY_UUID.clear();
-            }
-        }
-
-        if (playerName != null && !playerName.isEmpty()) {
-            LAST_KNOWN_HP_BY_NAME.put(
-                playerName.toLowerCase(Locale.ROOT),
-                health
-            );
-            if (LAST_KNOWN_HP_BY_NAME.size() > MAX_CACHE_SIZE) {
-                LAST_KNOWN_HP_BY_NAME.clear();
-            }
-        }
-    }
-
-    private static synchronized Integer getLastKnown(
-        String playerName,
-        UUID playerUuid
-    ) {
-        if (playerUuid != null) {
-            Integer byUuid = LAST_KNOWN_HP_BY_UUID.get(playerUuid);
-            if (byUuid != null) {
-                return byUuid;
-            }
-        }
-
-        if (playerName != null && !playerName.isEmpty()) {
-            return LAST_KNOWN_HP_BY_NAME.get(
-                playerName.toLowerCase(Locale.ROOT)
-            );
-        }
-
         return null;
     }
 

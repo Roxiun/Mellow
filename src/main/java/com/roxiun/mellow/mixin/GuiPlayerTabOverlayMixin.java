@@ -32,7 +32,8 @@ public class GuiPlayerTabOverlayMixin {
         NetworkPlayerInfo networkPlayerInfoIn,
         CallbackInfoReturnable<String> cir
     ) {
-        if (Mellow.config == null || !Mellow.config.tabStats) {
+        if (Mellow.config == null || !Mellow.config.tabStats
+            || com.roxiun.mellow.feature.stats.tab.VanillaHudTabIntegration.active()) {
             return;
         }
 

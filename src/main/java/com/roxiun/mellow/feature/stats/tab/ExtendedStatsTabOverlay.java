@@ -20,29 +20,31 @@ import java.util.List;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EnumPlayerModelParts;
 import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.IScoreObjectiveCriteria;
+import net.minecraft.util.IChatComponent;
+import com.roxiun.mellow.mixin.PlayerTabOverlayAccessor;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.WorldSettings;
 
-public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
+public class ExtendedStatsTabOverlay extends Gui {
 
     private static final Ordering<NetworkPlayerInfo> PLAYER_ORDERING =
         Ordering.from(new PlayerComparator());
     private static final int MAX_TAB_PLAYERS = 80;
-    private static final int TOP_Y = 20;
+    private static final int TOP_Y = 10;
     private static final int BORDER = 4;
     private static final int HEADER_HEIGHT = 11;
-    private static final int ENTRY_HEIGHT = 11;
-    private static final int ROW_GAP = 1;
+    private static final int ENTRY_HEIGHT = 9;
     private static final int CELL_PADDING_X = 3;
+    private static final int OUTER_PADDING_X = 6;
     private static final int TEAM_MODE_OWN_COLUMN = 0;
     private static final int TEAM_MODE_HIDE_HEADER = 1;
     private static final int TEAM_MODE_COMBINE_NAME = 2;
@@ -62,129 +64,163 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
 
     public ExtendedStatsTabOverlay(
         Minecraft mcIn,
-        GuiIngame guiIngameIn,
         MellowOneConfig config
     ) {
-        super(mcIn, guiIngameIn);
         this.mc = mcIn;
         this.config = config;
     }
 
-    public void renderExtendedPlayerList(StatScope scope) {
-        if (
-            mc == null ||
-            mc.thePlayer == null ||
-            mc.getNetHandler() == null ||
-            mc.getNetHandler().getPlayerInfoMap() == null
-        ) {
-            return;
+    /** One measurement is shared by the vanilla shell and the custom row pass. */
+    public static final class Layout {
+        private final StatScope scope;
+        private final List<NetworkPlayerInfo> players;
+        private final List<Integer> columns;
+        private final List<Integer> widths;
+        private final int tableWidth;
+        private final int width;
+        private final int bodyHeight;
+        private final int totalHeight;
+        private final int headerHeight;
+        private final float scale;
+        private final int visibleCount;
+        private final int objectiveWidth;
+        private final ScoreObjective objective;
+        public Layout(StatScope scope, List<NetworkPlayerInfo> players, List<Integer> columns, List<Integer> widths, int tableWidth, int width, int bodyHeight, int totalHeight, int headerHeight, float scale, int visibleCount, int objectiveWidth, ScoreObjective objective) {
+            this.scope = scope;
+            this.players = players;
+            this.columns = columns;
+            this.widths = widths;
+            this.tableWidth = tableWidth;
+            this.width = width;
+            this.bodyHeight = bodyHeight;
+            this.totalHeight = totalHeight;
+            this.headerHeight = headerHeight;
+            this.scale = scale;
+            this.visibleCount = visibleCount;
+            this.objectiveWidth = objectiveWidth;
+            this.objective = objective;
         }
-
-        List<NetworkPlayerInfo> players = collectPlayers(mc.getNetHandler());
-        if (players.isEmpty()) {
-            return;
-        }
-
-        List<Integer> columns = ExtendedTabStatsColumns.getConfiguredColumns(
-            scope,
-            config
-        );
-        if (columns.isEmpty()) {
-            columns = new ArrayList<>(2);
-            columns.add(0); // TEAM
-            columns.add(2); // NAME
-        }
-        resetTeamModeState();
-        columns = withAppliedTeamColumnMode(columns);
-
-        List<Integer> columnWidths = computeColumnWidths(columns, players, scope);
-        int totalWidth = getTotalWidth(columns, columnWidths);
-
-        ScaledResolution scaled = new ScaledResolution(mc);
-        int scaledWidth = scaled.getScaledWidth();
-        int scaledHeight = scaled.getScaledHeight();
-        int availableWidth = Math.max(100, scaledWidth - BORDER * 2);
-        float fitScale = totalWidth > availableWidth
-            ? (float) availableWidth / (float) totalWidth
-            : 1.0F;
-
-        int scaledPanelWidth = MathHelper.ceiling_float_int(totalWidth * fitScale);
-        int startX = Math.max(BORDER, (scaledWidth - scaledPanelWidth) / 2);
-        int maxRight = scaledWidth - BORDER;
-        if (startX + scaledPanelWidth > maxRight) {
-            startX = Math.max(BORDER, maxRight - scaledPanelWidth);
-        }
-
-        int scaledHeader = Math.max(
-            1,
-            MathHelper.ceiling_float_int((HEADER_HEIGHT + ROW_GAP) * fitScale)
-        );
-        int scaledRowStep = Math.max(
-            1,
-            MathHelper.ceiling_float_int((ENTRY_HEIGHT + ROW_GAP) * fitScale)
-        );
-        maxVisiblePlayers = Math.max(
-            1,
-            (scaledHeight - (TOP_Y + scaledHeader + BORDER * 2)) / scaledRowStep
-        );
-        int maxScroll = Math.max(0, players.size() - maxVisiblePlayers);
-        scrollIndex = MathHelper.clamp_int(scrollIndex, 0, maxScroll);
-
-        int endIndex = Math.min(players.size(), scrollIndex + maxVisiblePlayers);
-        List<NetworkPlayerInfo> visible = players.subList(scrollIndex, endIndex);
-
-        int visibleHeight = visible.size() * (ENTRY_HEIGHT + ROW_GAP);
-        int panelContentHeight = HEADER_HEIGHT + ROW_GAP + visibleHeight;
-
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(startX, TOP_Y, 0.0F);
-        GlStateManager.scale(fitScale, fitScale, 1.0F);
-
-        drawRect(-BORDER, -BORDER, totalWidth + BORDER, panelContentHeight + BORDER, Integer.MIN_VALUE);
-        drawRect(0, 0, totalWidth, HEADER_HEIGHT, 553648127);
-
-        drawHeaders(columns, columnWidths, scope, 0, (HEADER_HEIGHT - mc.fontRendererObj.FONT_HEIGHT) / 2);
-
-        int rowY = HEADER_HEIGHT + ROW_GAP;
-        for (NetworkPlayerInfo info : visible) {
-            drawRect(0, rowY, totalWidth, rowY + ENTRY_HEIGHT, getRowBackground(info));
-            drawValues(
-                columns,
-                columnWidths,
-                scope,
-                info,
-                0,
-                rowY + (ENTRY_HEIGHT - mc.fontRendererObj.FONT_HEIGHT) / 2
-            );
-            rowY += ENTRY_HEIGHT + ROW_GAP;
-        }
-
-        if (maxScroll > 0) {
-            int indicatorX = totalWidth - 8;
-            if (scrollIndex > 0) {
-                mc.fontRendererObj.drawStringWithShadow("§f▲", indicatorX, HEADER_HEIGHT + 1, -1);
-            }
-            if (endIndex < players.size()) {
-                mc.fontRendererObj.drawStringWithShadow(
-                    "§f▼",
-                    indicatorX,
-                    panelContentHeight - mc.fontRendererObj.FONT_HEIGHT - 1,
-                    -1
-                );
-            }
-        }
-
-        GlStateManager.popMatrix();
+        public StatScope scope() { return scope; }
+        public List<NetworkPlayerInfo> players() { return players; }
+        public List<Integer> columns() { return columns; }
+        public List<Integer> widths() { return widths; }
+        public int tableWidth() { return tableWidth; }
+        public int width() { return width; }
+        public int bodyHeight() { return bodyHeight; }
+        public int totalHeight() { return totalHeight; }
+        public int headerHeight() { return headerHeight; }
+        public float scale() { return scale; }
+        public int visibleCount() { return visibleCount; }
+        public int objectiveWidth() { return objectiveWidth; }
+        public ScoreObjective objective() { return objective; }
     }
 
-    public void handleMouseWheel(int wheelDelta, int playerCount) {
+    public Layout measure(StatScope scope, int screenWidth, int screenHeight,
+                          IChatComponent header,
+                          IChatComponent footer,
+                          ScoreObjective objective) {
+        List<NetworkPlayerInfo> players = collectPlayers(mc.getNetHandler());
+        List<Integer> columns = ExtendedTabStatsColumns.getConfiguredColumns(scope, config);
+        if (columns.isEmpty()) columns = new ArrayList<>(java.util.Arrays.asList(0, 2));
+        resetTeamModeState();
+        columns = withAppliedTeamColumnMode(columns);
+        List<Integer> widths = computeColumnWidths(columns, players, scope);
+        int objectiveWidth = 0;
+        if (objective != null) {
+            boolean hearts = objective.getRenderType() == IScoreObjectiveCriteria.EnumRenderType.HEARTS;
+            boolean healthColumn = columns.stream().anyMatch(c -> ExtendedTabStatsColumns.isHealthColumn(scope, c));
+            if (!TabHealthValueResolver.isHealthObjective(objective) || !healthColumn) {
+                objectiveWidth = hearts ? 90 : mc.fontRendererObj.getStringWidth(formatHeader(objective.getDisplayName())) + 6;
+                if (!hearts) for (NetworkPlayerInfo info : players) {
+                    String value = Integer.toString(objective.getScoreboard().getValueFromObjective(
+                        info.getGameProfile().getName(), objective).getScorePoints());
+                    objectiveWidth = Math.max(objectiveWidth, mc.fontRendererObj.getStringWidth(value) + 6);
+                }
+            }
+        }
+        int tableWidth = getTotalWidth(columns, widths) + objectiveWidth;
+        int available = Math.max(1, screenWidth - 50);
+        float scale = Math.min(1F, (float) available / Math.max(1, tableWidth));
+        int width = MathHelper.ceiling_float_int(tableWidth * scale);
+        int textHeight = 0;
+        for (IChatComponent text : new IChatComponent[]{header, footer}) {
+            if (text == null) continue;
+            List<String> lines = mc.fontRendererObj.listFormattedStringToWidth(text.getFormattedText(), available);
+            for (String line : lines) width = Math.max(width, mc.fontRendererObj.getStringWidth(line));
+            textHeight += lines.size() * mc.fontRendererObj.FONT_HEIGHT + 1;
+        }
+        // Expand the native shell equally on both sides, including wide headers/footers.
+        // Content stays centered and retains its existing cell spacing and scale.
+        width += OUTER_PADDING_X * 2;
+        int headerHeight = config.extendedTabStatsHeaders == 2 ? 0 : HEADER_HEIGHT;
+        int availableBody = Math.max(9, screenHeight - TOP_Y - textHeight - BORDER);
+        int capacity = Math.max(1, (int) ((availableBody - 8) / scale - headerHeight) / ENTRY_HEIGHT);
+        boolean scrolls = players.size() > capacity;
+        if (scrolls) capacity = Math.max(1, capacity - 1); // Dedicated scroll status line.
+        maxVisiblePlayers = capacity;
+        int count = Math.min(players.size(), capacity);
+        scrollIndex = MathHelper.clamp_int(scrollIndex, 0, Math.max(0, players.size() - count));
+        int pixels = MathHelper.ceiling_float_int((headerHeight + count * ENTRY_HEIGHT + (scrolls ? 9 : 0)) * scale);
+        // Vanilla reserves its body in nine-pixel rows. Keep footer positioning native.
+        int bodyHeight = ((pixels + 8) / 9) * 9;
+        return new Layout(scope, players, columns, widths, tableWidth, width, bodyHeight,
+            bodyHeight + textHeight, headerHeight, scale, count, objectiveWidth, objective);
+    }
+
+    public void drawBody(Layout layout, int screenWidth, int top, GuiPlayerTabOverlay vanilla) {
+        GlStateManager.pushMatrix();
+        try {
+            GlStateManager.translate(screenWidth / 2 - layout.tableWidth() * layout.scale() / 2, top, 0);
+            GlStateManager.scale(layout.scale(), layout.scale(), 1);
+            GlStateManager.color(1, 1, 1, 1);
+            drawHeaders(layout.columns(), layout.widths(), layout.scope(), 0, 0);
+            int scoreX = layout.tableWidth() - layout.objectiveWidth();
+            if (layout.objectiveWidth() > 0 && layout.headerHeight() > 0) {
+                String title = layout.objective().getRenderType() == IScoreObjectiveCriteria.EnumRenderType.HEARTS
+                    ? "HP" : layout.objective().getDisplayName();
+                mc.fontRendererObj.drawStringWithShadow(formatHeader(title), scoreX + 3, 0, -1);
+            }
+            int end = Math.min(layout.players().size(), scrollIndex + layout.visibleCount());
+            int y = layout.headerHeight();
+            for (NetworkPlayerInfo info : layout.players().subList(scrollIndex, end)) {
+                int background = getRowBackground(info);
+                if (background != 0) drawRect(0, y, layout.tableWidth(), y + ENTRY_HEIGHT, background);
+                drawValues(layout.columns(), layout.widths(), layout.scope(), info, 0, y);
+                if (layout.objectiveWidth() > 0 && info.getGameType() != WorldSettings.GameType.SPECTATOR) {
+                    if (layout.objective().getRenderType() == IScoreObjectiveCriteria.EnumRenderType.HEARTS) {
+                        ((PlayerTabOverlayAccessor) vanilla).mellow$drawScoreboardValues(
+                            layout.objective(), y, info.getGameProfile().getName(), scoreX + 3,
+                            layout.tableWidth() - 3, info);
+                    } else {
+                        // VanillaHUD's native numeric-score redirect assumes vanilla row/ping
+                        // coordinates. Draw the same value in our measured score column.
+                        String score = "§e" + layout.objective().getScoreboard().getValueFromObjective(
+                            info.getGameProfile().getName(), layout.objective()).getScorePoints();
+                        mc.fontRendererObj.drawStringWithShadow(score,
+                            layout.tableWidth() - 3 - mc.fontRendererObj.getStringWidth(score), y, -1);
+                    }
+                }
+                y += ENTRY_HEIGHT;
+            }
+            if (layout.players().size() > layout.visibleCount()) {
+                String status = "§7" + (scrollIndex + 1) + "–" + end + " / " + layout.players().size();
+                mc.fontRendererObj.drawStringWithShadow(status,
+                    (layout.tableWidth() - mc.fontRendererObj.getStringWidth(status)) / 2, y, -1);
+            }
+        } finally {
+            GlStateManager.popMatrix();
+            GlStateManager.color(1, 1, 1, 1);
+        }
+    }
+
+    public boolean handleMouseWheel(int wheelDelta) {
         if (wheelDelta == 0) {
-            return;
+            return false;
         }
 
-        int effectiveCount = Math.min(playerCount, MAX_TAB_PLAYERS);
+        int effectiveCount = mc.getNetHandler() == null ? 0 : collectPlayers(mc.getNetHandler()).size();
         if (effectiveCount <= maxVisiblePlayers) {
-            return;
+            return false;
         }
 
         int maxScroll = Math.max(0, effectiveCount - maxVisiblePlayers);
@@ -194,6 +230,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             scrollIndex++;
         }
         scrollIndex = MathHelper.clamp_int(scrollIndex, 0, maxScroll);
+        return true;
     }
 
     public void resetScroll() {
@@ -215,10 +252,16 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             }
         }
 
-        if (filtered.size() <= MAX_TAB_PLAYERS) {
+        if (VanillaHudTabIntegration.selfAtTop()) {
+            filtered = new ArrayList<>(filtered);
+            java.util.UUID self = mc.thePlayer.getUniqueID();
+            filtered.sort(java.util.Comparator.comparing(info -> !self.equals(info.getGameProfile().getId())));
+        }
+        int limit = VanillaHudTabIntegration.playerLimit(MAX_TAB_PLAYERS);
+        if (filtered.size() <= limit) {
             return filtered;
         }
-        return new ArrayList<>(filtered.subList(0, MAX_TAB_PLAYERS));
+        return new ArrayList<>(filtered.subList(0, limit));
     }
 
     private boolean shouldFilterObfuscatedPregameEntries() {
@@ -305,10 +348,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
 
         for (int i = 0; i < columns.size(); i++) {
             int column = columns.get(i);
-            String headerText = getHeaderLabel(scope, column);
-            String headerLabel = headerText.isEmpty()
-                ? ""
-                : "§l" + headerText + "§r";
+            String headerLabel = formatHeader(getHeaderLabel(scope, column));
             int width = Math.max(
                 getMinimumColumnWidth(scope, column),
                 headerLabel.isEmpty()
@@ -356,8 +396,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         int x = startX;
         for (int i = 0; i < columns.size(); i++) {
             int column = columns.get(i);
-            String headerText = getHeaderLabel(scope, column);
-            String header = headerText.isEmpty() ? "" : "§l" + headerText + "§r";
+            String header = formatHeader(getHeaderLabel(scope, column));
             int width = columnWidths.get(i);
             if (!header.isEmpty()) {
                 int headerWidth = mc.fontRendererObj.getStringWidth(header);
@@ -666,11 +705,24 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
         return value.substring(0, lastVisibleEnd) + suffixFormatting;
     }
 
+    private String formatHeader(String label) {
+        if (config.extendedTabStatsHeaders == 2 || label == null || label.isEmpty()) return "";
+        if (config.extendedTabStatsHeaders == 1) return label.replaceAll("(?i)§l", "") + "§r";
+        // Colour and reset codes also clear bold, including in server objective titles.
+        return "§l" + label.replaceAll("(?i)(§[0-9a-fr])", "$1§l") + "§r";
+    }
+
     private String getHeaderLabel(StatScope scope, int column) {
         if (column == 0 && shouldHideTeamHeaderInExtendedView()) {
             return "";
         }
-        return ExtendedTabStatsColumns.getHeaderLabel(scope, column);
+        String label = ExtendedTabStatsColumns.getHeaderLabel(scope, column);
+        switch (label) {
+            case "TEAM": case "STARS": case "NAME": case "LEVEL": case "WINS":
+            case "KILLS": case "BEDS": case "FINALS": case "TAGS": case "PING": case "CLIENT":
+                return label.charAt(0) + label.substring(1).toLowerCase(java.util.Locale.ROOT);
+            default: return label;
+        }
     }
 
     private int getMinimumColumnWidth(StatScope scope, int column) {
@@ -766,7 +818,7 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
     }
 
     private boolean shouldShowHeadsInExtendedView() {
-        return config != null && config.extendedTabStatsShowHeads;
+        return config != null && config.extendedTabStatsShowHeads && VanillaHudTabIntegration.showHeads();
     }
 
     private boolean shouldHideTeamHeaderInExtendedView() {
@@ -1237,9 +1289,9 @@ public class ExtendedStatsTabOverlay extends GuiPlayerTabOverlay {
             Mellow.config.highlightTaggedPlayers &&
             isPlayerTagged(info)
         ) {
-            return 0x99550000;
+            return 0x40550000;
         }
-        return 553648127;
+        return 0;
     }
 
     private boolean isPlayerTagged(NetworkPlayerInfo info) {

@@ -62,6 +62,8 @@ import org.lwjgl.input.Keyboard;
 @Mod(modid = Mellow.MODID, name = Mellow.NAME, version = Mellow.VERSION)
 public class Mellow {
 
+    public static TabOverlayRouter tabOverlayRouter;
+
     public static final String MODID = "mellow";
     public static final String NAME = "Mellow";
     public static final String VERSION = "@VER@";
@@ -227,7 +229,7 @@ public class Mellow {
         MinecraftForge.EVENT_BUS.register(new ReplayHudRouter(replayManager));
         MinecraftForge.EVENT_BUS.register(new ReplayInputRouter(replayManager));
         MinecraftForge.EVENT_BUS.register(new NametagColorRouter(config));
-        TabOverlayRouter tabOverlayRouter = new TabOverlayRouter(config);
+        tabOverlayRouter = new TabOverlayRouter(config);
         MinecraftForge.EVENT_BUS.register(tabOverlayRouter);
         MinecraftForge.EVENT_BUS.register(
             new TabOverlayInputRouter(tabOverlayRouter)
