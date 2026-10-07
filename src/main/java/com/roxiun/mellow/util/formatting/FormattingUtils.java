@@ -71,7 +71,7 @@ public class FormattingUtils {
     }
 
     public static String formatXadiaTag(XadiaTag tag) {
-        String text = "§d" + tag.getLabel();
+        String text = getXadiaTagColor(tag.getType()) + tag.getLabel();
         if (Boolean.FALSE.equals(tag.getVerified())) text += " §e[Unverified]";
         if (Boolean.TRUE.equals(tag.getVerified())) text += " §a[Verified]";
         if (tag.getReason() != null && !tag.getReason().trim().isEmpty()) text += " §7(" + tag.getReason() + ")";
@@ -89,7 +89,21 @@ public class FormattingUtils {
             case "alt": icon = "A"; break;
             default: icon = tag.getLabel();
         }
-        return "§dX:" + icon + (Boolean.FALSE.equals(tag.getVerified()) ? "§e?" : Boolean.TRUE.equals(tag.getVerified()) ? "§a✔" : "") + "§r";
+        return getXadiaTagColor(tag.getType()) + "X:" + icon + (Boolean.FALSE.equals(tag.getVerified()) ? "§e?" : Boolean.TRUE.equals(tag.getVerified()) ? "§a✔" : "") + "§r";
+    }
+
+    private static String getXadiaTagColor(String type) {
+        // Closest legacy Minecraft colours to Xadia's tag badges.
+        if (type == null) return "§d";
+        switch (type) {
+            case "hacker": return "§c";
+            case "sniper": return "§4";
+            case "legit_sniper": return "§3";
+            case "alt": return "§d";
+            case "caution": return "§e";
+            case "possibly_cheating": return "§6";
+            default: return "§d";
+        }
     }
 
     public static String formatCoralTags(List<CoralTag> tags) {
