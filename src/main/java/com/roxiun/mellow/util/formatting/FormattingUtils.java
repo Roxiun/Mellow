@@ -71,7 +71,7 @@ public class FormattingUtils {
     }
 
     public static String formatXadiaTag(XadiaTag tag) {
-        String text = getXadiaTagColor(tag.getType()) + tag.getLabel();
+        String text = getXadiaTagColor(tag.getType()) + "§l" + tag.getLabel() + "§r";
         if (Boolean.FALSE.equals(tag.getVerified())) text += " §e[Unverified]";
         if (Boolean.TRUE.equals(tag.getVerified())) text += " §a[Verified]";
         if (tag.getReason() != null && !tag.getReason().trim().isEmpty()) text += " §7(" + tag.getReason() + ")";
