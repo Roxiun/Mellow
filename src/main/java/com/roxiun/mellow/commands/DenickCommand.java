@@ -2,6 +2,7 @@ package com.roxiun.mellow.commands;
 
 import com.roxiun.mellow.api.aurora.AuroraApi;
 import com.roxiun.mellow.config.MellowOneConfig;
+import com.roxiun.mellow.feature.nicks.DenickSearchOptions;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.util.ChatUtils;
@@ -68,21 +69,9 @@ public class DenickCommand extends CommandBase {
 
         AsyncExecutor.getInstance().command(() -> {
             try {
-                int[] rangeValues = { 100, 200, 500, 1000 };
-                int[] maxValues = { 5, 10, 20 };
-
-                int rangeIndex = type.equals("finals")
-                    ? config.finalsRange
-                    : config.bedsRange;
-                int maxIndex = config.maxResults;
-
-                if (
-                    rangeIndex < 0 || rangeIndex >= rangeValues.length
-                ) rangeIndex = 1; // Default to 200
-                if (maxIndex < 0 || maxIndex >= maxValues.length) maxIndex = 0; // Default to 5
-
-                int range = rangeValues[rangeIndex];
-                int max = maxValues[maxIndex];
+                int range = DenickSearchOptions.range(type.equalsIgnoreCase("finals")
+                    ? config.finalsRange : config.bedsRange);
+                int max = DenickSearchOptions.limit(config.maxResults);
 
                 AuroraApi.AuroraResponse response = auroraApi.queryStats(
                     type,
