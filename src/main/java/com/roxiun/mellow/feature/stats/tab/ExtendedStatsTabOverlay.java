@@ -1363,7 +1363,7 @@ public class ExtendedStatsTabOverlay extends Gui {
 
         int ping = info.getResponseTime();
         if (ping <= 1 || ping >= 999) {
-            return "§70";
+            return "§7?";
         }
         if (ping < 50) {
             return "§a" + ping;
