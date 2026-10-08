@@ -4,7 +4,8 @@ import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.tags.PlayerTag;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
+import com.roxiun.mellow.stats.StatDefinition;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.feature.stats.StatScopeResolver;
 import com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns;
@@ -46,6 +47,7 @@ public class GuiPlayerTabOverlayMixin {
         }
 
         StatScope scope = resolveTabStatScope();
+        if (scope == null) return;
         boolean isNicked =
             Mellow.nickUtils != null && Mellow.nickUtils.isNicked(playerName);
         TabStats stats = Mellow.tabStats.get(playerName);
@@ -82,18 +84,7 @@ public class GuiPlayerTabOverlayMixin {
                 String teamColor = PlayerUtils.getTeamColor(team);
 
                 // Create a minimal TabStats object for the nick case
-                TabStats emptyStats = new TabStats(
-                    null, // coralTags
-                    null, // formattedNameWithRank
-                    null, // stars
-                    null, // fkdr
-                    null, // winstreak
-                    null, // wlr
-                    null, // bblr
-                    null, // wins
-                    null, // beds
-                    null // finals
-                );
+                TabStats emptyStats = TabStats.tagsOnly(null, null);
 
                 newDisplayName = formatDisplayNameWithStats(
                     networkPlayerInfoIn,
@@ -114,18 +105,7 @@ public class GuiPlayerTabOverlayMixin {
                 String teamColor = PlayerUtils.getTeamColor(team);
 
                 // Create a minimal TabStats object for the nick case
-                TabStats emptyStats = new TabStats(
-                    null, // coralTags
-                    null, // formattedNameWithRank
-                    null, // stars
-                    null, // fkdr
-                    null, // winstreak
-                    null, // wlr
-                    null, // bblr
-                    null, // wins
-                    null, // beds
-                    null // finals
-                );
+                TabStats emptyStats = TabStats.tagsOnly(null, null);
 
                 newDisplayName = formatDisplayNameWithStats(
                     networkPlayerInfoIn,
@@ -380,453 +360,31 @@ public class GuiPlayerTabOverlayMixin {
         String resolvedRealName,
         NetworkPlayerInfo playerInfo
     ) {
-        if (scope == StatScope.SKYWARS) {
-            return processSkywarsDynamicStat(
-                statIndex,
-                team,
-                name,
-                teamColor,
-                stats,
-                resolvedRealName,
-                playerInfo
-            );
-        }
-        if (scope == StatScope.DUELS) {
-            return processDuelsDynamicStat(
-                statIndex,
-                team,
-                name,
-                teamColor,
-                stats,
-                resolvedRealName,
-                playerInfo
-            );
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return processBuildBattleDynamicStat(
-                statIndex,
-                team,
-                name,
-                teamColor,
-                stats,
-                resolvedRealName,
-                playerInfo
-            );
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return processTntRunDynamicStat(
-                statIndex,
-                team,
-                name,
-                teamColor,
-                stats,
-                resolvedRealName,
-                playerInfo
-            );
-        }
-        return processBedwarsDynamicStat(
-            statIndex,
-            team,
-            name,
-            teamColor,
-            stats,
-            resolvedRealName,
-            playerInfo
-        );
-    }
-
-    private String[] processBedwarsDynamicStat(
-        int statIndex,
-        String team,
-        String name,
-        String teamColor,
-        TabStats stats,
-        String resolvedRealName,
-        NetworkPlayerInfo playerInfo
-    ) {
-        String stars = stats.getStars();
-        String fkdr = stats.getFkdr();
-
-        switch (statIndex) {
-            case 0: // Team
-                return new String[] { team, "false" };
-            case 1: // Stars (shows Nick instead if player is nicks)
-                boolean isNicked =
-                    Mellow.nickUtils != null && Mellow.nickUtils.isNicked(name);
-                if (isNicked && (stars == null || stars.isEmpty())) {
-                    if (Mellow.config.showNickWithBrackets) {
-                        return new String[] { "§5[§lNICK§r§5]§r", "false" };
-                    } else {
-                        return new String[] { "§5§lNICK§r", "false" };
-                    }
-                } else if (stars != null && !stars.isEmpty()) {
-                    return new String[] {
-                        formatStarsForTab(
-                            stars,
-                            Mellow.config.showStarsWithBrackets
-                        ),
-                        "false",
-                    };
-                }
-                break;
-            case 2: // Name
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return new String[] {
-                        buildDenickedName(teamColor, name, resolvedRealName),
-                        "false",
-                    };
-                }
+        StatDefinition stat = ExtendedTabStatsColumns.definition(scope, statIndex);
+        if (stat == null) return null;
+        String value = stat.value(stats);
+        switch (stat.style()) {
+            case TEAM: return new String[] { team, "false" };
+            case NAME:
+                if (hasResolvedRealName(resolvedRealName)) return new String[] { buildDenickedName(teamColor, name, resolvedRealName), "false" };
                 if (shouldShowRankInTabName()) {
-                    String formattedNameWithRank = stats.getFormattedNameWithRank();
-                    if (
-                        formattedNameWithRank != null &&
-                        !formattedNameWithRank.isEmpty()
-                    ) {
-                        return new String[] { formattedNameWithRank + "§r", "false" };
-                    }
+                    String ranked = stats.getFormattedNameWithRank();
+                    if (ranked != null && !ranked.isEmpty()) return new String[] { ranked + "§r", "false" };
                 }
                 return new String[] { "§r" + teamColor + name, "false" };
-            case 3: // FKDR
-                if (fkdr != null && !fkdr.isEmpty()) {
-                    return new String[] { fkdr, "false" };
+            case BEDWARS_STARS: case BADGE: case TITLE:
+                boolean nicked = Mellow.nickUtils != null && Mellow.nickUtils.isNicked(name);
+                if (nicked && (value == null || value.isEmpty())) {
+                    return new String[] { Mellow.config.showNickWithBrackets ? "§5[§lNICK§r§5]§r" : "§5§lNICK§r", "false" };
                 }
-                break;
-            case 4: // Winstreak
-                if (
-                    stats.getWinstreak() != null &&
-                    !stats.getWinstreak().isEmpty()
-                ) {
-                    return new String[] { stats.getWinstreak(), "false" };
-                }
-                break;
-            case 5: // WLR
-                if (stats.getWlr() != null && !stats.getWlr().isEmpty()) {
-                    return new String[] { stats.getWlr(), "false" }; // The color is already included in the string
-                }
-                break;
-            case 6: // BBLR
-                if (stats.getBblr() != null && !stats.getBblr().isEmpty()) {
-                    return new String[] { stats.getBblr(), "false" }; // The color is already included in the string (if implemented)
-                }
-                break;
-            case 7: // Wins
-                if (stats.getWins() != null && !stats.getWins().isEmpty()) {
-                    return new String[] { stats.getWins(), "false" }; // The color is already included in the string
-                }
-                break;
-            case 8: // Beds
-                if (stats.getBeds() != null && !stats.getBeds().isEmpty()) {
-                    return new String[] { stats.getBeds(), "false" }; // The color is already included in the string
-                }
-                break;
-            case 9: // Finals
-                if (stats.getFinals() != null && !stats.getFinals().isEmpty()) {
-                    return new String[] { stats.getFinals(), "false" }; // The color is already included in the string
-                }
-                break;
-            case ExtendedTabStatsColumns.BEDWARS_HP_INDEX: // HP
-                return new String[] {
-                    TabHealthValueResolver.getFormattedHealth(
-                        Minecraft.getMinecraft(),
-                        playerInfo
-                    ),
-                    "false",
-                };
-            case ExtendedTabStatsColumns.BEDWARS_NONE_INDEX: // None
-                return null;
+                if (value == null || value.isEmpty()) return null;
+                return new String[] { stat.style() == StatDefinition.Style.BEDWARS_STARS
+                    ? formatStarsForTab(value, Mellow.config.showStarsWithBrackets) : value + "§r", "false" };
+            case HEALTH:
+                return new String[] { TabHealthValueResolver.getFormattedHealth(Minecraft.getMinecraft(), playerInfo), "false" };
+            case NONE: case TAGS: case PING: return null;
+            default: return value == null || value.isEmpty() ? null : new String[] { value, "false" };
         }
-        return null;
-    }
-
-    private String[] processSkywarsDynamicStat(
-        int statIndex,
-        String team,
-        String name,
-        String teamColor,
-        TabStats stats,
-        String resolvedRealName,
-        NetworkPlayerInfo playerInfo
-    ) {
-        String level = stats.getStars();
-        String kdr = stats.getFkdr();
-
-        switch (statIndex) {
-            case 0: // Team
-                return new String[] { team, "false" };
-            case 1: // Level (shows Nick instead if player is nicked)
-                boolean isNicked =
-                    Mellow.nickUtils != null && Mellow.nickUtils.isNicked(name);
-                if (isNicked && (level == null || level.isEmpty())) {
-                    if (Mellow.config.showNickWithBrackets) {
-                        return new String[] { "§5[§lNICK§r§5]§r", "false" };
-                    } else {
-                        return new String[] { "§5§lNICK§r", "false" };
-                    }
-                } else if (level != null && !level.isEmpty()) {
-                    return new String[] { level + "§r", "false" };
-                }
-                break;
-            case 2: // Name
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return new String[] {
-                        buildDenickedName(teamColor, name, resolvedRealName),
-                        "false",
-                    };
-                }
-                if (shouldShowRankInTabName()) {
-                    String formattedNameWithRank = stats.getFormattedNameWithRank();
-                    if (
-                        formattedNameWithRank != null &&
-                        !formattedNameWithRank.isEmpty()
-                    ) {
-                        return new String[] { formattedNameWithRank + "§r", "false" };
-                    }
-                }
-                return new String[] { "§r" + teamColor + name, "false" };
-            case 3: // KDR
-                if (kdr != null && !kdr.isEmpty()) {
-                    return new String[] { kdr, "false" };
-                }
-                break;
-            case 4: // WLR
-                if (stats.getWlr() != null && !stats.getWlr().isEmpty()) {
-                    return new String[] { stats.getWlr(), "false" };
-                }
-                break;
-            case 5: // Wins
-                if (stats.getWins() != null && !stats.getWins().isEmpty()) {
-                    return new String[] { stats.getWins(), "false" };
-                }
-                break;
-            case 6: // Kills
-                if (stats.getKills() != null && !stats.getKills().isEmpty()) {
-                    return new String[] { stats.getKills(), "false" };
-                }
-                break;
-            case ExtendedTabStatsColumns.SKYWARS_HP_INDEX: // HP
-                return new String[] {
-                    TabHealthValueResolver.getFormattedHealth(
-                        Minecraft.getMinecraft(),
-                        playerInfo
-                    ),
-                    "false",
-                };
-            case ExtendedTabStatsColumns.SKYWARS_NONE_INDEX: // None
-                return null;
-        }
-
-        return null;
-    }
-
-    private String[] processDuelsDynamicStat(
-        int statIndex,
-        String team,
-        String name,
-        String teamColor,
-        TabStats stats,
-        String resolvedRealName,
-        NetworkPlayerInfo playerInfo
-    ) {
-        String division = stats.getStars();
-        String kdr = stats.getFkdr();
-
-        switch (statIndex) {
-            case 0: // Team
-                return new String[] { team, "false" };
-            case 1: // Division (shows Nick instead if player is nicked)
-                boolean isNicked =
-                    Mellow.nickUtils != null && Mellow.nickUtils.isNicked(name);
-                if (isNicked && (division == null || division.isEmpty())) {
-                    if (Mellow.config.showNickWithBrackets) {
-                        return new String[] { "§5[§lNICK§r§5]§r", "false" };
-                    } else {
-                        return new String[] { "§5§lNICK§r", "false" };
-                    }
-                } else if (division != null && !division.isEmpty()) {
-                    return new String[] { division + "§r", "false" };
-                }
-                break;
-            case 2: // Name
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return new String[] {
-                        buildDenickedName(teamColor, name, resolvedRealName),
-                        "false",
-                    };
-                }
-                if (shouldShowRankInTabName()) {
-                    String formattedNameWithRank = stats.getFormattedNameWithRank();
-                    if (
-                        formattedNameWithRank != null &&
-                        !formattedNameWithRank.isEmpty()
-                    ) {
-                        return new String[] { formattedNameWithRank + "§r", "false" };
-                    }
-                }
-                return new String[] { "§r" + teamColor + name, "false" };
-            case 3: // KDR
-                if (kdr != null && !kdr.isEmpty()) {
-                    return new String[] { kdr, "false" };
-                }
-                break;
-            case 4: // WLR
-                if (stats.getWlr() != null && !stats.getWlr().isEmpty()) {
-                    return new String[] { stats.getWlr(), "false" };
-                }
-                break;
-            case 5: // Wins
-                if (stats.getWins() != null && !stats.getWins().isEmpty()) {
-                    return new String[] { stats.getWins(), "false" };
-                }
-                break;
-            case 6: // Losses
-                if (stats.getLosses() != null && !stats.getLosses().isEmpty()) {
-                    return new String[] { stats.getLosses(), "false" };
-                }
-                break;
-            case 7: // Kills
-                if (stats.getKills() != null && !stats.getKills().isEmpty()) {
-                    return new String[] { stats.getKills(), "false" };
-                }
-                break;
-            case 8: // Deaths
-                if (stats.getDeaths() != null && !stats.getDeaths().isEmpty()) {
-                    return new String[] { stats.getDeaths(), "false" };
-                }
-                break;
-            case 9: // Winstreak
-                if (stats.getWinstreak() != null && !stats.getWinstreak().isEmpty()) {
-                    return new String[] { stats.getWinstreak(), "false" };
-                }
-                break;
-            case ExtendedTabStatsColumns.DUELS_HP_INDEX: // HP
-                return new String[] {
-                    TabHealthValueResolver.getFormattedHealth(
-                        Minecraft.getMinecraft(),
-                        playerInfo
-                    ),
-                    "false",
-                };
-            case ExtendedTabStatsColumns.DUELS_NONE_INDEX: // None
-                return null;
-        }
-
-        return null;
-    }
-
-    private String[] processBuildBattleDynamicStat(
-        int statIndex,
-        String team,
-        String name,
-        String teamColor,
-        TabStats stats,
-        String resolvedRealName,
-        NetworkPlayerInfo playerInfo
-    ) {
-        String title = stats.getStars();
-
-        switch (statIndex) {
-            case 0: // Team
-                return new String[] { team, "false" };
-            case 1: // Title
-                boolean isNicked =
-                    Mellow.nickUtils != null && Mellow.nickUtils.isNicked(name);
-                if (isNicked && (title == null || title.isEmpty())) {
-                    if (Mellow.config.showNickWithBrackets) {
-                        return new String[] { "§5[§lNICK§r§5]§r", "false" };
-                    } else {
-                        return new String[] { "§5§lNICK§r", "false" };
-                    }
-                } else if (title != null && !title.isEmpty()) {
-                    return new String[] { title + "§r", "false" };
-                }
-                break;
-            case 2: // Name
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return new String[] {
-                        buildDenickedName(teamColor, name, resolvedRealName),
-                        "false",
-                    };
-                }
-                if (shouldShowRankInTabName()) {
-                    String formattedNameWithRank = stats.getFormattedNameWithRank();
-                    if (
-                        formattedNameWithRank != null &&
-                        !formattedNameWithRank.isEmpty()
-                    ) {
-                        return new String[] { formattedNameWithRank + "§r", "false" };
-                    }
-                }
-                return new String[] { "§r" + teamColor + name, "false" };
-            case 3: // Wins
-                if (stats.getWins() != null && !stats.getWins().isEmpty()) {
-                    return new String[] { stats.getWins(), "false" };
-                }
-                break;
-            case ExtendedTabStatsColumns.BUILD_BATTLE_HP_INDEX: // HP
-                return new String[] {
-                    TabHealthValueResolver.getFormattedHealth(
-                        Minecraft.getMinecraft(),
-                        playerInfo
-                    ),
-                    "false",
-                };
-            case ExtendedTabStatsColumns.BUILD_BATTLE_NONE_INDEX: // None
-                return null;
-        }
-        return null;
-    }
-
-    private String[] processTntRunDynamicStat(
-        int statIndex,
-        String team,
-        String name,
-        String teamColor,
-        TabStats stats,
-        String resolvedRealName,
-        NetworkPlayerInfo playerInfo
-    ) {
-        switch (statIndex) {
-            case 0: // Team
-                return new String[] { team, "false" };
-            case 1: // Wins
-                if (stats.getWins() != null && !stats.getWins().isEmpty()) {
-                    return new String[] { stats.getWins(), "false" };
-                }
-                break;
-            case 2: // Name
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return new String[] {
-                        buildDenickedName(teamColor, name, resolvedRealName),
-                        "false",
-                    };
-                }
-                if (shouldShowRankInTabName()) {
-                    String formattedNameWithRank = stats.getFormattedNameWithRank();
-                    if (
-                        formattedNameWithRank != null &&
-                        !formattedNameWithRank.isEmpty()
-                    ) {
-                        return new String[] { formattedNameWithRank + "§r", "false" };
-                    }
-                }
-                return new String[] { "§r" + teamColor + name, "false" };
-            case 3: // Ratio
-                if (stats.getWlr() != null && !stats.getWlr().isEmpty()) {
-                    return new String[] { stats.getWlr(), "false" };
-                }
-                break;
-            case ExtendedTabStatsColumns.TNT_RUN_HP_INDEX: // HP
-                return new String[] {
-                    TabHealthValueResolver.getFormattedHealth(
-                        Minecraft.getMinecraft(),
-                        playerInfo
-                    ),
-                    "false",
-                };
-            case ExtendedTabStatsColumns.TNT_RUN_NONE_INDEX: // None
-                return null;
-        }
-        return null;
     }
 
     private int[] getConfiguredStatsForScope(StatScope scope) {

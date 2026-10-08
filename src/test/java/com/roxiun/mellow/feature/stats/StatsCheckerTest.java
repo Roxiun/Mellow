@@ -1,7 +1,7 @@
 package com.roxiun.mellow.feature.stats;
 
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.api.tags.*;
 import com.roxiun.mellow.data.*;
 import java.util.*;
@@ -14,8 +14,7 @@ public class StatsCheckerTest {
 
     private PlayerProfile profile(double fkdr, TagReport report) {
         return new PlayerProfile("uuid", "Player",
-            new BedwarsPlayer("Player", "100", fkdr, 0, 0, 0, 0, 0, 0, 0, 0),
-            null, null, null, null, report);
+            Collections.singletonMap(com.roxiun.mellow.stats.GameRegistry.BEDWARS, new BedwarsPlayer("Player", "100", fkdr, 0, 0, 0, 0, 0, 0, 0, 0)), report);
     }
 
     @Test public void belowThresholdStatsRemoveAnEarlyTagRowAndRejectLaterTags() {

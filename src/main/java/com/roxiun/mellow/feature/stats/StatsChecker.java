@@ -4,10 +4,10 @@ import com.roxiun.mellow.util.cache.LookupTracker;
 import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.provider.model.FetchFailureReason;
+import com.roxiun.mellow.stats.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.api.model.FetchFailureReason;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.*;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchResult;
 import com.roxiun.mellow.config.MellowOneConfig;
@@ -95,7 +95,9 @@ public class StatsChecker {
         if (names == null) return scheduled;
         final long generation = fetchGeneration;
         final long session = HypixelFeatures.getInstance().getGameSnapshot().getSessionId();
-        final StatScope scope = resolveActiveScope();
+        final StatsSelection selection = GameRegistry.detect(HypixelFeatures.getInstance().getGameSnapshot());
+        if (selection == null) return scheduled;
+        final StatScope scope = selection.game().scope();
         for (String name : names) {
             UUID uuid = PlayerUtils.getTrustedTabUuid(name);
             if (uuid == null || nickUtils.isNicked(name) || PlayerUtils.isNickedOrNpc(name)) continue;
@@ -121,7 +123,7 @@ public class StatsChecker {
             statsUuids.add(uuid.toString());
             statsRequests.add(() -> {
                 try {
-                    ProfileFetchResult result = playerCache.getProfileForIdentity(name, uuid.toString(), false);
+                    ProfileFetchResult result = playerCache.getProfileForIdentity(name, uuid.toString(), false, selection);
                     mc.addScheduledTask(() -> {
                         if (!isCurrent(session, generation)) return;
                         PlayerProfile profile = result.getProfile();
@@ -323,7 +325,7 @@ public class StatsChecker {
             return;
         }
 
-        BedwarsPlayer bedwarsPlayer = profile.getBedwarsPlayer();
+        BedwarsPlayer bedwarsPlayer = profile.getStats(GameRegistry.BEDWARS);
         UUID playerUuid = parseUuid(profile.getUuid());
         if (bedwarsPlayer == null || playerUuid == null) {
             return;
@@ -449,38 +451,14 @@ public class StatsChecker {
         }
     }
 
-    private StatScope resolveActiveScope() {
-        GameSnapshot snapshot = HypixelFeatures.getInstance().getGameSnapshot();
-        return StatScopeResolver.resolveInGameScope(snapshot);
-    }
-
     private static boolean hasStatsForScope(PlayerProfile profile, StatScope scope) {
-        if (scope == StatScope.SKYWARS) {
-            return profile.getSkywarsPlayer() != null;
-        }
-        if (scope == StatScope.DUELS) {
-            return profile.getDuelsPlayer() != null;
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return profile.getBuildBattlePlayer() != null;
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return profile.getTntRunPlayer() != null;
-        }
-        return profile.getBedwarsPlayer() != null;
+        return profile.hasStats(scope);
     }
 
     private static boolean passesScopeFilters(PlayerProfile profile, StatScope scope, int minFkdr) {
-        if (
-            scope == StatScope.SKYWARS ||
-            scope == StatScope.DUELS ||
-            scope == StatScope.BUILD_BATTLE ||
-            scope == StatScope.TNT_RUN
-        ) {
-            return true;
-        }
+        if (scope != StatScope.BEDWARS) return true;
 
-        BedwarsPlayer player = profile.getBedwarsPlayer();
+        BedwarsPlayer player = profile.getStats(GameRegistry.BEDWARS);
         return player != null && player.getFkdr() >= minFkdr;
     }
 
@@ -491,7 +469,7 @@ public class StatsChecker {
     }
 
     private String formatBedwarsChatStats(PlayerProfile profile) {
-        BedwarsPlayer player = profile.getBedwarsPlayer();
+        BedwarsPlayer player = profile.getStats(GameRegistry.BEDWARS);
         if (player == null) {
             return "";
         }
@@ -539,7 +517,7 @@ public class StatsChecker {
     }
 
     private String buildTagsValue(PlayerProfile profile) {
-        BedwarsPlayer player = profile.getBedwarsPlayer();
+        BedwarsPlayer player = profile.getStats(GameRegistry.BEDWARS);
         int starsInt = 0;
         try {
             starsInt = Integer.parseInt(

@@ -1027,6 +1027,146 @@ public class MellowOneConfig extends Config {
     )
     public int duelsCustomStat10 = 11; // HP by default
 
+    @Dropdown(
+        name = "First Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat1 = 0;
+
+    @Dropdown(
+        name = "Second Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat2 = 1;
+
+    @Dropdown(
+        name = "Third Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat3 = 2;
+
+    @Dropdown(
+        name = "Fourth Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat4 = 3;
+
+    @Dropdown(
+        name = "Fifth Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat5 = 4;
+
+    @Dropdown(
+        name = "Sixth Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat6 = 4;
+
+    @Dropdown(
+        name = "Seventh Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat7 = 4;
+
+    @Dropdown(
+        name = "Eighth Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat8 = 4;
+
+    @Dropdown(
+        name = "Ninth Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat9 = 4;
+
+    @Dropdown(
+        name = "Tenth Stat",
+        options = {"Team", "Title", "Name", "Wins", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Build Battle Stat Order"
+    )
+    public int buildBattleCustomStat10 = 4;
+
+    @Dropdown(
+        name = "First Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat1 = 0;
+
+    @Dropdown(
+        name = "Second Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat2 = 2;
+
+    @Dropdown(
+        name = "Third Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat3 = 1;
+
+    @Dropdown(
+        name = "Fourth Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat4 = 3;
+
+    @Dropdown(
+        name = "Fifth Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat5 = 4;
+
+    @Dropdown(
+        name = "Sixth Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat6 = 4;
+
+    @Dropdown(
+        name = "Seventh Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat7 = 4;
+
+    @Dropdown(
+        name = "Eighth Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat8 = 4;
+
+    @Dropdown(
+        name = "Ninth Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat9 = 4;
+
+    @Dropdown(
+        name = "Tenth Stat",
+        options = {"Team", "Wins", "Name", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Run Stat Order"
+    )
+    public int tntRunCustomStat10 = 4;
+
     @Checkbox(
         description = "Drag stats to change their order. Uncheck a stat to hide it.",
         name = "Between 1st and 2nd",
@@ -1687,7 +1827,7 @@ public class MellowOneConfig extends Config {
         dependOn("numberDenicker", "numberDenickerFuzzy", "minFinalsForDenick");
         dependOn("coloredHitboxes", "coloredHitboxesAffectVanillaDebug", "coloredHitboxesAffectPolyHitbox");
         dependOn("coloredNametagBackgrounds", "coloredNametagAffectPolyNametag");
-        for (String prefix : new String[]{"customStat", "skywarsCustomStat", "duelsCustomStat"}) {
+        for (String prefix : new String[]{"customStat", "skywarsCustomStat", "duelsCustomStat", "buildBattleCustomStat", "tntRunCustomStat"}) {
             for (int slot = 1; slot <= 10; slot++) addDependency(prefix + slot, "tabStats");
         }
         for (String component : new String[]{"Hue", "Saturation", "Brightness"}) {
@@ -1746,6 +1886,27 @@ public class MellowOneConfig extends Config {
         duelsCustomStat8 = statIndex(duelsCustomStat8, 14, 10);
         duelsCustomStat9 = statIndex(duelsCustomStat9, 14, 10);
         duelsCustomStat10 = statIndex(duelsCustomStat10, 14, 10);
+
+        buildBattleCustomStat1 = statIndex(buildBattleCustomStat1, 8, 4);
+        buildBattleCustomStat2 = statIndex(buildBattleCustomStat2, 8, 4);
+        buildBattleCustomStat3 = statIndex(buildBattleCustomStat3, 8, 4);
+        buildBattleCustomStat4 = statIndex(buildBattleCustomStat4, 8, 4);
+        buildBattleCustomStat5 = statIndex(buildBattleCustomStat5, 8, 4);
+        buildBattleCustomStat6 = statIndex(buildBattleCustomStat6, 8, 4);
+        buildBattleCustomStat7 = statIndex(buildBattleCustomStat7, 8, 4);
+        buildBattleCustomStat8 = statIndex(buildBattleCustomStat8, 8, 4);
+        buildBattleCustomStat9 = statIndex(buildBattleCustomStat9, 8, 4);
+        buildBattleCustomStat10 = statIndex(buildBattleCustomStat10, 8, 4);
+        tntRunCustomStat1 = statIndex(tntRunCustomStat1, 8, 4);
+        tntRunCustomStat2 = statIndex(tntRunCustomStat2, 8, 4);
+        tntRunCustomStat3 = statIndex(tntRunCustomStat3, 8, 4);
+        tntRunCustomStat4 = statIndex(tntRunCustomStat4, 8, 4);
+        tntRunCustomStat5 = statIndex(tntRunCustomStat5, 8, 4);
+        tntRunCustomStat6 = statIndex(tntRunCustomStat6, 8, 4);
+        tntRunCustomStat7 = statIndex(tntRunCustomStat7, 8, 4);
+        tntRunCustomStat8 = statIndex(tntRunCustomStat8, 8, 4);
+        tntRunCustomStat9 = statIndex(tntRunCustomStat9, 8, 4);
+        tntRunCustomStat10 = statIndex(tntRunCustomStat10, 8, 4);
 
         // Misc dropdowns
         extendedTabStatsHeaders = clampIndex(extendedTabStatsHeaders, 3);

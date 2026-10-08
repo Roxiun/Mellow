@@ -1,10 +1,11 @@
 package com.roxiun.mellow.feature.profileviewer;
 
+import com.roxiun.mellow.stats.GameRegistry;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.provider.StatsProvider;
-import com.roxiun.mellow.api.provider.model.ProviderId;
+import com.roxiun.mellow.stats.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.api.hypixel.provider.StatsProvider;
+import com.roxiun.mellow.api.hypixel.provider.model.ProviderId;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
@@ -12,7 +13,7 @@ import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.data.PlayerProfile;
 import com.roxiun.mellow.feature.profileviewer.model.PvComputedStats;
 import com.roxiun.mellow.feature.profileviewer.model.PvExperience;
-import com.roxiun.mellow.feature.profileviewer.model.PvMode;
+import com.roxiun.mellow.stats.bedwars.BedwarsMode;
 import com.roxiun.mellow.feature.profileviewer.model.PvSourceData;
 import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.UUIDUtils;
@@ -96,8 +97,8 @@ public class PVGui extends GuiScreen {
     private final PlayerProfile profile;
     private final PvSourceData sourceData;
 
-    private PvMode selectedMode;
-    private final List<String> categories = PvMode.categories();
+    private BedwarsMode selectedMode;
+    private final List<String> categories = BedwarsMode.categories();
     private int categoryIndex;
 
     private int panelX;
@@ -141,7 +142,7 @@ public class PVGui extends GuiScreen {
         PlayerCache playerCache,
         MellowOneConfig config
     ) {
-        this(profile, rawProviderData, providerId, playerCache, config, PvMode.OVERALL);
+        this(profile, rawProviderData, providerId, playerCache, config, BedwarsMode.OVERALL);
     }
 
     public PVGui(
@@ -150,14 +151,14 @@ public class PVGui extends GuiScreen {
         ProviderId providerId,
         PlayerCache playerCache,
         MellowOneConfig config,
-        PvMode preferredMode
+        BedwarsMode preferredMode
     ) {
         this.profile = profile;
         this.providerId = providerId;
         this.playerCache = playerCache;
         this.config = config;
         this.sourceData = PvDataParser.parse(rawProviderData, providerId);
-        this.selectedMode = preferredMode == null ? PvMode.OVERALL : preferredMode;
+        this.selectedMode = preferredMode == null ? BedwarsMode.OVERALL : preferredMode;
         this.categoryIndex = Math.max(0, categories.indexOf(this.selectedMode.getCategory()));
         this.searchText = profile == null ? "" : profile.getName();
     }
@@ -216,7 +217,7 @@ public class PVGui extends GuiScreen {
                 : TEXTURE_SEARCH
         );
 
-        BedwarsPlayer player = profile.getBedwarsPlayer();
+        BedwarsPlayer player = profile.getStats(GameRegistry.BEDWARS);
         PvComputedStats stats = PvComputedStats.from(sourceData, player, selectedMode);
 
         renderPreviewEntity(mouseX, mouseY);
@@ -666,14 +667,14 @@ public class PVGui extends GuiScreen {
 
         setStatus("§aFetching profile for " + query + "...", 0xFFA8FFB0, 3000L);
 
-        final PvMode modeToKeep = selectedMode;
+        final BedwarsMode modeToKeep = selectedMode;
         AsyncExecutor.getInstance().command(() -> {
             PlayerProfile newProfile = playerCache.getProfile(query);
             String rawData = playerCache.fetchRawPlayerData(query);
             StatsProvider provider = playerCache.getSelectedProvider();
             ProviderId newProviderId = provider == null ? providerId : provider.getProviderId();
 
-            if (newProfile == null || newProfile.getBedwarsPlayer() == null) {
+            if (newProfile == null || newProfile.getStats(GameRegistry.BEDWARS) == null) {
                 MainThreadDispatcher.run(() ->
                     setStatus("§cFailed to fetch profile for " + query, 0xFFFF6666, 3000L)
                 );
@@ -693,14 +694,14 @@ public class PVGui extends GuiScreen {
         if (categoryIndex >= categories.size()) {
             categoryIndex = 0;
         }
-        List<PvMode> modes = modesInCurrentCategory();
+        List<BedwarsMode> modes = modesInCurrentCategory();
         if (!modes.isEmpty()) {
             selectedMode = modes.get(0);
         }
     }
 
     private void cycleMode() {
-        List<PvMode> modes = modesInCurrentCategory();
+        List<BedwarsMode> modes = modesInCurrentCategory();
         if (modes.isEmpty()) {
             return;
         }
@@ -710,8 +711,8 @@ public class PVGui extends GuiScreen {
         selectedMode = modes.get(modeIndex);
     }
 
-    private List<PvMode> modesInCurrentCategory() {
-        return PvMode.modesForCategory(currentCategory());
+    private List<BedwarsMode> modesInCurrentCategory() {
+        return BedwarsMode.modesForCategory(currentCategory());
     }
 
     private String currentCategory() {

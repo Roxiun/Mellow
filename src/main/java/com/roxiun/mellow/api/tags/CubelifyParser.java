@@ -1,7 +1,7 @@
 package com.roxiun.mellow.api.tags;
 
 import com.google.gson.*;
-import com.roxiun.mellow.api.provider.model.*;
+import com.roxiun.mellow.api.model.*;
 import java.util.*;
 
 /** Decode the shared envelope; each provider explicitly maps its tags and HTTP-200 error badges. */

@@ -1,8 +1,9 @@
 package com.roxiun.mellow.commands;
 
+import com.roxiun.mellow.stats.GameRegistry;
 import com.mojang.authlib.GameProfile;
-import com.roxiun.mellow.api.provider.model.StatScope;
-import com.roxiun.mellow.api.skywars.SkywarsPlayer;
+import com.roxiun.mellow.stats.StatScope;
+import com.roxiun.mellow.stats.skywars.SkywarsPlayer;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
@@ -65,7 +66,7 @@ public class SkywarsCommand extends CommandBase {
             );
             PlayerProfile profile = result.getProfile();
 
-            if (profile == null || profile.getSkywarsPlayer() == null) {
+            if (profile == null || profile.getStats(GameRegistry.SKYWARS) == null) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
                         sender,
@@ -82,7 +83,7 @@ public class SkywarsCommand extends CommandBase {
                 return;
             }
 
-            SkywarsPlayer player = profile.getSkywarsPlayer();
+            SkywarsPlayer player = profile.getStats(GameRegistry.SKYWARS);
             List<String> statsLines = Arrays.asList(
                 player.getLevelFormatted() +
                 " §r" +

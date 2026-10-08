@@ -9,13 +9,13 @@ import com.roxiun.mellow.api.aurora.AuroraWinstreakService;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.luna.LunaPingService;
 import com.roxiun.mellow.api.mojang.MojangApi;
-import com.roxiun.mellow.api.provider.AbyssApi;
-import com.roxiun.mellow.api.provider.BordicApi;
-import com.roxiun.mellow.api.provider.BedlifyApi;
-import com.roxiun.mellow.api.provider.HypixelPublicApi;
-import com.roxiun.mellow.api.provider.NadeshikoApi;
-import com.roxiun.mellow.api.provider.ProviderManager;
-import com.roxiun.mellow.api.provider.StatsProvider;
+import com.roxiun.mellow.api.hypixel.provider.AbyssApi;
+import com.roxiun.mellow.api.hypixel.provider.BordicApi;
+import com.roxiun.mellow.api.hypixel.provider.BedlifyApi;
+import com.roxiun.mellow.api.hypixel.provider.HypixelPublicApi;
+import com.roxiun.mellow.api.hypixel.provider.NadeshikoApi;
+import com.roxiun.mellow.api.hypixel.provider.ProviderManager;
+import com.roxiun.mellow.api.hypixel.provider.StatsProvider;
 import com.roxiun.mellow.api.coral.CoralApi;
 import com.roxiun.mellow.autoupdate.ModrinthUpdater;
 import com.roxiun.mellow.cache.PlayerCache;
@@ -301,6 +301,7 @@ public class Mellow {
         com.roxiun.mellow.platform.ClientCommands.register(
             new PVCommand(playerCache, config)
         );
+        com.roxiun.mellow.platform.ClientCommands.register(new com.roxiun.mellow.commands.StatsCommand(playerCache));
         com.roxiun.mellow.platform.ClientCommands.register(new MellowCommand());
         com.roxiun.mellow.platform.ClientCommands.register(new DebugStateCommand());
         com.roxiun.mellow.platform.ClientCommands.register(

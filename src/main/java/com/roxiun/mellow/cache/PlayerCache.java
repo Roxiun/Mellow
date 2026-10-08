@@ -1,30 +1,21 @@
 package com.roxiun.mellow.cache;
 
-import com.roxiun.mellow.api.provider.model.ProviderId;
 import com.roxiun.mellow.api.xadia.XadiaTag;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
 import com.roxiun.mellow.util.cache.TimedValueCache;
 import com.roxiun.mellow.util.cache.RequestCache;
 import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.api.xadia.XadiaApi;
 import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.buildbattle.BuildBattlePlayer;
-import com.roxiun.mellow.api.duels.DuelsMode;
-import com.roxiun.mellow.api.duels.DuelsPlayer;
-import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.mojang.MojangApi;
-import com.roxiun.mellow.api.provider.ProviderManager;
-import com.roxiun.mellow.api.provider.StatsProvider;
-import com.roxiun.mellow.api.provider.model.FetchFailureReason;
-import com.roxiun.mellow.api.provider.model.ProviderResult;
-import com.roxiun.mellow.api.provider.model.StatScope;
-import com.roxiun.mellow.api.skywars.SkywarsPlayer;
-import com.roxiun.mellow.api.tnt.TntRunPlayer;
+import com.roxiun.mellow.api.hypixel.provider.ProviderManager;
+import com.roxiun.mellow.api.hypixel.provider.StatsProvider;
+import com.roxiun.mellow.api.model.FetchFailureReason;
+import com.roxiun.mellow.api.model.ProviderResult;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.api.coral.CoralApi;
 import com.roxiun.mellow.api.coral.CoralTag;
-import com.roxiun.mellow.api.util.HypixelApiUtils;
+import com.roxiun.mellow.stats.*;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.PlayerProfile;
 import com.roxiun.mellow.util.ChatUtils;
@@ -98,12 +89,15 @@ public class PlayerCache {
 
     public ProfileFetchResult getScopedProfileResult(String name, StatScope scope,
         ProfileFetchContext context, boolean includeTags) {
+        return getSelectedProfileResult(name, StatsSelection.overall(scope), context, includeTags);
+    }
+
+    public ProfileFetchResult getSelectedProfileResult(String name, StatsSelection selection,
+        ProfileFetchContext context, boolean includeTags) {
         ResolvedUuid identity = resolveUuid(name, context == null ? ProfileFetchContext.GENERAL : context);
-        if (!identity.isSuccess()) {
-            return ProfileFetchResult.failure(identity.failureReason, identity.detail,
-                getSelectedProvider() == null ? null : getSelectedProvider().getDisplayName());
-        }
-        return getProfileForIdentity(name, identity.uuid, includeTags);
+        if (!identity.isSuccess()) return ProfileFetchResult.failure(identity.failureReason, identity.detail,
+            getSelectedProvider() == null ? null : getSelectedProvider().getDisplayName());
+        return getProfileForIdentity(name, identity.uuid, includeTags, selection);
     }
 
     private ProfileFetchResult withAvailableProfile(
@@ -200,12 +194,16 @@ public class PlayerCache {
     }
 
     public ProfileFetchResult getProfileForIdentity(String name, String uuid, boolean tags) {
+        return getProfileForIdentity(name, uuid, tags, null);
+    }
+
+    public ProfileFetchResult getProfileForIdentity(String name, String uuid, boolean tags, StatsSelection selection) {
         StatsProvider provider = getSelectedProvider();
         if (provider == null) return ProfileFetchResult.failure(FetchFailureReason.PROVIDER_ERROR, "No provider", null);
         resolvedNames.put(name.toLowerCase(Locale.ROOT), uuid);
         ProviderResult<JsonObject> raw = fetchRaw(provider, uuid);
         ProfileFetchResult result = raw.isSuccess()
-            ? buildFullProfileResult(name, uuid, raw.getValue(), provider, resolveActiveDuelsMode(), tags)
+            ? buildProfileResult(name, uuid, raw.getValue(), provider, selection, tags)
             : toProfileFailure(raw, provider.getDisplayName());
         return withAvailableProfile(result, name, uuid, tags);
     }
@@ -234,106 +232,13 @@ public class PlayerCache {
         return rawResult.getValue().toString();
     }
 
-    private ProfileFetchResult buildFullProfileResult(
-        String playerName,
-        String uuid,
-        JsonObject root,
-        StatsProvider provider,
-        DuelsMode duelsMode,
-        boolean includeTags
-    ) {
-        ProviderResult<BedwarsPlayer> bedwarsResult = HypixelApiUtils.parsePlayerDataResult(
-            root,
-            provider.getProviderId()
-        );
-        ProviderResult<SkywarsPlayer> skywarsResult =
-            HypixelApiUtils.parseSkywarsPlayerDataResult(
-                root,
-                provider.getProviderId()
-            );
-        ProviderResult<DuelsPlayer> duelsResult = HypixelApiUtils.parseDuelsPlayerDataResult(
-            root,
-            provider.getProviderId(),
-            duelsMode
-        );
-        ProviderResult<BuildBattlePlayer> buildBattleResult =
-            HypixelApiUtils.parseBuildBattlePlayerDataResult(
-                root,
-                provider.getProviderId()
-            );
-        ProviderResult<TntRunPlayer> tntRunResult =
-            HypixelApiUtils.parseTntRunPlayerDataResult(
-                root,
-                provider.getProviderId()
-            );
-
-        if (
-            !bedwarsResult.isSuccess() &&
-            !skywarsResult.isSuccess() &&
-            !duelsResult.isSuccess() &&
-            !buildBattleResult.isSuccess() &&
-            !tntRunResult.isSuccess()
-        ) {
-            return selectProfileFailure(
-                provider.getDisplayName(),
-                bedwarsResult,
-                skywarsResult,
-                duelsResult,
-                buildBattleResult,
-                tntRunResult
-            );
-        }
-
-        PlayerProfile profile = new PlayerProfile(
-            uuid,
-            playerName,
-            bedwarsResult.getValue(),
-            skywarsResult.getValue(),
-            duelsResult.getValue(),
-            buildBattleResult.getValue(),
-            tntRunResult.getValue(),
-            null
-        );
-
-        if (includeTags) {
-            profile = enrichProfileWithTags(profile);
-        }
-
+    private ProfileFetchResult buildProfileResult(String name, String uuid, JsonObject root,
+        StatsProvider provider, StatsSelection selection, boolean includeTags) {
+        ProviderResult<PlayerProfile> parsed = PlayerStatsService.parse(uuid, name, root, provider.getProviderId(), selection);
+        if (!parsed.isSuccess()) return toProfileFailure(parsed, provider.getDisplayName());
+        PlayerProfile profile = parsed.getValue();
+        if (includeTags) profile = enrichProfileWithTags(profile);
         return ProfileFetchResult.success(profile, provider.getDisplayName());
-    }
-
-    private ProfileFetchResult selectProfileFailure(
-        String providerName,
-        ProviderResult<?>... results
-    ) {
-        if (results == null || results.length == 0) {
-            return ProfileFetchResult.failure(
-                FetchFailureReason.UNKNOWN,
-                "Unknown parse failure",
-                providerName
-            );
-        }
-
-        for (ProviderResult<?> result : results) {
-            if (
-                result != null &&
-                result.getFailureReason() == FetchFailureReason.NO_PLAYER_DATA
-            ) {
-                return toProfileFailure(result, providerName);
-            }
-        }
-
-        for (ProviderResult<?> result : results) {
-            if (result != null && result.getFailureReason() != null) {
-                return toProfileFailure(result, providerName);
-            }
-        }
-
-        return ProfileFetchResult.failure(
-            FetchFailureReason.UNKNOWN,
-            "Unknown parse failure",
-            providerName
-        );
     }
 
     private ProfileFetchResult toProfileFailure(
@@ -528,33 +433,11 @@ public class PlayerCache {
                 providerCooldown.put(provider.getProviderId().name(), System.currentTimeMillis() + 30_000L);
             return ProviderResult.failure(response.getFailureReason(), response.getError());
         }
-        try {
-            JsonObject root = new JsonParser().parse(response.getValue()).getAsJsonObject();
-            if (provider.getProviderId() != ProviderId.NADESHIKO) {
-                if (!root.has("success") || !root.get("success").getAsBoolean())
-                    return ProviderResult.failure(FetchFailureReason.PROVIDER_ERROR,
-                        root.has("cause") ? root.get("cause").getAsString() : "Provider returned success=false");
-                if (!root.has("player") || root.get("player").isJsonNull())
-                    return ProviderResult.failure(FetchFailureReason.NO_PLAYER_DATA, "No player data");
-            }
-            return ProviderResult.success(root);
-        } catch (RuntimeException error) {
-            return ProviderResult.failure(FetchFailureReason.PARSE_ERROR, error.getMessage());
-        }
+        return com.roxiun.mellow.api.hypixel.HypixelPlayerData.parseResponse(response.getValue(), provider.getProviderId());
     }
 
     private String normalizeApiKey(String apiKey) {
         return apiKey == null ? "" : apiKey.trim();
-    }
-
-    private DuelsMode resolveActiveDuelsMode() {
-        try {
-            return DuelsMode.fromSnapshot(
-                HypixelFeatures.getInstance().getGameSnapshot()
-            );
-        } catch (Exception ignored) {
-            return DuelsMode.OVERALL;
-        }
     }
 
     private static class ResolvedUuid {

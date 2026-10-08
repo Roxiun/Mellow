@@ -1,7 +1,7 @@
 package com.roxiun.mellow.api.tags;
 
 import com.google.gson.JsonObject;
-import com.roxiun.mellow.api.provider.model.ProviderResult;
+import com.roxiun.mellow.api.model.ProviderResult;
 import com.roxiun.mellow.feature.tags.TagPolicy;
 import java.util.*;
 import org.junit.Test;

@@ -1,203 +1,89 @@
 package com.roxiun.mellow.data;
 
 import com.roxiun.mellow.api.tags.TagReport;
+import java.util.*;
 
+/** Render-ready values keyed by stat ID. Legacy getters serve the vanilla tab integration. */
 public class TabStats {
-
     private final TagReport tags;
-    public TagReport getTags() { return tags; }
-    public TabStats withTags(TagReport tags) {
-        return new TabStats(tags, formattedNameWithRank, stars, fkdr, winstreak, wlr,
-            bblr, wins, losses, kills, deaths, beds, finals);
-    }
     private final String formattedNameWithRank;
-    private final String stars;
-    private final String fkdr;
-    private final String winstreak;
-    private final String wlr;
-    private final String bblr;
-    private final String wins;
-    private final String losses;
-    private final String kills;
-    private final String deaths;
-    private final String beds;
-    private final String finals;
-
-    public static TabStats tagsOnly(
-        TagReport tags,
-        String playerName
-    ) {
-        return new TabStats(
-            tags,
-            playerName,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-    }
-
-    public TabStats(
-        TagReport tags,
-        String formattedNameWithRank,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String kills,
-        String beds,
-        String finals
-    ) {
-        this(
-            tags,
-            formattedNameWithRank,
-            stars,
-            fkdr,
-            winstreak,
-            wlr,
-            bblr,
-            wins,
-            null,
-            kills,
-            null,
-            beds,
-            finals
-        );
-    }
-
-    public TabStats(
-        TagReport tags,
-        String formattedNameWithRank,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String beds,
-        String finals
-    ) {
-        this(
-            tags,
-            formattedNameWithRank,
-            stars,
-            fkdr,
-            winstreak,
-            wlr,
-            bblr,
-            wins,
-            null,
-            null,
-            null,
-            beds,
-            finals
-        );
-    }
-
-    public TabStats(
-        TagReport tags,
-        String formattedNameWithRank,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String losses,
-        String kills,
-        String deaths,
-        String beds,
-        String finals
-    ) {
+    private final Map<String, String> values = new LinkedHashMap<>();
+    public TabStats(TagReport tags, String formattedNameWithRank, Map<String, String> values) {
         this.tags = tags == null ? TagReport.empty() : tags;
         this.formattedNameWithRank = formattedNameWithRank;
-        this.stars = stars;
-        this.fkdr = fkdr;
-        this.winstreak = winstreak;
-        this.wlr = wlr;
-        this.bblr = bblr;
-        this.wins = wins;
-        this.losses = losses;
-        this.kills = kills;
-        this.deaths = deaths;
-        this.beds = beds;
-        this.finals = finals;
+        this.values.putAll(values);
     }
-
+    public String value(String id) { return values.get(id); }
+    public TagReport getTags() { return tags; }
+    public TabStats withTags(TagReport tags) { return new TabStats(tags, formattedNameWithRank, values); }
+    public static TabStats tagsOnly(TagReport tags, String playerName) {
+        return new TabStats(tags, playerName, Collections.emptyMap());
+    }
     public String getFormattedNameWithRank() {
         return formattedNameWithRank;
     }
 
     public String getStars() {
-        return stars;
+        return value("stars");
     }
 
     public String getFkdr() {
-        return fkdr;
+        return value("fkdr");
     }
 
     public String getWinstreak() {
-        return winstreak;
+        return value("winstreak");
     }
 
     public String getWlr() {
-        return wlr;
+        return value("wlr");
     }
 
     public String getBblr() {
-        return bblr;
+        return value("bblr");
     }
 
     public String getWins() {
-        return wins;
+        return value("wins");
     }
 
     public String getLosses() {
-        return losses;
+        return value("losses");
     }
 
     public String getKills() {
-        return kills;
+        return value("kills");
     }
 
     public String getDeaths() {
-        return deaths;
+        return value("deaths");
     }
 
     public String getBeds() {
-        return beds;
+        return value("beds");
     }
 
     public String getFinals() {
-        return finals;
+        return value("finals");
     }
 
     public String getColoredWlr() {
-        return wlr;
+        return value("wlr");
     }
 
     public String getColoredBblr() {
-        return bblr;
+        return value("bblr");
     }
 
     public String getColoredWins() {
-        return wins;
+        return value("wins");
     }
 
     public String getColoredBeds() {
-        return beds;
+        return value("beds");
     }
 
     public String getColoredFinals() {
-        return finals;
+        return value("finals");
     }
 }

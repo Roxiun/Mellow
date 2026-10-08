@@ -298,8 +298,17 @@ final class TabIntegrationSmokeTest {
         };
         info.setDisplayName(new ChatComponentText("§b[MVP+] " + name));
         players.add(info);
-        Mellow.tabStats.put(name, new TabStats(com.roxiun.mellow.api.tags.TagReport.empty(), "§b[MVP+] " + name,
-            "§b" + (100 + index * 25) + "✫", "§e" + (index + 1) + ".25", "§a12", "§f1.52", "§71.0", "§a250", "§f200", "§e130", "§a1200"));
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("stars", "§b" + (100 + index * 25) + "✫");
+        values.put("fkdr", "§e" + (index + 1) + ".25");
+        values.put("winstreak", "§a12");
+        values.put("wlr", "§f1.52");
+        values.put("bblr", "§71.0");
+        values.put("wins", "§a250");
+        values.put("kills", "§f200");
+        values.put("beds", "§e130");
+        values.put("finals", "§a1200");
+        Mellow.tabStats.put(name, new TabStats(com.roxiun.mellow.api.tags.TagReport.empty(), "§b[MVP+] " + name, values));
     }
 
     private static void render(Minecraft mc, GuiPlayerTabOverlay tab, Scoreboard board, ScoreObjective objective, String image) {
@@ -538,7 +547,7 @@ final class TabIntegrationSmokeTest {
             hud.setShowHeader(header); hud.setShowFooter(footer); hud.setDisplayMode(mode);
 //?} else {
 /*    private static int[] getColumns() {
-        return ExtendedTabStatsColumns.getConfiguredStatsForScope(com.roxiun.mellow.api.provider.model.StatScope.BEDWARS, Mellow.config);
+        return ExtendedTabStatsColumns.getConfiguredStatsForScope(com.roxiun.mellow.stats.StatScope.BEDWARS, Mellow.config);
     }
     private static void setColumns(int... columns) {
         for (int i = 0; i < 10; i++) {

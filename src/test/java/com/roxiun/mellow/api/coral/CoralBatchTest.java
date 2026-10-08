@@ -1,7 +1,7 @@
 package com.roxiun.mellow.api.coral;
 
 import com.roxiun.mellow.support.FakeHttpURLConnection;
-import com.roxiun.mellow.api.provider.model.ProviderResult;
+import com.roxiun.mellow.api.model.ProviderResult;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;

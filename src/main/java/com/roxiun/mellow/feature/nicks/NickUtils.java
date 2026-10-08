@@ -2,9 +2,8 @@ package com.roxiun.mellow.feature.nicks;
 
 import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.feature.stats.StatScopeResolver;
 import com.roxiun.mellow.feature.stats.ChatStatsFormatter;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
@@ -108,12 +107,12 @@ public class NickUtils {
         ResolvedNickProfile resolved = new ResolvedNickProfile(realName, source);
         nickedPlayers.add(key);
         resolvedNickProfiles.put(key, resolved);
-        final StatScope scope = StatScopeResolver.resolveInGameScope(
-            HypixelFeatures.getInstance().getGameSnapshot()
-        );
+        final com.roxiun.mellow.stats.StatsSelection selection = com.roxiun.mellow.stats.GameRegistry.detect(
+            HypixelFeatures.getInstance().getGameSnapshot());
+        final StatScope scope = selection == null ? null : selection.game().scope();
         AsyncExecutor.getInstance().profileIo(() -> {
-            ProfileFetchResult result = playerCache.getScopedProfileResult(
-                realName, scope, ProfileFetchContext.GENERAL, automatic
+            ProfileFetchResult result = playerCache.getSelectedProfileResult(
+                realName, selection, ProfileFetchContext.GENERAL, automatic
             );
             MainThreadDispatcher.run(() -> {
                 // Clearing the map or replacing this identity invalidates its pending fetch.

@@ -276,6 +276,22 @@ public class MellowOneConfig extends Config {
     )
     public String[] duelsStatOrder = {"Team", "Division", "Name", "KDR", "WLR", "Wins", "Losses", "Kills", "Deaths", "HP"};
 
+    @DraggableList(
+        title = "Build Battle Stat Order",
+        description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "Stat Order", checkable = true,
+        options = {"Team", "Title", "Name", "Wins", "HP", "Tags", "Ping"}
+    )
+    public String[] buildBattleStatOrder = {"Team", "Title", "Name", "Wins"};
+
+    @DraggableList(
+        title = "TNT Run Stat Order",
+        description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "Stat Order", checkable = true,
+        options = {"Team", "Wins", "Name", "Ratio", "HP", "Tags", "Ping"}
+    )
+    public String[] tntRunStatOrder = {"Team", "Name", "Wins", "Ratio"};
+
     @Checkbox(
         description = "Toggle separator between stats",
         title = "Between 1st and 2nd",
@@ -686,7 +702,7 @@ public class MellowOneConfig extends Config {
         dependOn("tabStats", "showStarsWithBrackets", "showNickWithBrackets", "showRanksInGameTabStats",
             "extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
             "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding", "highlightTaggedPlayers",
-            "bedwarsStatOrder", "skywarsStatOrder", "duelsStatOrder", "showDot12", "showDot23", "showDot34",
+            "bedwarsStatOrder", "skywarsStatOrder", "duelsStatOrder", "buildBattleStatOrder", "tntRunStatOrder", "showDot12", "showDot23", "showDot34",
             "showDot45", "showDot56", "showDot67", "showDot78", "showDot89", "showDot910",
             "showUrchinTagsInTab", "showXadiaTagsInTab");
         dependOn("extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",

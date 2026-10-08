@@ -16,6 +16,8 @@ final class ConfigSmokeTest {
         MellowOneConfig config = Mellow.config;
         verifyDenickSearchLabels();
         String[] originalOrder = config.bedwarsStatOrder;
+        String[] originalBuildBattle = config.buildBattleStatOrder;
+        String[] originalTntRun = config.tntRunStatOrder;
         int originalHueMode = config.hitboxHueMode;
         int originalSaturationMode = config.hitboxSaturationMode;
         int originalBrightnessMode = config.hitboxBrightnessMode;
@@ -23,6 +25,8 @@ final class ConfigSmokeTest {
         String temporary = "mellow-settings-test";
         try {
             config.getProperty("bedwarsStatOrder").setAs(new String[]{"Ping", "Name"});
+            config.getProperty("buildBattleStatOrder").setAs(new String[]{"Name", "Title", "Wins"});
+            config.getProperty("tntRunStatOrder").setAs(new String[]{"Ratio", "Name", "Ping"});
             config.save();
             verifyDependencies(config);
             ConfigManager.createProfile(temporary);
@@ -31,6 +35,10 @@ final class ConfigSmokeTest {
             verifyDependencies(config);
             // Values unrelated to the dependency checks must survive the switch back.
             require(Arrays.equals(config.bedwarsStatOrder, new String[]{"Ping", "Name"}), "Stat order lost after profile switch");
+            require(Arrays.equals(config.buildBattleStatOrder, new String[]{"Name", "Title", "Wins"}), "Build Battle order lost after profile switch");
+            require(Arrays.equals(config.tntRunStatOrder, new String[]{"Ratio", "Name", "Ping"}), "TNT Run order lost after profile switch");
+            require(Arrays.equals(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.TNT_RUN, config), new int[]{3, 2, 7}), "TNT Run UI order did not reach renderer");
             verifyHuds(config);
             ConfigManager.openProfile(temporary);
             ConfigManager.openProfile(profile);
@@ -41,6 +49,8 @@ final class ConfigSmokeTest {
         } finally {
             if (!ConfigManager.activeProfile().equals(profile)) ConfigManager.openProfile(profile);
             config.bedwarsStatOrder = originalOrder;
+            config.buildBattleStatOrder = originalBuildBattle;
+            config.tntRunStatOrder = originalTntRun;
             config.hitboxHueMode = originalHueMode;
             config.hitboxSaturationMode = originalSaturationMode;
             config.hitboxBrightnessMode = originalBrightnessMode;

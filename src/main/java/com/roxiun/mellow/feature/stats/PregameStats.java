@@ -1,8 +1,9 @@
 package com.roxiun.mellow.feature.stats;
 
+import com.roxiun.mellow.stats.GameRegistry;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.feature.tags.TagPolicy;
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.stats.bedwars.BedwarsPlayer;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
@@ -184,7 +185,7 @@ public class PregameStats {
                 inSession(session, () -> publishProfile(username, ProfileFetchResult.success(tagged, null), false, session));
             });
         }
-        ProfileFetchResult result = playerCache.getProfileForIdentity(username, identity.getUuid(), false);
+        ProfileFetchResult result = playerCache.getProfileForIdentity(username, identity.getUuid(), false, com.roxiun.mellow.stats.StatsSelection.overall(com.roxiun.mellow.stats.StatScope.BEDWARS));
         inSession(session, () -> publishProfile(username, result, sendStats, session));
     }
 
@@ -192,7 +193,7 @@ public class PregameStats {
         PlayerProfile profile = result.getProfile();
         BedwarsPlayer player = profile == null
             ? null
-            : profile.getBedwarsPlayer();
+            : profile.getStats(GameRegistry.BEDWARS);
 
         if (sendStats && player == null) {
             alreadyLookedUp.remove(username.toLowerCase(Locale.ROOT));
@@ -305,7 +306,7 @@ public class PregameStats {
     private boolean shouldSuppressFailureMessage(ProfileFetchResult result) {
         return result != null &&
         result.getFailureReason() ==
-        com.roxiun.mellow.api.provider.model.FetchFailureReason.UUID_UNAVAILABLE;
+        com.roxiun.mellow.api.model.FetchFailureReason.UUID_UNAVAILABLE;
     }
 
     private boolean isPartyMemberByName(String username) {

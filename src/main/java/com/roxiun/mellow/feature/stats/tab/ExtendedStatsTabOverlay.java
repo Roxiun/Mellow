@@ -7,7 +7,8 @@ import com.google.common.collect.Ordering;
 import com.mojang.authlib.GameProfile;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
+import com.roxiun.mellow.stats.StatDefinition;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
@@ -757,75 +758,9 @@ public class ExtendedStatsTabOverlay extends Gui {
     }
 
     private int getMaximumColumnWidth(StatScope scope, int column) {
-        if (ExtendedTabStatsColumns.isHealthColumn(scope, column)) {
-            return 34;
-        }
-        if (ExtendedTabStatsColumns.isTagsColumn(scope, column)) {
-            return 110;
-        }
-
-        if (scope == StatScope.SKYWARS) {
-            switch (column) {
-                case 0:
-                    return 40;
-                case 1:
-                    return 70;
-                case 2:
-                    return shouldShowHeadsInExtendedView() ? 230 : 220;
-                default:
-                    return 72;
-            }
-        }
-
-        if (scope == StatScope.DUELS) {
-            switch (column) {
-                case 0:
-                    return 40;
-                case 1:
-                    return 92;
-                case 2:
-                    return shouldShowHeadsInExtendedView() ? 230 : 220;
-                default:
-                    return 72;
-            }
-        }
-
-        if (scope == StatScope.BUILD_BATTLE) {
-            switch (column) {
-                case 0:
-                    return 40;
-                case 1:
-                    return 136;
-                case 2:
-                    return shouldShowHeadsInExtendedView() ? 230 : 220;
-                default:
-                    return 72;
-            }
-        }
-
-        if (scope == StatScope.TNT_RUN) {
-            switch (column) {
-                case 0:
-                    return 40;
-                case 1:
-                    return 72;
-                case 2:
-                    return shouldShowHeadsInExtendedView() ? 230 : 220;
-                default:
-                    return 72;
-            }
-        }
-
-        switch (column) {
-            case 0:
-                return 40;
-            case 1:
-                return 70;
-            case 2:
-                return shouldShowHeadsInExtendedView() ? 230 : 220;
-            default:
-                return 72;
-        }
+        StatDefinition stat = ExtendedTabStatsColumns.definition(scope, column);
+        if (stat == null) return 72;
+        return stat.maximumWidth() + (stat.style() == StatDefinition.Style.NAME && shouldShowHeadsInExtendedView() ? 10 : 0);
     }
 
     private boolean shouldShowHeadsInExtendedView() {
@@ -907,67 +842,9 @@ public class ExtendedStatsTabOverlay extends Gui {
         String suffix = tabData != null && tabData.length > 2 ? tabData[2] : "";
         String teamColor = PlayerUtils.getTeamColor(team);
 
-        if (column == 4 && scope == StatScope.BEDWARS) {
-            return buildBedwarsWinstreakValue(stats, isNicked, info);
-        }
-
-        String value;
-        if (scope == StatScope.SKYWARS) {
-            value = getSkywarsColumnValue(
-                column,
-                team,
-                name,
-                suffix,
-                teamColor,
-                stats,
-                isNicked,
-                resolvedRealName
-            );
-        } else if (scope == StatScope.DUELS) {
-            value = getDuelsColumnValue(
-                column,
-                team,
-                name,
-                suffix,
-                teamColor,
-                stats,
-                isNicked,
-                resolvedRealName
-            );
-        } else if (scope == StatScope.BUILD_BATTLE) {
-            value = getBuildBattleColumnValue(
-                column,
-                team,
-                name,
-                suffix,
-                teamColor,
-                stats,
-                isNicked,
-                resolvedRealName
-            );
-        } else if (scope == StatScope.TNT_RUN) {
-            value = getTntRunColumnValue(
-                column,
-                team,
-                name,
-                suffix,
-                teamColor,
-                stats,
-                isNicked,
-                resolvedRealName
-            );
-        } else {
-            value = getBedwarsColumnValue(
-                column,
-                team,
-                name,
-                suffix,
-                teamColor,
-                stats,
-                isNicked,
-                resolvedRealName
-            );
-        }
+        StatDefinition definition = ExtendedTabStatsColumns.definition(scope, column);
+        if (definition == null) return "";
+        String value = getStatColumnValue(definition, team, name, suffix, teamColor, stats, isNicked, resolvedRealName, info);
 
         if (column == 2 && shouldKeepTagsInName(scope)) {
             value = appendTagSuffixes(value, stats);
@@ -977,267 +854,32 @@ public class ExtendedStatsTabOverlay extends Gui {
         return value == null ? "" : value;
     }
 
-    private String getBedwarsColumnValue(
-        int column,
-        String team,
-        String name,
-        String suffix,
-        String teamColor,
-        TabStats stats,
-        boolean isNicked,
-        String resolvedRealName
-    ) {
-        switch (column) {
-            case 0:
+    private String getStatColumnValue(StatDefinition definition, String team, String name,
+        String suffix, String teamColor, TabStats stats, boolean isNicked, String resolvedRealName,
+        NetworkPlayerInfo info) {
+        String value = definition.value(stats);
+        switch (definition.style()) {
+            case TEAM:
                 return team;
-            case 1:
-                if (isNicked && (stats == null || stats.getStars() == null || stats.getStars().isEmpty())) {
-                    return getNickLabel();
-                }
-                if (stats != null && stats.getStars() != null && !stats.getStars().isEmpty()) {
-                    return formatStarsForTab(stats.getStars(), config.showStarsWithBrackets);
-                }
-                return "";
-            case 2:
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return buildDenickedName(
-                        teamColor,
-                        name,
-                        suffix,
-                        resolvedRealName
-                    );
-                }
-                if (shouldShowRankInTabName()) {
-                    if (
-                        stats != null &&
-                        stats.getFormattedNameWithRank() != null &&
-                        !stats.getFormattedNameWithRank().isEmpty()
-                    ) {
-                        return stats.getFormattedNameWithRank() + "§r";
-                    }
-                }
+            case NAME:
+                if (hasResolvedRealName(resolvedRealName)) return buildDenickedName(teamColor, name, suffix, resolvedRealName);
+                if (shouldShowRankInTabName() && stats != null && stats.getFormattedNameWithRank() != null
+                    && !stats.getFormattedNameWithRank().isEmpty()) return stats.getFormattedNameWithRank() + "§r";
                 return "§r" + teamColor + name + suffix;
-            case 3:
-                return getExtendedStatValue(stats, stats != null ? stats.getFkdr() : null, isNicked);
-            case 4:
-                return getExtendedStatValue(
-                    stats,
-                    stats != null ? stats.getWinstreak() : null,
-                    isNicked
-                );
-            case 5:
-                return getExtendedStatValue(stats, stats != null ? stats.getWlr() : null, isNicked);
-            case 6:
-                return getExtendedStatValue(stats, stats != null ? stats.getBblr() : null, isNicked);
-            case 7:
-                return getExtendedStatValue(stats, stats != null ? stats.getWins() : null, isNicked);
-            case 8:
-                return getExtendedStatValue(stats, stats != null ? stats.getBeds() : null, isNicked);
-            case 9:
-                return getExtendedStatValue(stats, stats != null ? stats.getFinals() : null, isNicked);
+            case BEDWARS_STARS:
+            case BADGE:
+                if (isNicked && (value == null || value.isEmpty())) return getNickLabel();
+                if (value == null || value.isEmpty()) return "";
+                return definition.style() == StatDefinition.Style.BEDWARS_STARS
+                    ? formatStarsForTab(value, config.showStarsWithBrackets) : value + "§r";
+            case TITLE:
+                if (isNicked && (value == null || value.isEmpty())) return getNickLabel();
+                return getExtendedStatValue(stats, value, isNicked);
+            case BEDWARS_WINSTREAK:
+                return buildBedwarsWinstreakValue(stats, isNicked, info);
             default:
-                return "";
-        }
-    }
-
-    private String getSkywarsColumnValue(
-        int column,
-        String team,
-        String name,
-        String suffix,
-        String teamColor,
-        TabStats stats,
-        boolean isNicked,
-        String resolvedRealName
-    ) {
-        switch (column) {
-            case 0:
-                return team;
-            case 1:
-                if (isNicked && (stats == null || stats.getStars() == null || stats.getStars().isEmpty())) {
-                    return getNickLabel();
-                }
-                if (stats != null && stats.getStars() != null && !stats.getStars().isEmpty()) {
-                    return stats.getStars() + "§r";
-                }
-                return "";
-            case 2:
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return buildDenickedName(
-                        teamColor,
-                        name,
-                        suffix,
-                        resolvedRealName
-                    );
-                }
-                if (shouldShowRankInTabName()) {
-                    if (
-                        stats != null &&
-                        stats.getFormattedNameWithRank() != null &&
-                        !stats.getFormattedNameWithRank().isEmpty()
-                    ) {
-                        return stats.getFormattedNameWithRank() + "§r";
-                    }
-                }
-                return "§r" + teamColor + name + suffix;
-            case 3:
-                return getExtendedStatValue(stats, stats != null ? stats.getFkdr() : null, isNicked);
-            case 4:
-                return getExtendedStatValue(stats, stats != null ? stats.getWlr() : null, isNicked);
-            case 5:
-                return getExtendedStatValue(stats, stats != null ? stats.getWins() : null, isNicked);
-            case 6:
-                return getExtendedStatValue(stats, stats != null ? stats.getKills() : null, isNicked);
-            default:
-                return "";
-        }
-    }
-
-    private String getDuelsColumnValue(
-        int column,
-        String team,
-        String name,
-        String suffix,
-        String teamColor,
-        TabStats stats,
-        boolean isNicked,
-        String resolvedRealName
-    ) {
-        switch (column) {
-            case 0:
-                return team;
-            case 1:
-                if (isNicked && (stats == null || stats.getStars() == null || stats.getStars().isEmpty())) {
-                    return getNickLabel();
-                }
-                if (stats != null && stats.getStars() != null && !stats.getStars().isEmpty()) {
-                    return stats.getStars() + "§r";
-                }
-                return "";
-            case 2:
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return buildDenickedName(
-                        teamColor,
-                        name,
-                        suffix,
-                        resolvedRealName
-                    );
-                }
-                if (shouldShowRankInTabName()) {
-                    if (
-                        stats != null &&
-                        stats.getFormattedNameWithRank() != null &&
-                        !stats.getFormattedNameWithRank().isEmpty()
-                    ) {
-                        return stats.getFormattedNameWithRank() + "§r";
-                    }
-                }
-                return "§r" + teamColor + name + suffix;
-            case 3:
-                return getExtendedStatValue(stats, stats != null ? stats.getFkdr() : null, isNicked);
-            case 4:
-                return getExtendedStatValue(stats, stats != null ? stats.getWlr() : null, isNicked);
-            case 5:
-                return getExtendedStatValue(stats, stats != null ? stats.getWins() : null, isNicked);
-            case 6:
-                return getExtendedStatValue(stats, stats != null ? stats.getLosses() : null, isNicked);
-            case 7:
-                return getExtendedStatValue(stats, stats != null ? stats.getKills() : null, isNicked);
-            case 8:
-                return getExtendedStatValue(stats, stats != null ? stats.getDeaths() : null, isNicked);
-            case 9:
-                return getExtendedStatValue(
-                    stats,
-                    stats != null ? stats.getWinstreak() : null,
-                    isNicked
-                );
-            default:
-                return "";
-        }
-    }
-
-    private String getBuildBattleColumnValue(
-        int column,
-        String team,
-        String name,
-        String suffix,
-        String teamColor,
-        TabStats stats,
-        boolean isNicked,
-        String resolvedRealName
-    ) {
-        switch (column) {
-            case 0:
-                return team;
-            case 1:
-                if (isNicked && (stats == null || stats.getStars() == null || stats.getStars().isEmpty())) {
-                    return getNickLabel();
-                }
-                return getExtendedStatValue(stats, stats != null ? stats.getStars() : null, isNicked);
-            case 2:
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return buildDenickedName(
-                        teamColor,
-                        name,
-                        suffix,
-                        resolvedRealName
-                    );
-                }
-                if (shouldShowRankInTabName()) {
-                    if (
-                        stats != null &&
-                        stats.getFormattedNameWithRank() != null &&
-                        !stats.getFormattedNameWithRank().isEmpty()
-                    ) {
-                        return stats.getFormattedNameWithRank() + "§r";
-                    }
-                }
-                return "§r" + teamColor + name + suffix;
-            case 3:
-                return getExtendedStatValue(stats, stats != null ? stats.getWins() : null, isNicked);
-            default:
-                return "";
-        }
-    }
-
-    private String getTntRunColumnValue(
-        int column,
-        String team,
-        String name,
-        String suffix,
-        String teamColor,
-        TabStats stats,
-        boolean isNicked,
-        String resolvedRealName
-    ) {
-        switch (column) {
-            case 0:
-                return team;
-            case 1:
-                return getExtendedStatValue(stats, stats != null ? stats.getWins() : null, isNicked);
-            case 2:
-                if (hasResolvedRealName(resolvedRealName)) {
-                    return buildDenickedName(
-                        teamColor,
-                        name,
-                        suffix,
-                        resolvedRealName
-                    );
-                }
-                if (shouldShowRankInTabName()) {
-                    if (
-                        stats != null &&
-                        stats.getFormattedNameWithRank() != null &&
-                        !stats.getFormattedNameWithRank().isEmpty()
-                    ) {
-                        return stats.getFormattedNameWithRank() + "§r";
-                    }
-                }
-                return "§r" + teamColor + name + suffix;
-            case 3:
-                return getExtendedStatValue(stats, stats != null ? stats.getWlr() : null, isNicked);
-            default:
-                return "";
+                // Build Battle's title uses the same missing-stat rendering as numeric columns.
+                return getExtendedStatValue(stats, value, isNicked);
         }
     }
 

@@ -58,6 +58,9 @@ public class MellowCommand extends CommandBase {
                 "§r§5/sw <username>:§d Manually check skywars stats of a player.§r"
             )
         );
+        sender.addChatMessage(new ChatComponentText(
+            "§r§5/mellowstats <player> [game|auto] [mode]:§d Check any supported game's stats.§r"));
+
         sender.addChatMessage(
             new ChatComponentText(
                 "§r§5/pv [username] (aliases: /profileviewer, /bedwarsprofileviewer, /bwprofileviewer):§d Open the profile viewer UI for a player (self by default).§r"

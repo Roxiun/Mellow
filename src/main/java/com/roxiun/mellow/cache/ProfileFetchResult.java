@@ -1,6 +1,6 @@
 package com.roxiun.mellow.cache;
 
-import com.roxiun.mellow.api.provider.model.FetchFailureReason;
+import com.roxiun.mellow.api.model.FetchFailureReason;
 import com.roxiun.mellow.data.PlayerProfile;
 
 public class ProfileFetchResult {

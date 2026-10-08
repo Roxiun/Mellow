@@ -2,7 +2,7 @@ package com.roxiun.mellow.data;
 
 import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.api.coral.CoralTag;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
 import java.util.Collections;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,11 +33,11 @@ public class PlayerProfileTabFormattingTest {
 
     @Test
     public void formatTabCountForDisplayAddsCommas() {
-        Assert.assertEquals("§c12,345", PlayerProfile.formatTabCountForDisplay("§c12345"));
+        Assert.assertEquals("§c12,345", com.roxiun.mellow.stats.StatFormatting.formatTabCountForDisplay("§c12345"));
     }
 
     @Test
     public void formatTabCountForDisplayLeavesRatiosUnchanged() {
-        Assert.assertEquals("§e1.23", PlayerProfile.formatTabCountForDisplay("§e1.23"));
+        Assert.assertEquals("§e1.23", com.roxiun.mellow.stats.StatFormatting.formatTabCountForDisplay("§e1.23"));
     }
 }

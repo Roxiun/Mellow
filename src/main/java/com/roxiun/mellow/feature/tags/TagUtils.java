@@ -1,9 +1,9 @@
 package com.roxiun.mellow.feature.tags;
 
 import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.api.provider.NadeshikoApi;
-import com.roxiun.mellow.api.provider.StatsProvider;
-import com.roxiun.mellow.api.provider.model.ProviderResult;
+import com.roxiun.mellow.api.hypixel.provider.NadeshikoApi;
+import com.roxiun.mellow.api.hypixel.provider.StatsProvider;
+import com.roxiun.mellow.api.model.ProviderResult;
 import com.roxiun.mellow.util.cache.TimedValueCache;
 import com.roxiun.mellow.util.blacklist.BlacklistManager;
 import java.io.BufferedReader;

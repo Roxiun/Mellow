@@ -48,6 +48,8 @@ final class PreferenceLayout {
             case "bedwarsStatOrder" -> "bedwarsLayout";
             case "skywarsStatOrder" -> "skywarsLayout";
             case "duelsStatOrder" -> "duelsLayout";
+            case "buildBattleStatOrder" -> "buildBattleLayout";
+            case "tntRunStatOrder" -> "tntRunLayout";
             case "finalsRange", "bedsRange", "maxResults" -> "denickerSearch";
             case "anticheatVerbose", "anticheatVl", "anticheatCooldown" -> "anticheatAlerts";
             case "winstreakMinStars", "winstreakMinFkdr" -> "winstreakFilters";
@@ -62,6 +64,8 @@ final class PreferenceLayout {
             case "bedwarsLayout" -> "BedWars Stat Order";
             case "skywarsLayout" -> "SkyWars Stat Order";
             case "duelsLayout" -> "Duels Stat Order";
+            case "buildBattleLayout" -> "Build Battle Stat Order";
+            case "tntRunLayout" -> "TNT Run Stat Order";
             case "denickerSearch" -> "Search Settings";
             case "anticheatAlerts" -> "Alert Settings";
             case "winstreakFilters" -> "Fetch Filters";

@@ -1,7 +1,7 @@
 package com.roxiun.mellow.core.event;
 
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.feature.stats.tab.ExtendedStatsTabOverlay;
 import com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsMode;

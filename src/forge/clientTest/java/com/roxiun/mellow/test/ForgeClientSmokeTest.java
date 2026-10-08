@@ -67,10 +67,16 @@ public final class ForgeClientSmokeTest {
             config.customStat1 = 14;
             config.skywarsCustomStat1 = 11;
             config.duelsCustomStat1 = 14;
+            require(config.optionNames.containsKey("buildBattleCustomStat1") && config.optionNames.containsKey("tntRunCustomStat1"), "Game column controls absent from OneConfig");
+            config.buildBattleCustomStat1 = 3;
+            config.tntRunCustomStat1 = 7;
             config.customStat2 = 13; // Existing Ping index must not move.
             config.save();
             config.statsProvider = 0;
             config.load();
+            require(config.buildBattleCustomStat1 == 3 && config.tntRunCustomStat1 == 7, "New game layouts were not persisted");
+            require(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.TNT_RUN, config)[0] == 7, "TNT Run dropdown did not reach renderer");
             require(config.statsProvider == 4, "Bedlify clamped to another provider");
             require(config.pingProvider == 0 && config.customStat1 == 10 && config.skywarsCustomStat1 == 7
                 && config.duelsCustomStat1 == 10 && config.customStat2 == 13, "Retired selections migrated incorrectly");

@@ -115,6 +115,7 @@ Under **Tab Stats**, Ornithe uses draggable entries that you can uncheck to hide
 | `/mstatus <player>` | Online status, last login, and Luna lobby data |
 | `/namehistory <player>` | Name history |
 | `/winstreak <player>` | Visible BedWars winstreak, with Aurora fallback if enabled |
+| `/mellowstats <player> [game\|auto] [mode]` | Query any supported game; tab completion lists games and modes |
 | `/clearcache` | Clear cached player data |
 | `/mdebug <all/state/scoreboard/pregame>` | Game-state diagnostics |
 | `/mreplay` | Open the replay browser |
@@ -129,10 +130,20 @@ Coral and Xadia use native tag integrations. Stats and tags load independently; 
 
 - `gamestate/GameStateManager` owns connection, party, location, and game phase. `ScoreboardObservation` extracts sidebar facts; Bedwars chat signals provide explicit match-start evidence. A missing sidebar preserves the established phase. A new world/server starts an unknown session; lobby location and disconnect packets reset the relevant state. Session IDs are separate from ordinary snapshot revisions.
 - `feature/stats/InGameTabStatsSyncService` scans the live roster every 1.5 seconds. `StatsChecker` applies local checks immediately, schedules stats and tags independently, and applies results on the client thread only while their session and refresh generation remain current. Party checks use membership UUIDs independently of the match and never fetch stats. Successful remote checks are retained per member for the connection session, including across leaving/rejoining the party; newcomers are still checked. Local lists remain checked locally.
-- `cache/PlayerCache` owns shared stats requests and parsed responses. Stats adapters handle transport; `HypixelApiUtils` projects the shared response into game-specific stats. Nadeshiko keeps its native response adapter. Raw responses are shared across commands, views, and game scopes.
+- `cache/PlayerCache` owns request sharing and freshness. Adapters live in `api/hypixel/provider`; `HypixelPlayerData` handles provider envelopes and identity/rank differences. Raw responses are shared across commands, views, and game scopes. `stats/PlayerStatsService` parses a caller-supplied `StatsSelection`, without consulting live client state.
+- `stats/GameRegistry` lists supported games. Each game owns its parser, typed stats, submodes, tab columns, defaults, and chat output. Tab renderers consume `StatDefinition` metadata. `PlayerProfile` stores typed game results without a field per game. All five games configure their column layouts inside OneConfig: checkable draggable lists on Ornithe and ordered dropdowns on Forge, using each platform's existing config file. Missing game data does not fall back to Bed Wars.
 - Native Coral and Xadia adapters share request caching through `api/tags/TagRequests`. Their responses become `TagReport` / `PlayerTag` values used by alerts and overlays. A report preserves failures separately from empty successful results. `TagPolicy` centralizes automatic tag suppression and tab visibility; manual lookups show the fetched report. `CubelifyParser` supplies shared envelope decoding with explicit provider mappings for warning tags, metadata, and HTTP-200 error badges.
 - Roster lookups use Coral/Xadia batches and Bordic bulk stats, in groups of at most 100. Single and batch requests share cache entries. Shared stats and tag responses stay fresh for five minutes. Successful identity lookups are retained for the connection session (bounded to 4,096 entries per cache), and cleared on disconnect or explicit cache clearing; identity failures expire after 30 seconds. Successful roster lookups are retained for the match; expiry does not trigger polling. Automatic failures receive at most one retry after 30 seconds; stats rate limits impose a provider cooldown. Upstream provider caches may contain older data.
 - `/refresh` invalidates current players' stats and tags while retaining good displayed rows until replacements arrive. `/clearcache` invalidates cached and pending results without changing local lists. `RequestCache` bounds retained entries and shares pending work; clearing an entry detaches its old completion. Ping discovery runs from ticks, with rendering limited to cache reads; successful values remain for the match instead of being periodically refreshed.
+
+## Adding game stats
+
+1. Create a package under `stats/` containing the typed player stats, parser, and a `GameDefinition` (plus a mode enum when needed). Parsers receive normalised `HypixelPlayerData`, never a provider ID.
+2. Add a `StatScope` and register the definition in `GameRegistry`. Give each column a stable ID, label, formatting style, and default position. For compatibility with team/name composition, keep Team at index 0 and Name at index 2. The existing games illustrate badge and numeric columns at index 1.
+3. Define game detection and, if applicable, submode detection. Preserve missing data instead of silently substituting another game's or mode's totals.
+4. Add fixtures covering the API fields, calculations, and detection rules that are specific to the game. The shared command and tab renderers pick it up. Add its native OneConfig controls to each platform and connect them in `ExtendedTabStatsColumns`; keep the game's column IDs and defaults stable.
+
+Add submodes inside their game's package. The detailed Bed Wars profile viewer uses the same `BedwarsMode` definitions; its custom visual layout remains unchanged. Provider-specific transport or envelope changes belong under `api/hypixel`, independently of game definitions.
 
 ## Community
 

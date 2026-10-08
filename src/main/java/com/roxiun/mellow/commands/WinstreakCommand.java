@@ -1,9 +1,10 @@
 package com.roxiun.mellow.commands;
 
+import com.roxiun.mellow.stats.GameRegistry;
 import com.mojang.authlib.GameProfile;
 import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
@@ -69,7 +70,7 @@ public class WinstreakCommand extends CommandBase {
             );
             PlayerProfile profile = result.getProfile();
 
-            if (profile == null || profile.getBedwarsPlayer() == null) {
+            if (profile == null || profile.getStats(GameRegistry.BEDWARS) == null) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
                         sender,
@@ -83,7 +84,7 @@ public class WinstreakCommand extends CommandBase {
                 return;
             }
 
-            BedwarsPlayer player = profile.getBedwarsPlayer();
+            BedwarsPlayer player = profile.getStats(GameRegistry.BEDWARS);
             String wsDisplay = resolveWinstreak(profile, player, sender);
 
             MainThreadDispatcher.run(() ->

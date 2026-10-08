@@ -1,6 +1,6 @@
 package com.roxiun.mellow.api.tags;
 
-import com.roxiun.mellow.api.provider.model.ProviderResult;
+import com.roxiun.mellow.api.model.ProviderResult;
 import com.roxiun.mellow.util.cache.RequestCache;
 import java.io.IOException;
 import java.util.List;

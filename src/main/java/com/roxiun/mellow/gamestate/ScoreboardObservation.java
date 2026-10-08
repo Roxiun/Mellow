@@ -22,11 +22,7 @@ public final class ScoreboardObservation {
 
     public static ScoreboardObservation parse(String title, List<String> lines) {
         String heading = normalize(title);
-        GameType type = heading.contains("bed wars") ? GameType.BEDWARS
-            : heading.contains("skywars") || heading.contains("sky wars") ? GameType.SKYWARS
-            : heading.contains("duel") ? GameType.DUELS
-            : heading.contains("build battle") ? GameType.BUILD_BATTLE
-            : heading.contains("tnt games") || heading.contains("tnt run") ? GameType.TNTGAMES : null;
+        GameType type = com.roxiun.mellow.stats.GameRegistry.scoreboardType(heading);
         boolean waiting = false, live = false;
         int countdown = -1, stage = -1, remaining = -1;
         for (String raw : lines == null ? Collections.<String>emptyList() : lines) {

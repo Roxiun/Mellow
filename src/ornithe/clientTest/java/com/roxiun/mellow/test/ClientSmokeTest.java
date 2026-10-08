@@ -28,7 +28,7 @@ public final class ClientSmokeTest implements ClientModInitializer {
             try {
                 orderProperty.setAs(new String[]{"Ping", "Name"});
                 int[] columns = com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
-                    com.roxiun.mellow.api.provider.model.StatScope.BEDWARS, Mellow.config);
+                    com.roxiun.mellow.stats.StatScope.BEDWARS, Mellow.config);
                 if (!java.util.Arrays.equals(columns, new int[]{13, 2})) throw new AssertionError("UI reorder did not update renderer");
                 orderProperty.setAs(new String[0]);
                 if (Mellow.config.bedwarsStatOrder.length != 0) throw new AssertionError("Cannot disable all stats");

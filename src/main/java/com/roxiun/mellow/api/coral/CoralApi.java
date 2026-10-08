@@ -1,6 +1,6 @@
 package com.roxiun.mellow.api.coral;
 
-import com.roxiun.mellow.api.provider.model.ProviderResult;
+import com.roxiun.mellow.api.model.ProviderResult;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
