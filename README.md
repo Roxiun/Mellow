@@ -145,6 +145,10 @@ Original Creator: `melissalmao` - Melissa (fwrina)
 
 Mellow (Fork): `Roxiun`
 
+[YedelMod](https://github.com/Yedelo/YedelMod): `Yedelo` — inspiration for coordinating the bundled Hypixel Mod API loader with OneConfig and existing API installations.
+
+[Hypixel Forge Mod API](https://github.com/HypixelDev/ForgeModAPI): bundled Forge integration and adapted MIT-licensed API loader.
+
 [Lucid](https://github.com/afterlikeorg/Lucid): Many anticheat checks were adopted from Lucid, and wouldn't be possible without them
 
 ### Features:
