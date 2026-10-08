@@ -140,7 +140,7 @@ Supported game IDs include `tnt_tag`, `bow_spleef`, and `murder_mystery`. For ex
 
 Live provider checks on 2026-10-08 confirmed these three games through Abyss. Bordic responses checked omitted their stats; availability depends on the selected provider. Missing game data is reported as unavailable.
 
-**Smart Rank Styling** in OneConfig's Tab Stats settings decorates names in TNT Run, Bow Spleef, TNT Tag, Sumo 1v1, and Classic 1v1. TNT possession colours, spectators, aliases, and custom labels take precedence. Other modes retain server styling. The existing saved rank-toggle preference is retained; the default remains off. Resolved-nickname display continues to follow the existing denicker behaviour.
+**Smart Rank Styling** in OneConfig's Tab Stats settings decorates names in TNT Run, Bow Spleef, TNT Tag, Sumo 1v1, and Classic 1v1. TNT possession colours, spectators, aliases, and custom labels take precedence. Other modes retain server styling. The existing saved rank-toggle preference is retained; the default is on. Resolved-nickname display continues to follow the existing denicker behaviour.
 
 ## Adding game stats
 

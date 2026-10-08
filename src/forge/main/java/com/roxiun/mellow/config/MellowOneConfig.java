@@ -279,7 +279,7 @@ public class MellowOneConfig extends Config {
         subcategory = "General"
     )
     // Keep the saved key so existing preferences survive the smarter name styling.
-    public boolean showRanksInGameTabStats = false;
+    public boolean showRanksInGameTabStats = true;
 
     @Switch(
         name = "Extended Tab Stats View",
