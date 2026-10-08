@@ -39,6 +39,8 @@ public abstract class GameDefinition<T> {
     public String modeLabel(String mode) { return "overall".equals(mode) ? "Overall" : mode; }
     public String detectMode(GameSnapshot snapshot) { return "overall"; }
     public net.hypixel.data.type.GameType scoreboardType(String heading) { return null; }
+    /** Whether this exact queue permits rank-coloured names; unknown queues preserve server styling. */
+    public boolean usesRankNames(GameSnapshot snapshot) { return false; }
     public abstract boolean matches(GameSnapshot snapshot);
     public abstract ProviderResult<T> parse(HypixelPlayerData data, String mode);
     public abstract TabStats tabStats(T stats);

@@ -367,11 +367,10 @@ public class GuiPlayerTabOverlayMixin {
             case TEAM: return new String[] { team, "false" };
             case NAME:
                 if (hasResolvedRealName(resolvedRealName)) return new String[] { buildDenickedName(teamColor, name, resolvedRealName), "false" };
-                if (shouldShowRankInTabName()) {
-                    String ranked = stats.getFormattedNameWithRank();
-                    if (ranked != null && !ranked.isEmpty()) return new String[] { ranked + "§r", "false" };
-                }
-                return new String[] { "§r" + teamColor + name, "false" };
+                return new String[] { com.roxiun.mellow.feature.stats.tab.TabNameFormatter.format(
+                    playerInfo, team, stats == null ? null : stats.getFormattedNameWithRank(),
+                    HypixelFeatures.getInstance().getGameSnapshot(), Mellow.config.showRanksInGameTabStats,
+                    Mellow.nickUtils != null && Mellow.nickUtils.isNicked(name)), "false" };
             case BEDWARS_STARS: case BADGE: case TITLE:
                 boolean nicked = Mellow.nickUtils != null && Mellow.nickUtils.isNicked(name);
                 if (nicked && (value == null || value.isEmpty())) {
@@ -412,16 +411,6 @@ public class GuiPlayerTabOverlayMixin {
             safeDisplayName += " §8[§3ANNOY§8]";
         }
         return safeDisplayName;
-    }
-
-    private boolean shouldShowRankInTabName() {
-        if (HypixelFeatures.getInstance().getGameSnapshot() == null) {
-            return false;
-        }
-        if (HypixelFeatures.getInstance().getGameSnapshot().isLobby()) {
-            return true;
-        }
-        return Mellow.config.showRanksInGameTabStats;
     }
 
     private StatScope resolveTabStatScope() {

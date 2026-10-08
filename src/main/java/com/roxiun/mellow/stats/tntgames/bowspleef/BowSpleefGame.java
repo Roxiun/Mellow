@@ -21,6 +21,7 @@ public final class BowSpleefGame extends GameDefinition<BowSpleefPlayer> {
             StatDefinition.tags(),
             StatDefinition.ping());
     }
+    @Override public boolean usesRankNames(GameSnapshot snapshot) { return true; }
     @Override public GameType scoreboardType(String heading) {
         return heading.contains("bow spleef") ? GameType.TNTGAMES : null;
     }

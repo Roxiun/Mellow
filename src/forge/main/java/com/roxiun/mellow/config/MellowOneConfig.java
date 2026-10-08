@@ -273,11 +273,12 @@ public class MellowOneConfig extends Config {
     public boolean showNickWithBrackets = true;
 
     @Switch(
-        description = "When enabled, Name stat includes rank prefix during games. Lobbies always show rank.",
-        name = "Show Ranks In-Game",
+        description = "Show rank prefixes and colours in suitable modes while preserving gameplay colours and identities. Off keeps server styling.",
+        name = "Smart Rank Styling",
         category = "Tab Stats",
         subcategory = "General"
     )
+    // Keep the saved key so existing preferences survive the smarter name styling.
     public boolean showRanksInGameTabStats = false;
 
     @Switch(

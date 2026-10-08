@@ -29,6 +29,11 @@ public final class DuelsGame extends GameDefinition<DuelsPlayer> {
             StatDefinition.tags(),
             StatDefinition.ping());
     }
+    @Override public boolean usesRankNames(GameSnapshot snapshot) {
+        // Stats categories aggregate multiple queues, so use the server's exact queue ID.
+        return "SUMO_DUEL".equalsIgnoreCase(snapshot.getMode())
+            || "CLASSIC_DUEL".equalsIgnoreCase(snapshot.getMode());
+    }
     @Override public GameType scoreboardType(String heading) { return heading.contains("duel") ? GameType.DUELS : null; }
     @Override public boolean matches(GameSnapshot snapshot) { return snapshot.getGameType() == GameType.DUELS; }
     @Override public ProviderResult<DuelsPlayer> parse(HypixelPlayerData data, String mode) {

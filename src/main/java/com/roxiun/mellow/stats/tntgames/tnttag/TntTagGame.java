@@ -19,6 +19,7 @@ public final class TntTagGame extends GameDefinition<TntTagPlayer> {
             StatDefinition.tags(),
             StatDefinition.ping());
     }
+    @Override public boolean usesRankNames(GameSnapshot snapshot) { return true; }
     @Override public GameType scoreboardType(String heading) {
         return heading.contains("tnt tag") ? GameType.TNTGAMES : null;
     }

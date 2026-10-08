@@ -23,6 +23,7 @@ public final class TntRunGame extends GameDefinition<TntRunPlayer> {
             StatDefinition.tags(),
             StatDefinition.ping());
     }
+    @Override public boolean usesRankNames(GameSnapshot snapshot) { return true; }
     @Override public GameType scoreboardType(String heading) { return heading.contains("tnt games") || heading.contains("tnt run") ? GameType.TNTGAMES : null; }
     @Override public boolean matches(GameSnapshot snapshot) { return snapshot.getGameType() == GameType.TNTGAMES && matchesTntRun(snapshot); }
     @Override public ProviderResult<TntRunPlayer> parse(HypixelPlayerData data, String mode) {

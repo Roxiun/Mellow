@@ -863,9 +863,8 @@ public class ExtendedStatsTabOverlay extends Gui {
                 return team;
             case NAME:
                 if (hasResolvedRealName(resolvedRealName)) return buildDenickedName(teamColor, name, suffix, resolvedRealName);
-                if (shouldShowRankInTabName() && stats != null && stats.getFormattedNameWithRank() != null
-                    && !stats.getFormattedNameWithRank().isEmpty()) return stats.getFormattedNameWithRank() + "§r";
-                return "§r" + teamColor + name + suffix;
+                return TabNameFormatter.format(info, team, stats == null ? null : stats.getFormattedNameWithRank(),
+                    HypixelFeatures.getInstance().getGameSnapshot(), config.showRanksInGameTabStats, isNicked);
             case BEDWARS_STARS:
             case BADGE:
                 if (isNicked && (value == null || value.isEmpty())) return getNickLabel();
@@ -1135,16 +1134,6 @@ public class ExtendedStatsTabOverlay extends Gui {
         }
 
         return "";
-    }
-
-    private boolean shouldShowRankInTabName() {
-        if (HypixelFeatures.getInstance().getGameSnapshot() == null) {
-            return false;
-        }
-        if (HypixelFeatures.getInstance().getGameSnapshot().isLobby()) {
-            return true;
-        }
-        return Mellow.config.showRanksInGameTabStats;
     }
 
     private String formatStarsForTab(String stars, boolean withBrackets) {
