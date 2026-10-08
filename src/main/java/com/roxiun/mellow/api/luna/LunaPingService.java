@@ -1,14 +1,14 @@
 package com.roxiun.mellow.api.luna;
 
+import com.roxiun.mellow.util.cache.TimedValueCache;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.util.ChatUtils;
-import com.roxiun.mellow.util.ping.SessionPingFetchGate;
+import com.roxiun.mellow.util.ping.PingRetryGate;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,15 +21,17 @@ public class LunaPingService {
 
     private static final String PING_URL = "https://lunaaaa.net/ping/";
 
+    private volatile long generation;
     private final OkHttpClient client = new OkHttpClient();
-    private final Map<String, Integer> pingCache = new ConcurrentHashMap<>();
-    private final SessionPingFetchGate sessionFetchGate =
-        new SessionPingFetchGate();
+    private final TimedValueCache<String, Integer> pingCache = new TimedValueCache<>(120_000L);
+    private final PingRetryGate sessionFetchGate =
+        new PingRetryGate();
     private final Set<String> fetchInProgress = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean errorShownThisSession = new AtomicBoolean(false);
 
     public int getCachedPing(String uuid) {
-        return pingCache.getOrDefault(uuid, -1);
+        Integer ping = pingCache.get(uuid);
+        return ping == null ? -1 : ping;
     }
 
     public boolean tryStartFetch(String uuid) {
@@ -49,12 +51,15 @@ public class LunaPingService {
             return;
         }
 
+        generation++;
+        fetchInProgress.clear();
         pingCache.remove(uuid);
         sessionFetchGate.clearPlayer(uuid);
         fetchInProgress.remove(uuid);
     }
 
     public void clearCache() {
+        generation++;
         pingCache.clear();
         sessionFetchGate.clear();
         fetchInProgress.clear();
@@ -79,16 +84,17 @@ public class LunaPingService {
             return;
         }
 
+        long requestGeneration = generation;
         AsyncExecutor.getInstance().supplementalIo(() -> {
             try {
                 int ping = fetchPingBlocking(uuid, apiKey);
-                if (ping >= 0) {
+                if (ping >= 0 && generation == requestGeneration) {
                     storeInCache(uuid, ping);
                 }
             } catch (Exception e) {
                 showErrorOnce("Luna Ping API error", e);
             } finally {
-                finishFetch(uuid);
+                if (generation == requestGeneration) finishFetch(uuid);
             }
         });
     }

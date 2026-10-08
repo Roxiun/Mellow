@@ -1,16 +1,14 @@
 package com.roxiun.mellow.mixin;
 
-import com.roxiun.mellow.api.xadia.XadiaTag;
+import com.roxiun.mellow.feature.tags.TagPolicy;
+import com.roxiun.mellow.api.tags.PlayerTag;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.provider.model.StatScope;
-import com.roxiun.mellow.api.seraph.SeraphTag;
-import com.roxiun.mellow.api.coral.CoralTag;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.feature.stats.StatScopeResolver;
 import com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns;
 import com.roxiun.mellow.feature.stats.tab.TabHealthValueResolver;
-import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.player.PlayerUtils;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
@@ -81,7 +79,6 @@ public class GuiPlayerTabOverlayMixin {
                 // Create a minimal TabStats object for the nick case
                 TabStats emptyStats = new TabStats(
                     null, // coralTags
-                    null, // seraphTags
                     null, // formattedNameWithRank
                     null, // stars
                     null, // fkdr
@@ -114,7 +111,6 @@ public class GuiPlayerTabOverlayMixin {
                 // Create a minimal TabStats object for the nick case
                 TabStats emptyStats = new TabStats(
                     null, // coralTags
-                    null, // seraphTags
                     null, // formattedNameWithRank
                     null, // stars
                     null, // fkdr
@@ -192,25 +188,8 @@ public class GuiPlayerTabOverlayMixin {
             resolvedRealName
         );
 
-        if (Mellow.config.shouldShowCoralTagsInTab() && stats.isCoralTagged()) {
-            for (CoralTag tag : stats.getCoralTags()) {
-                newDisplayName +=
-                    " " + FormattingUtils.formatCoralTagIcon(tag);
-            }
-        }
-
-        if (Mellow.config.xadia && Mellow.config.showXadiaTagsInTab && stats.isXadiaTagged()) {
-            for (XadiaTag tag : stats.getXadiaTags()) {
-                newDisplayName += " " + FormattingUtils.formatXadiaTagIcon(tag);
-            }
-        }
-
-        if (Mellow.config.showSeraphTagsInTab && stats.isSeraphTagged()) {
-            for (SeraphTag tag : stats.getSeraphTags()) {
-                newDisplayName +=
-                    " " + FormattingUtils.formatSeraphTagIcon(tag);
-            }
-        }
+        for (PlayerTag tag : TagPolicy.visible(stats.getTags(), Mellow.config))
+            newDisplayName += " " + tag.getIcon();
 
         return newDisplayName;
     }

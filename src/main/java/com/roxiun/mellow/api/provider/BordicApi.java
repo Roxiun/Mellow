@@ -1,33 +1,19 @@
 package com.roxiun.mellow.api.provider;
 
+import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
 import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.buildbattle.BuildBattlePlayer;
-import com.roxiun.mellow.api.duels.DuelsMode;
-import com.roxiun.mellow.api.duels.DuelsPlayer;
-import com.roxiun.mellow.api.mojang.MojangApi;
 import com.roxiun.mellow.api.provider.model.FetchFailureReason;
 import com.roxiun.mellow.api.provider.model.ProviderId;
 import com.roxiun.mellow.api.provider.model.ProviderResult;
-import com.roxiun.mellow.api.skywars.SkywarsPlayer;
-import com.roxiun.mellow.api.tnt.TntRunPlayer;
 import com.roxiun.mellow.api.util.HypixelApiUtils;
-import com.roxiun.mellow.util.cache.TimedValueCache;
-import com.roxiun.mellow.util.player.PlayerUtils;
-import java.io.IOException;
 
 public class BordicApi implements StatsProvider {
 
-    private static final long RAW_DATA_CACHE_TTL_MS = 120_000L;
     private static final String PLAYER_ENDPOINT =
         "https://api.bordic.xyz/v3/cache/hypixel?uuid=";
 
-    private final MojangApi mojangApi;
-    private final TimedValueCache<String, ProviderResult<String>> rawDataCache =
-        new TimedValueCache<>(RAW_DATA_CACHE_TTL_MS);
-
-    public BordicApi(MojangApi mojangApi) {
-        this.mojangApi = mojangApi;
+    public BordicApi() {
     }
 
     @Override
@@ -41,12 +27,6 @@ public class BordicApi implements StatsProvider {
     }
 
     @Override
-    public String fetchPlayerData(String uuid) {
-        ProviderResult<String> result = fetchPlayerDataResult(uuid);
-        return result.isSuccess() ? result.getValue() : "";
-    }
-
-    @Override
     public ProviderResult<String> fetchPlayerDataResult(String uuid) {
         if (uuid == null || uuid.trim().isEmpty()) {
             return ProviderResult.failure(
@@ -56,89 +36,47 @@ public class BordicApi implements StatsProvider {
         }
 
         String cacheKey = uuid.trim();
-        if (rawDataCache.containsFresh(cacheKey)) {
-            ProviderResult<String> cached = rawDataCache.get(cacheKey);
-            if (cached != null) {
-                return cached;
-            }
-        }
 
         ProviderResult<String> result = HypixelApiUtils.fetchPlayerDataResult(
             PLAYER_ENDPOINT + cacheKey,
             "Mellow/" + Mellow.VERSION
         );
-        if (result.isSuccess()) {
-            rawDataCache.put(cacheKey, result);
-        }
         return result;
     }
 
-    @Override
-    public BedwarsPlayer fetchPlayerStats(String playerName)
-        throws IOException {
-        String json = fetchPlayerJson(playerName);
-        return json == null
-            ? null
-            : HypixelApiUtils.parsePlayerData(json, ProviderId.BORDIC);
-    }
+    @Override public boolean supportsBatch() { return true; }
 
-    @Override
-    public SkywarsPlayer fetchSkywarsStats(String playerName)
-        throws IOException {
-        String json = fetchPlayerJson(playerName);
-        return json == null
-            ? null
-            : HypixelApiUtils.parseSkywarsPlayerData(json, ProviderId.BORDIC);
-    }
-
-    @Override
-    public DuelsPlayer fetchDuelsStats(String playerName) throws IOException {
-        return fetchDuelsStats(playerName, DuelsMode.OVERALL);
-    }
-
-    @Override
-    public DuelsPlayer fetchDuelsStats(String playerName, DuelsMode mode)
-        throws IOException {
-        String json = fetchPlayerJson(playerName);
-        return json == null
-            ? null
-            : HypixelApiUtils.parseDuelsPlayerData(
-                json,
-                ProviderId.BORDIC,
-                mode
-            );
-    }
-
-    @Override
-    public BuildBattlePlayer fetchBuildBattleStats(String playerName)
-        throws IOException {
-        String json = fetchPlayerJson(playerName);
-        return json == null
-            ? null
-            : HypixelApiUtils.parseBuildBattlePlayerData(
-                json,
-                ProviderId.BORDIC
-            );
-    }
-
-    @Override
-    public TntRunPlayer fetchTntRunStats(String playerName) throws IOException {
-        String json = fetchPlayerJson(playerName);
-        return json == null
-            ? null
-            : HypixelApiUtils.parseTntRunPlayerData(json, ProviderId.BORDIC);
-    }
-
-    private String fetchPlayerJson(String playerName) {
-        String uuid = PlayerUtils.getUUIDFromPlayerName(playerName);
-        if (uuid == null) {
-            uuid = mojangApi.fetchUUID(playerName);
-            if ("ERROR".equals(uuid)) {
-                return null;
+    @Override public java.util.Map<String, ProviderResult<String>> fetchBatch(java.util.Set<String> uuids) {
+        java.util.Map<String, ProviderResult<String>> results = new java.util.LinkedHashMap<>();
+        com.google.gson.JsonArray ids = new com.google.gson.JsonArray();
+        for (String uuid : uuids) ids.add(new com.google.gson.JsonPrimitive(uuid));
+        JsonObject body = new JsonObject(); body.add("uuids", ids);
+        java.net.HttpURLConnection connection = null;
+        try {
+            connection = (java.net.HttpURLConnection) new java.net.URL("https://api.bordic.xyz/v3/cache/hypixel").openConnection();
+            connection.setRequestMethod("POST"); connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("User-Agent", "Mellow/" + Mellow.VERSION);
+            connection.setConnectTimeout(5000); connection.setReadTimeout(5000);
+            try (java.io.OutputStream out = connection.getOutputStream()) {
+                out.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
             }
-        }
-
-        String json = fetchPlayerData(uuid);
-        return json == null || json.isEmpty() ? null : json;
+            int status = connection.getResponseCode();
+            if (status != 200) {
+                for (String uuid : uuids) results.put(uuid, ProviderResult.failure(
+                    status == 429 ? FetchFailureReason.RATE_LIMITED : FetchFailureReason.PROVIDER_ERROR, "HTTP " + status));
+                return results;
+            }
+            JsonObject response;
+            try (java.io.Reader reader = new java.io.InputStreamReader(connection.getInputStream(), java.nio.charset.StandardCharsets.UTF_8)) {
+                response = new JsonParser().parse(reader).getAsJsonObject();
+            }
+            for (String uuid : uuids) results.put(uuid, response.has(uuid)
+                ? ProviderResult.success(response.get(uuid).toString())
+                : ProviderResult.failure(FetchFailureReason.NO_PLAYER_DATA, "No cached player data"));
+        } catch (Exception error) {
+            for (String uuid : uuids) results.put(uuid, ProviderResult.failure(FetchFailureReason.NETWORK_ERROR, error.getMessage()));
+        } finally { if (connection != null) connection.disconnect(); }
+        return results;
     }
 }

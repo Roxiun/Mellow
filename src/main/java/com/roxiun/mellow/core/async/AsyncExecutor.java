@@ -37,23 +37,38 @@ public final class AsyncExecutor {
     }
 
     public void profileIo(Runnable task) {
-        profileIoExecutor.submit(task);
+        profileIoExecutor.execute(() -> {
+            try { task.run(); }
+            catch (Exception e) { org.apache.logging.log4j.LogManager.getLogger("Mellow").error("Background task failed", e); }
+        });
     }
 
     public void chat(Runnable task) {
-        chatExecutor.submit(task);
+        chatExecutor.execute(() -> {
+            try { task.run(); }
+            catch (Exception e) { org.apache.logging.log4j.LogManager.getLogger("Mellow").error("Background task failed", e); }
+        });
     }
 
     public void command(Runnable task) {
-        commandExecutor.submit(task);
+        commandExecutor.execute(() -> {
+            try { task.run(); }
+            catch (Exception e) { org.apache.logging.log4j.LogManager.getLogger("Mellow").error("Background task failed", e); }
+        });
     }
 
     public void supplementalIo(Runnable task) {
-        supplementalIoExecutor.submit(task);
+        supplementalIoExecutor.execute(() -> {
+            try { task.run(); }
+            catch (Exception e) { org.apache.logging.log4j.LogManager.getLogger("Mellow").error("Background task failed", e); }
+        });
     }
 
     public void replayIo(Runnable task) {
-        replayIoExecutor.submit(task);
+        replayIoExecutor.execute(() -> {
+            try { task.run(); }
+            catch (Exception e) { org.apache.logging.log4j.LogManager.getLogger("Mellow").error("Background task failed", e); }
+        });
     }
 
     public void shutdownReplayIoAndAwait() {

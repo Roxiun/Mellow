@@ -25,7 +25,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 - Supports [Coral API](https://api.urchin.gg/) tags (API key required)
 
-- Seraph integration is deprecated. All Seraph requests (tags, reports, ping, client detection, and UUID fallback) are disabled.
+- Identity lookup uses Mowojang with fallback providers. Retired Seraph tag, reporting, ping, and client-detection integrations have been removed.
 
 - Supports [Xadia API](https://xadia.sniped.me/) tags, including verified and unverified reports
 
@@ -96,11 +96,22 @@ Enable Coral or Xadia and add their keys under **API Keys**. Xadia keys come fro
 | `/mdebug <all/state/scoreboard/pregame>` | Game-state diagnostics |
 | `/mreplay` | Open the replay browser |
 
-List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. With the Seraph mod installed, use `/mblacklist` or `/bl` instead of `/blacklist`.
+List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. `/bl` and `/mblacklist` are aliases.
 
 Replay subcommands: `list`, `open <id/index>`, `info <id/index>`, `delete <id/index>`, and `tp <player>` (also `spectate`).
 
-Seraph requests are disabled; `/seraph`, `/client`, and legacy Seraph reporting remain deprecated.
+Coral and Xadia use native tag integrations. Stats and tags load independently; failed sources are reported separately.
+
+## Data and game-state flow
+
+- `gamestate/GameStateManager` owns connection, party, location, and game phase. `ScoreboardObservation` extracts sidebar facts; Bedwars chat signals provide explicit match-start evidence. A missing sidebar preserves the established phase. A new world/server starts an unknown session; lobby location and disconnect packets reset the relevant state. Session IDs are separate from ordinary snapshot revisions.
+- `feature/stats/InGameTabStatsSyncService` scans the live roster every 1.5 seconds. `StatsChecker` applies local checks immediately, schedules stats and tags independently, and applies results on the client thread only while their session and refresh generation remain current. Party checks use membership UUIDs independently of the match and never fetch stats.
+- `cache/PlayerCache` owns shared stats requests and parsed responses. Stats adapters handle transport; `HypixelApiUtils` projects the shared response into game-specific stats. Nadeshiko keeps its native response adapter. Raw responses are shared across commands, views, and game scopes.
+- Native Coral and Xadia adapters share request caching through `api/tags/TagRequests`. Their responses become `TagReport` / `PlayerTag` values used by alerts and overlays. A report preserves failures separately from empty successful results. `TagPolicy` centralizes automatic tag suppression and tab visibility; manual lookups show the fetched report. `CubelifyParser` supplies shared envelope decoding with explicit provider mappings for warning tags, metadata, and HTTP-200 error badges.
+- Roster lookups use Coral/Xadia batches and Bordic bulk stats, in groups of at most 100. Single and batch requests share cache entries. Stats and tags normally stay fresh for two minutes; failures have short retry windows and stats rate limits impose a provider cooldown. Upstream provider caches may contain older data.
+- `/refresh` invalidates current players' stats and tags while retaining good displayed rows until replacements arrive. `/clearcache` invalidates cached and pending results without changing local lists. `RequestCache` bounds retained entries and shares pending work; clearing an entry detaches its old completion. Ping refresh runs from ticks, with rendering limited to cache reads.
+
+Build checks: use JDK 21 for `./gradlew test remapJar`; the resulting mod and shaded dependencies target Java 8. The optional `-PclientTest` source set contains isolated Forge client fixtures.
 
 ## Community
 

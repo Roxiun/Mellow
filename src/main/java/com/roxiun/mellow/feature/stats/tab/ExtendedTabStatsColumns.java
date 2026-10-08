@@ -21,19 +21,14 @@ public final class ExtendedTabStatsColumns {
     public static final int TNT_RUN_HP_INDEX = 5;
     public static final int BEDWARS_TAGS_COLUMN = 12;
     public static final int BEDWARS_PING_COLUMN = 13;
-    public static final int BEDWARS_CLIENT_COLUMN = 14;
     public static final int SKYWARS_TAGS_COLUMN = 9;
     public static final int SKYWARS_PING_COLUMN = 10;
-    public static final int SKYWARS_CLIENT_COLUMN = 11;
     public static final int DUELS_TAGS_COLUMN = 12;
     public static final int DUELS_PING_COLUMN = 13;
-    public static final int DUELS_CLIENT_COLUMN = 14;
     public static final int BUILD_BATTLE_TAGS_COLUMN = 6;
     public static final int BUILD_BATTLE_PING_COLUMN = 7;
-    public static final int BUILD_BATTLE_CLIENT_COLUMN = 8;
     public static final int TNT_RUN_TAGS_COLUMN = 6;
     public static final int TNT_RUN_PING_COLUMN = 7;
-    public static final int TNT_RUN_CLIENT_COLUMN = 8;
 
     private static final int[] BUILD_BATTLE_DEFAULT_COLUMNS = new int[] {
         0, 1, 2, 3, BUILD_BATTLE_NONE_INDEX, BUILD_BATTLE_NONE_INDEX,
@@ -179,22 +174,6 @@ public final class ExtendedTabStatsColumns {
         return BEDWARS_PING_COLUMN;
     }
 
-    public static int getClientColumnIndex(StatScope scope) {
-        if (scope == StatScope.SKYWARS) {
-            return SKYWARS_CLIENT_COLUMN;
-        }
-        if (scope == StatScope.DUELS) {
-            return DUELS_CLIENT_COLUMN;
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return BUILD_BATTLE_CLIENT_COLUMN;
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return TNT_RUN_CLIENT_COLUMN;
-        }
-        return BEDWARS_CLIENT_COLUMN;
-    }
-
     public static boolean isTagsColumn(StatScope scope, int statIndex) {
         return statIndex == getTagsColumnIndex(scope);
     }
@@ -203,15 +182,10 @@ public final class ExtendedTabStatsColumns {
         return statIndex == getPingColumnIndex(scope);
     }
 
-    public static boolean isClientColumn(StatScope scope, int statIndex) {
-        return statIndex == getClientColumnIndex(scope);
-    }
-
     public static boolean isSupportedColumn(StatScope scope, int statIndex) {
         if (
             isTagsColumn(scope, statIndex) ||
-            isPingColumn(scope, statIndex) ||
-            isClientColumn(scope, statIndex)
+            isPingColumn(scope, statIndex)
         ) {
             return true;
         }
@@ -268,9 +242,7 @@ public final class ExtendedTabStatsColumns {
         if (isPingColumn(scope, statIndex)) {
             return "PING";
         }
-        if (isClientColumn(scope, statIndex)) {
-            return "CLIENT";
-        }
+
         if (scope == StatScope.SKYWARS) {
             switch (statIndex) {
                 case 0:
@@ -392,9 +364,7 @@ public final class ExtendedTabStatsColumns {
         if (isPingColumn(scope, statIndex)) {
             return 30;
         }
-        if (isClientColumn(scope, statIndex)) {
-            return 34;
-        }
+
         if (scope == StatScope.SKYWARS) {
             switch (statIndex) {
                 case 0:

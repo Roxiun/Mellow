@@ -67,7 +67,7 @@ public class MellowCommand extends CommandBase {
             new ChatComponentText(
                 "§r§5" +
                     BlacklistCommandResolver.getCommandPrefix() +
-                    " <add | remove | list | import> (alias: /bl):§d Manage your local blacklist. Seraph reporting is disabled.§r"
+                    " <add | remove | list | import> (alias: /bl):§d Manage your local blacklist.§r"
             )
         );
         sender.addChatMessage(
@@ -87,15 +87,7 @@ public class MellowCommand extends CommandBase {
                     ":§d View a player's Coral tags.§r"
             )
         );
-        sender.addChatMessage(
-            new ChatComponentText(
-                "§r§5" +
-                    (BlacklistCommandResolver.isSeraphLoaded()
-                        ? "/seraph|/mseraph <username>"
-                        : "/seraph <username>") +
-                    ":§d Deprecated; Seraph tag requests are disabled.§r"
-            )
-        );
+
         sender.addChatMessage(
             new ChatComponentText(
                 "§r§5/xadia|/mxadia <username>:§d View a player's Xadia tags.§r"
@@ -126,11 +118,7 @@ public class MellowCommand extends CommandBase {
                 "§r§5/namehistory|/nameh|/names|/nh <username>:§d View merged name history from Ashcon, Laby.net, and NameMC.§r"
             )
         );
-        sender.addChatMessage(
-            new ChatComponentText(
-                "§r§5/client <username>:§d Deprecated; Seraph client detection is disabled.§r"
-            )
-        );
+
         sender.addChatMessage(
             new ChatComponentText(
                 "§r§5/winstreak <username>:§d Show visible BedWars winstreak first, then Aurora fallback if configured.§r"

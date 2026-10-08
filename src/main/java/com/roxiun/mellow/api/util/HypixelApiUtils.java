@@ -19,7 +19,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
@@ -106,20 +105,6 @@ public class HypixelApiUtils {
             }
             in.close();
 
-            if (urlString.contains("nadeshiko")) {
-                Pattern pattern = Pattern.compile(
-                    "playerData = JSON.parse\\(decodeURIComponent\\(\\\"(.*?)\\\"\\)\\)"
-                );
-                Matcher matcher = pattern.matcher(response.toString());
-
-                if (matcher.find()) {
-                    String playerDataEncoded = matcher.group(1);
-                    return ProviderResult.success(
-                        URLDecoder.decode(playerDataEncoded, "UTF-8")
-                    );
-                }
-            }
-
             return ProviderResult.success(response.toString());
         } catch (SocketTimeoutException e) {
             return ProviderResult.failure(
@@ -163,12 +148,16 @@ public class HypixelApiUtils {
         return parsePlayerDataResult(json, providerId).getValue();
     }
 
-    public static ProviderResult<BedwarsPlayer> parsePlayerDataResult(
-        String json,
-        ProviderId providerId
-    ) {
+    public static ProviderResult<BedwarsPlayer> parsePlayerDataResult(String json, ProviderId providerId) {
         try {
-            JsonObject rootObject = new JsonParser().parse(json).getAsJsonObject();
+            return parsePlayerDataResult(new JsonParser().parse(json).getAsJsonObject(), providerId);
+        } catch (Exception e) {
+            return ProviderResult.failure(FetchFailureReason.PARSE_ERROR, e.getMessage());
+        }
+    }
+
+    public static ProviderResult<BedwarsPlayer> parsePlayerDataResult(JsonObject rootObject, ProviderId providerId) {
+        try {
             JsonObject playerObject = getPlayerObject(rootObject, providerId);
             if (isMissingPlayerObject(playerObject)) {
                 return ProviderResult.failure(
@@ -251,12 +240,16 @@ public class HypixelApiUtils {
         return parseSkywarsPlayerDataResult(json, providerId).getValue();
     }
 
-    public static ProviderResult<SkywarsPlayer> parseSkywarsPlayerDataResult(
-        String json,
-        ProviderId providerId
-    ) {
+    public static ProviderResult<SkywarsPlayer> parseSkywarsPlayerDataResult(String json, ProviderId providerId) {
         try {
-            JsonObject rootObject = new JsonParser().parse(json).getAsJsonObject();
+            return parseSkywarsPlayerDataResult(new JsonParser().parse(json).getAsJsonObject(), providerId);
+        } catch (Exception e) {
+            return ProviderResult.failure(FetchFailureReason.PARSE_ERROR, e.getMessage());
+        }
+    }
+
+    public static ProviderResult<SkywarsPlayer> parseSkywarsPlayerDataResult(JsonObject rootObject, ProviderId providerId) {
+        try {
             JsonObject playerObject = getPlayerObject(rootObject, providerId);
             if (isMissingPlayerObject(playerObject)) {
                 return ProviderResult.failure(
@@ -336,13 +329,16 @@ public class HypixelApiUtils {
         return parseDuelsPlayerDataResult(json, providerId, requestedMode).getValue();
     }
 
-    public static ProviderResult<DuelsPlayer> parseDuelsPlayerDataResult(
-        String json,
-        ProviderId providerId,
-        DuelsMode requestedMode
-    ) {
+    public static ProviderResult<DuelsPlayer> parseDuelsPlayerDataResult(String json, ProviderId providerId, DuelsMode requestedMode) {
         try {
-            JsonObject rootObject = new JsonParser().parse(json).getAsJsonObject();
+            return parseDuelsPlayerDataResult(new JsonParser().parse(json).getAsJsonObject(), providerId, requestedMode);
+        } catch (Exception e) {
+            return ProviderResult.failure(FetchFailureReason.PARSE_ERROR, e.getMessage());
+        }
+    }
+
+    public static ProviderResult<DuelsPlayer> parseDuelsPlayerDataResult(JsonObject rootObject, ProviderId providerId, DuelsMode requestedMode) {
+        try {
             JsonObject playerObject = getPlayerObject(rootObject, providerId);
             if (isMissingPlayerObject(playerObject)) {
                 return ProviderResult.failure(
@@ -420,12 +416,16 @@ public class HypixelApiUtils {
         return parseBuildBattlePlayerDataResult(json, providerId).getValue();
     }
 
-    public static ProviderResult<BuildBattlePlayer> parseBuildBattlePlayerDataResult(
-        String json,
-        ProviderId providerId
-    ) {
+    public static ProviderResult<BuildBattlePlayer> parseBuildBattlePlayerDataResult(String json, ProviderId providerId) {
         try {
-            JsonObject rootObject = new JsonParser().parse(json).getAsJsonObject();
+            return parseBuildBattlePlayerDataResult(new JsonParser().parse(json).getAsJsonObject(), providerId);
+        } catch (Exception e) {
+            return ProviderResult.failure(FetchFailureReason.PARSE_ERROR, e.getMessage());
+        }
+    }
+
+    public static ProviderResult<BuildBattlePlayer> parseBuildBattlePlayerDataResult(JsonObject rootObject, ProviderId providerId) {
+        try {
             JsonObject playerObject = getPlayerObject(rootObject, providerId);
             if (isMissingPlayerObject(playerObject)) {
                 return ProviderResult.failure(
@@ -543,12 +543,16 @@ public class HypixelApiUtils {
         return parseTntRunPlayerDataResult(json, providerId).getValue();
     }
 
-    public static ProviderResult<TntRunPlayer> parseTntRunPlayerDataResult(
-        String json,
-        ProviderId providerId
-    ) {
+    public static ProviderResult<TntRunPlayer> parseTntRunPlayerDataResult(String json, ProviderId providerId) {
         try {
-            JsonObject rootObject = new JsonParser().parse(json).getAsJsonObject();
+            return parseTntRunPlayerDataResult(new JsonParser().parse(json).getAsJsonObject(), providerId);
+        } catch (Exception e) {
+            return ProviderResult.failure(FetchFailureReason.PARSE_ERROR, e.getMessage());
+        }
+    }
+
+    public static ProviderResult<TntRunPlayer> parseTntRunPlayerDataResult(JsonObject rootObject, ProviderId providerId) {
+        try {
             JsonObject playerObject = getPlayerObject(rootObject, providerId);
             if (isMissingPlayerObject(playerObject)) {
                 return ProviderResult.failure(
@@ -780,25 +784,8 @@ public class HypixelApiUtils {
     }
 
     private static JsonObject getPlayerObject(JsonObject root, ProviderId providerId) {
-        if (providerId == ProviderId.ABYSS) {
-            if (!getBoolean(root, "success", false)) {
-                return null;
-            }
-            return getObject(root, "player");
-        }
-
-        if (
-            providerId == ProviderId.HYPIXEL_PUBLIC ||
-            providerId == ProviderId.BORDIC ||
-            providerId == ProviderId.BEDLIFY
-        ) {
-            if (!getBoolean(root, "success", false)) {
-                return null;
-            }
-            return getObject(root, "player");
-        }
-
-        return root;
+        if (providerId == ProviderId.NADESHIKO) return root;
+        return getBoolean(root, "success", false) ? getObject(root, "player") : null;
     }
 
     private static boolean isMissingPlayerObject(JsonObject playerObject) {

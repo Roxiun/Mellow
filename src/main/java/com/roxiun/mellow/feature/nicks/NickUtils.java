@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.nicks;
 
+import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.feature.stats.StatScopeResolver;
 import com.roxiun.mellow.feature.stats.ChatStatsFormatter;
@@ -127,35 +128,23 @@ public class NickUtils {
                     return;
                 }
                 resolved.profile = profile;
-                announceProfile(realName, profile, scope);
+                announceProfile(realName, profile, scope, automatic);
             });
         });
         return true;
     }
 
-    private void announceProfile(String realName, PlayerProfile profile, StatScope scope) {
+    private void announceProfile(String realName, PlayerProfile profile, StatScope scope, boolean automatic) {
         String stats = ChatStatsFormatter.format(profile, scope);
         if (!stats.isEmpty()) {
             ChatUtils.sendMessage(stats);
         }
-        if (config.isCoralEnabled() && profile.isCoralTagged()) {
-            ChatUtils.sendMessage("§c" + realName + " is tagged on §5Coral§c for: "
-                + FormattingUtils.formatCoralTags(profile.getCoralTags()));
-        }
-        if (config.xadia && profile.isXadiaTagged()) {
-            ChatUtils.sendMessage("§c" + realName + " is tagged on §dXadia§c for: "
-                + FormattingUtils.formatXadiaTags(profile.getXadiaTags()));
-        }
-        if (config.seraph && profile.isSeraphTagged()) {
-            String[] tags = FormattingUtils.formatSeraphTags(profile.getSeraphTags()).split("\n§c");
-            for (int i = 0; i < tags.length; i++) {
-                if (!tags[i].trim().isEmpty()) {
-                    ChatUtils.sendMessage(i == 0
-                        ? "§c" + realName + " is tagged on §3Seraph§c for: " + tags[i]
-                        : "§c" + tags[i]);
-                }
-            }
-        }
+        boolean ignored = automatic && com.roxiun.mellow.Mellow.tagIgnoreManager != null
+            && com.roxiun.mellow.Mellow.tagIgnoreManager.isTagIgnored(com.roxiun.mellow.util.UUIDUtils.fromString(profile.getUuid()));
+        java.util.Map<String, String> warnings = TagPolicy.warnings(
+            profile.getTags(), !automatic || config.printBlacklistTags, ignored);
+        for (java.util.Map.Entry<String, String> source : warnings.entrySet())
+            ChatUtils.sendMessage("§c" + realName + " is tagged on §d" + source.getKey() + "§c for: " + source.getValue());
     }
 
     private static String normalize(String name) {

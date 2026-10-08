@@ -1,52 +1,32 @@
 package com.roxiun.mellow.gamestate;
 
 import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
-import com.roxiun.mellow.gamestate.query.GameContext;
 import com.roxiun.mellow.util.scoreboard.ScoreboardUtils;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 import net.hypixel.data.type.GameType;
-import net.hypixel.data.type.ServerType;
 import net.hypixel.modapi.HypixelModAPI;
 import net.hypixel.modapi.packet.impl.clientbound.ClientboundPartyInfoPacket;
 import net.hypixel.modapi.packet.impl.clientbound.event.ClientboundLocationPacket;
 import net.hypixel.modapi.packet.impl.serverbound.ServerboundPartyInfoPacket;
 
-public class GameStateManager implements GameContext {
-
-    private static final Pattern GENERIC_TIMER_PATTERN = Pattern.compile(
-        "(?i).+\\s+(?:in\\s+)?\\d{1,2}:\\d{2}"
-    );
-    private static final Set<String> BEDWARS_STAGE_EVENTS = new HashSet<>();
-
-    static {
-        BEDWARS_STAGE_EVENTS.add("diamond ii");
-        BEDWARS_STAGE_EVENTS.add("emerald ii");
-        BEDWARS_STAGE_EVENTS.add("diamond iii");
-        BEDWARS_STAGE_EVENTS.add("emerald iii");
-        BEDWARS_STAGE_EVENTS.add("bed gone");
-        BEDWARS_STAGE_EVENTS.add("beds gone");
-        BEDWARS_STAGE_EVENTS.add("bed destroyed");
-        BEDWARS_STAGE_EVENTS.add("beds destroyed");
-        BEDWARS_STAGE_EVENTS.add("sudden death");
-        BEDWARS_STAGE_EVENTS.add("game end");
-        BEDWARS_STAGE_EVENTS.add("end game");
-    }
+public class GameStateManager {
 
     private final AtomicReference<GameSnapshot> snapshot =
         new AtomicReference<>(GameSnapshot.empty());
     private final CopyOnWriteArrayList<Consumer<GameSnapshot>> listeners =
         new CopyOnWriteArrayList<>();
 
+    private long sessionId;
+    private boolean awaitingLocation;
+    private long locationBeforeWorldAt;
+    private GameType locationGameType;
+    private boolean locationLobby;
     private boolean initialized;
     private int tickCounter;
     private long lastPartyRequestMillis;
@@ -64,7 +44,6 @@ public class GameStateManager implements GameContext {
         initialized = true;
     }
 
-    @Override
     public GameSnapshot getSnapshot() {
         return snapshot.get();
     }
@@ -81,105 +60,78 @@ public class GameStateManager implements GameContext {
             return;
         }
 
-        GameSnapshot current = snapshot.get();
-        boolean onHypixel = HypixelUtils.INSTANCE.isHypixel();
-
-        if (!onHypixel) {
-            if (current.isOnHypixel()) {
-                publish(GameSnapshot.empty());
-            }
+        if (!HypixelUtils.INSTANCE.isHypixel()) {
+            if (snapshot.get().isOnHypixel() && net.minecraft.client.Minecraft.getMinecraft().getNetHandler() == null) onDisconnect();
             return;
         }
-
-        ScoreboardState scoreboard = readScoreboard();
-        GameType resolvedGameType = resolveGameType(current, scoreboard);
-        boolean resolvedLobby = resolveLobby(current, resolvedGameType, scoreboard);
-        boolean pregame = detectBedwarsPregame(
-            resolvedGameType,
-            resolvedLobby,
-            scoreboard.lines
-        );
-
-        PregameReason pregameReason = pregame &&
-        current.getGameType() == null
-            ? PregameReason.FALLBACK
-            : pregame
-            ? PregameReason.PLAYERS_LINE
-            : PregameReason.NONE;
-
-        GameSnapshot next = new GameSnapshot(
-            true,
-            current.getServerName(),
-            resolvedGameType,
-            current.getMode(),
-            current.getMap(),
-            resolvedLobby,
-            pregame,
-            pregameReason,
-            scoreboard.title,
-            scoreboard.lines,
-            current.getPartyState(),
-            System.currentTimeMillis(),
-            current.getStateVersion() + 1
-        );
-
-        publish(next);
+        updateFromScoreboard();
         requestPartyInfo(false);
     }
 
     public void onWorldChange() {
-        publish(GameSnapshot.empty());
+        if (locationBeforeWorldAt > 0 && System.currentTimeMillis() - locationBeforeWorldAt < 2000) {
+            locationBeforeWorldAt = 0;
+            return;
+        }
+        sessionId++;
+        awaitingLocation = true;
+        locationGameType = null;
+        locationLobby = false;
+        GameSnapshot current = snapshot.get();
+        publish(new GameSnapshot(current.isOnHypixel(), "", null, "", "", GamePhase.UNKNOWN,
+            "", java.util.Collections.emptyList(), current.getPartyState(), current.getStateVersion() + 1, sessionId));
+    }
+
+    public void onDisconnect() {
+        locationBeforeWorldAt = 0;
+        sessionId++;
+        locationGameType = null;
+        locationLobby = false;
+        awaitingLocation = true;
+        lastPartyRequestMillis = 0;
+        publish(new GameSnapshot(false, "", null, "", "", GamePhase.UNKNOWN, "",
+            java.util.Collections.emptyList(), PartyState.empty(), snapshot.get().getStateVersion() + 1, sessionId));
+    }
+
+    public void onChat(String message) {
+        GameSnapshot current = snapshot.get();
+        if (current.isOnHypixel() && current.getGameType() == GameType.BEDWARS
+            && current.getPhase() != GamePhase.LOBBY
+            && (com.roxiun.mellow.feature.bedwars.BedwarsChatSignalParser.isBedwarsStartMessage(message)
+                || com.roxiun.mellow.feature.bedwars.BedwarsChatSignalParser.isBedwarsRespawnMessage(message))) {
+            publish(current.withPhase(GamePhase.LIVE));
+        }
+    }
+
+    private void updateFromScoreboard() {
+        GameSnapshot current = snapshot.get();
+        ScoreboardState board = readScoreboard();
+        ScoreboardObservation observation = ScoreboardObservation.parse(board.title, board.lines);
+        GameType type = locationGameType != null ? locationGameType : observation.gameType != null ? observation.gameType : current.getGameType();
+        GamePhase phase = ScoreboardObservation.resolve(current.getPhase(), locationLobby, observation);
+        publish(new GameSnapshot(true, current.getServerName(), type, current.getMode(), current.getMap(), phase,
+            board.title, board.lines, current.getPartyState(), current.getStateVersion() + 1, sessionId));
     }
 
     private void handleLocationPacket(ClientboundLocationPacket packet) {
         GameSnapshot current = snapshot.get();
-
-        GameType gameType = null;
-        if (packet.getServerType().isPresent()) {
-            ServerType serverType = packet.getServerType().get();
-            if (serverType instanceof GameType) {
-                gameType = (GameType) serverType;
-            }
+        boolean changed = !packet.getServerName().equals(current.getServerName());
+        if (changed && !awaitingLocation) {
+            sessionId++;
+            locationBeforeWorldAt = System.currentTimeMillis();
+        } else {
+            locationBeforeWorldAt = 0;
         }
-
-        boolean lobby = packet.getLobbyName().isPresent();
-        ScoreboardState scoreboard = readScoreboard();
-        GameType resolvedGameType = gameType == null
-            ? inferGameTypeFromScoreboard(scoreboard)
-            : gameType;
-        boolean resolvedLobby = lobby;
-        if (resolvedGameType == GameType.BEDWARS && gameType == null) {
-            resolvedLobby = inferBedwarsLobby(scoreboard.lines);
-        }
-        boolean pregame = detectBedwarsPregame(
-            resolvedGameType,
-            resolvedLobby,
-            scoreboard.lines
-        );
-
-        PregameReason pregameReason = pregame
-            ? PregameReason.PLAYERS_LINE
-            : (resolvedGameType == GameType.BEDWARS && !resolvedLobby
-                ? PregameReason.MODAPI_TRANSITION
-                : PregameReason.NONE);
-
-        GameSnapshot next = new GameSnapshot(
-            true,
-            packet.getServerName(),
-            resolvedGameType,
-            packet.getMode().orElse(""),
-            packet.getMap().orElse(""),
-            resolvedLobby,
-            pregame,
-            pregameReason,
-            scoreboard.title,
-            scoreboard.lines,
-            current.getPartyState(),
-            System.currentTimeMillis(),
-            current.getStateVersion() + 1
-        );
-
-        publish(next);
+        awaitingLocation = false;
+        locationGameType = packet.getServerType().isPresent() && packet.getServerType().get() instanceof GameType
+            ? (GameType) packet.getServerType().get() : null;
+        locationLobby = packet.getLobbyName().isPresent();
+        // Do not combine a new location with a previous world's sidebar.
+        GamePhase phase = locationLobby ? GamePhase.LOBBY : changed ? GamePhase.UNKNOWN : current.getPhase();
+        publish(new GameSnapshot(true, packet.getServerName(), locationGameType,
+            packet.getMode().orElse(""), packet.getMap().orElse(""), phase,
+            changed ? "" : current.getScoreboardTitle(), changed ? java.util.Collections.emptyList() : current.getScoreboardLines(),
+            current.getPartyState(), current.getStateVersion() + 1, sessionId));
         requestPartyInfo(true);
     }
 
@@ -234,138 +186,6 @@ public class GameStateManager implements GameContext {
         } catch (Exception ignored) {}
     }
 
-    private boolean detectBedwarsPregame(
-        GameType gameType,
-        boolean lobby,
-        List<String> lines
-    ) {
-        if (gameType != GameType.BEDWARS || lobby || lines.isEmpty()) {
-            return false;
-        }
-
-        for (String line : lines) {
-            String normalized = line
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("\\s+", " ")
-                .trim();
-            if (
-                normalized.startsWith("players:") ||
-                normalized.startsWith("players ") ||
-                normalized.equals("players")
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private GameType resolveGameType(
-        GameSnapshot current,
-        ScoreboardState scoreboard
-    ) {
-        if (current.getGameType() != null) {
-            return current.getGameType();
-        }
-        return inferGameTypeFromScoreboard(scoreboard);
-    }
-
-    private GameType inferGameTypeFromScoreboard(ScoreboardState scoreboard) {
-        String title = scoreboard.title == null
-            ? ""
-            : scoreboard.title.toLowerCase(Locale.ROOT);
-        if (title.contains("bed wars")) {
-            return GameType.BEDWARS;
-        }
-        if (title.contains("skywars") || title.contains("sky wars")) {
-            return GameType.SKYWARS;
-        }
-        if (title.contains("duels") || title.contains("duel")) {
-            return GameType.DUELS;
-        }
-        if (title.contains("build battle")) {
-            return GameType.BUILD_BATTLE;
-        }
-        if (title.contains("tnt games") || title.contains("tnt run")) {
-            return GameType.TNTGAMES;
-        }
-        return null;
-    }
-
-    private boolean resolveLobby(
-        GameSnapshot current,
-        GameType resolvedGameType,
-        ScoreboardState scoreboard
-    ) {
-        if (resolvedGameType != GameType.BEDWARS) {
-            return current.isLobby();
-        }
-
-        boolean hasPlayersLine = hasPlayersLine(scoreboard.lines);
-        boolean hasStageTimer = hasBedwarsStageTimer(scoreboard.lines);
-
-        if (hasPlayersLine || hasStageTimer) {
-            return false;
-        }
-
-        if (current.getGameType() == null) {
-            return true;
-        }
-
-        return current.isLobby();
-    }
-
-    private boolean inferBedwarsLobby(List<String> lines) {
-        return !hasPlayersLine(lines) && !hasBedwarsStageTimer(lines);
-    }
-
-    private boolean hasPlayersLine(List<String> lines) {
-        for (String line : lines) {
-            String normalized = line
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("\\s+", " ")
-                .trim();
-            if (
-                normalized.startsWith("players:") ||
-                normalized.startsWith("players ") ||
-                normalized.equals("players")
-            ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean hasBedwarsStageTimer(List<String> lines) {
-        for (String line : lines) {
-            String normalized = line
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("\\s+", " ")
-                .trim();
-            if (!GENERIC_TIMER_PATTERN.matcher(normalized).matches()) {
-                continue;
-            }
-
-            String eventName = normalized;
-            int inIndex = normalized.indexOf(" in ");
-            if (inIndex >= 0) {
-                eventName = normalized.substring(0, inIndex).trim();
-            } else {
-                int timerStart = normalized.lastIndexOf(' ');
-                if (timerStart > 0) {
-                    eventName = normalized.substring(0, timerStart).trim();
-                }
-            }
-            if (eventName.startsWith("next event:")) {
-                eventName = eventName.substring("next event:".length()).trim();
-            }
-            if (BEDWARS_STAGE_EVENTS.contains(eventName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private ScoreboardState readScoreboard() {
         return new ScoreboardState(
             ScoreboardUtils.getSidebarTitle(),
@@ -383,7 +203,9 @@ public class GameStateManager implements GameContext {
         for (Consumer<GameSnapshot> listener : listeners) {
             try {
                 listener.accept(next);
-            } catch (Exception ignored) {}
+            } catch (Exception error) {
+                org.apache.logging.log4j.LogManager.getLogger("Mellow").warn("Game-state listener failed", error);
+            }
         }
     }
 

@@ -68,14 +68,12 @@ public final class ForgeClientSmokeTest {
             config.skywarsCustomStat1 = 11;
             config.duelsCustomStat1 = 14;
             config.customStat2 = 13; // Existing Ping index must not move.
-            config.seraphKey = "retained-test-key";
             config.save();
             config.statsProvider = 0;
             config.load();
             require(config.statsProvider == 4, "Bedlify clamped to another provider");
             require(config.pingProvider == 0 && config.customStat1 == 10 && config.skywarsCustomStat1 == 7
                 && config.duelsCustomStat1 == 10 && config.customStat2 == 13, "Retired selections migrated incorrectly");
-            require(config.seraphKey.equals("retained-test-key"), "Hidden credential lost on save/load");
             require(!config.optionNames.get("autoLeaveBlacklistedPregameCommand").isEnabled(), "Dependencies lost after load");
             for (String field : new String[]{"finalsRange", "bedsRange", "maxResults"}) {
                 String[] labels = config.getClass().getField(field)

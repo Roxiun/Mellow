@@ -16,9 +16,6 @@ import com.roxiun.mellow.api.provider.HypixelPublicApi;
 import com.roxiun.mellow.api.provider.NadeshikoApi;
 import com.roxiun.mellow.api.provider.ProviderManager;
 import com.roxiun.mellow.api.provider.StatsProvider;
-import com.roxiun.mellow.api.seraph.SeraphApi;
-import com.roxiun.mellow.api.seraph.SeraphClientCacheService;
-import com.roxiun.mellow.api.seraph.SeraphPingService;
 import com.roxiun.mellow.api.coral.CoralApi;
 import com.roxiun.mellow.autoupdate.ModrinthUpdater;
 import com.roxiun.mellow.cache.PlayerCache;
@@ -62,6 +59,8 @@ import org.lwjgl.input.Keyboard;
 @Mod(modid = Mellow.MODID, name = Mellow.NAME, version = Mellow.VERSION)
 public class Mellow {
 
+    public static InGameTabStatsSyncService inGameTabStatsSyncService;
+    public static PartyBlacklistWarningService partyBlacklistWarningService;
     public static TabOverlayRouter tabOverlayRouter;
 
     public static final String MODID = "mellow";
@@ -76,12 +75,9 @@ public class Mellow {
     public static AuroraWinstreakService auroraWinstreakService;
     public static AuroraApi auroraApi;
     public static LunaPingService lunaPingService;
-    public static SeraphClientCacheService seraphClientCacheService;
-    public static SeraphPingService seraphPingService;
     public static MojangApi mojangApi;
     public static XadiaApi xadiaApi;
     public static CoralApi coralApi;
-    public static SeraphApi seraphApi;
     public static PlayerCache playerCache;
     public static BlacklistManager blacklistManager;
     public static AnnoylistManager annoylistManager;
@@ -106,39 +102,32 @@ public class Mellow {
         auroraPingService = new AuroraPingService();
         auroraWinstreakService = new AuroraWinstreakService();
         lunaPingService = new LunaPingService();
-        seraphPingService = new SeraphPingService();
         mojangApi = new MojangApi();
         providerManager = new ProviderManager();
-        providerManager.register(new HypixelPublicApi(mojangApi, config));
-        providerManager.register(new NadeshikoApi(mojangApi));
-        providerManager.register(new AbyssApi(mojangApi));
-        providerManager.register(new BordicApi(mojangApi));
-        providerManager.register(new BedlifyApi(mojangApi));
+        providerManager.register(new HypixelPublicApi(config));
+        providerManager.register(new NadeshikoApi());
+        providerManager.register(new AbyssApi());
+        providerManager.register(new BordicApi());
+        providerManager.register(new BedlifyApi());
 
         coralApi = new CoralApi();
         xadiaApi = new XadiaApi();
-        seraphApi = new SeraphApi(mojangApi);
-        seraphClientCacheService = new SeraphClientCacheService(seraphApi, config);
         auroraApi = new AuroraApi();
 
         playerCache = new PlayerCache(
             mojangApi,
             providerManager,
             coralApi,
-            seraphApi,
             xadiaApi,
             config
         );
-        PartyBlacklistWarningService partyBlacklistWarningService =
+        partyBlacklistWarningService =
             new PartyBlacklistWarningService(
                 blacklistManager,
                 config,
                 playerCache,
                 tagIgnoreManager
             );
-        HypixelFeatures
-            .getInstance()
-            .addGameStateListener(partyBlacklistWarningService::onSnapshotUpdate);
 
         nickUtils = new NickUtils(playerCache, config);
 
@@ -205,11 +194,8 @@ public class Mellow {
             annoylistManager,
             tagIgnoreManager
         );
-        InGameTabStatsSyncService inGameTabStatsSyncService =
+        inGameTabStatsSyncService =
             new InGameTabStatsSyncService(statsChecker, nickUtils, config, tabStats);
-        HypixelFeatures
-            .getInstance()
-            .addGameStateListener(inGameTabStatsSyncService::onSnapshotUpdate);
         HypixelFeatures.getInstance().addGameStateListener(replayManager::onGameSnapshot);
 
         MinecraftForge.EVENT_BUS.register(
@@ -220,9 +206,10 @@ public class Mellow {
                 requestPopupService
             )
         );
-        MinecraftForge.EVENT_BUS.register(
-            new WorldLifecycleRouter(numberDenicker, pregameStats, nickUtils)
-        );
+        WorldLifecycleRouter lifecycle = new WorldLifecycleRouter(numberDenicker, pregameStats, nickUtils);
+        MinecraftForge.EVENT_BUS.register(lifecycle);
+        if (net.minecraftforge.fml.common.FMLCommonHandler.instance().bus() != MinecraftForge.EVENT_BUS)
+            net.minecraftforge.fml.common.FMLCommonHandler.instance().bus().register(lifecycle);
         MinecraftForge.EVENT_BUS.register(
             new ClientTickRouter(HypixelFeatures.getInstance())
         );
@@ -259,7 +246,7 @@ public class Mellow {
             new SkinDenickCommand(nickUtils)
         );
         ClientCommandHandler.instance.registerCommand(
-            new BlacklistCommand(blacklistManager, mojangApi, seraphApi, config)
+            new BlacklistCommand(blacklistManager, mojangApi)
         );
         ClientCommandHandler.instance.registerCommand(
             new AnnoylistCommand(annoylistManager, mojangApi)
@@ -273,18 +260,14 @@ public class Mellow {
         ClientCommandHandler.instance.registerCommand(
             new CoralCommand(coralApi, config)
         );
-        ClientCommandHandler.instance.registerCommand(
-            new SeraphCommand(seraphApi, mojangApi, config)
-        );
+
         ClientCommandHandler.instance.registerCommand(
             new StatusCommand(mojangApi, config)
         );
         ClientCommandHandler.instance.registerCommand(
             new NameHistoryCommand(mojangApi)
         );
-        ClientCommandHandler.instance.registerCommand(
-            new ClientCommand(seraphApi, mojangApi, config)
-        );
+
         ClientCommandHandler.instance.registerCommand(
             new WinstreakCommand(playerCache, config)
         );

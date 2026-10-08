@@ -59,7 +59,7 @@ final class TabIntegrationSmokeTest {
                 false, false, WorldType.DEFAULT), 0, EnumDifficulty.NORMAL, mc.mcProfiler);
             mc.thePlayer = new EntityPlayerSP(mc, mc.theWorld, net, new StatFileWriter());
             state.set(new GameSnapshot(true, "mini-test", GameType.BEDWARS, "BEDWARS_EIGHT_ONE", "Test",
-                false, false, PregameReason.NONE, "BED WARS", Collections.emptyList(), PartyState.empty(), 0, 1));
+                GamePhase.LIVE, "BED WARS", Collections.emptyList(), PartyState.empty(), 0, 1));
             Mellow.config.tabStats = true;
             Mellow.config.extendedTabStatsView = true;
             setColumns(1, 2, 3, 5, 13);
@@ -203,7 +203,7 @@ final class TabIntegrationSmokeTest {
         };
         info.setDisplayName(new ChatComponentText("§b[MVP+] " + name));
         players.add(info);
-        Mellow.tabStats.put(name, new TabStats(Collections.emptyList(), Collections.emptyList(), "§b[MVP+] " + name,
+        Mellow.tabStats.put(name, new TabStats(com.roxiun.mellow.api.tags.TagReport.empty(), "§b[MVP+] " + name,
             "§b" + (100 + index * 25) + "✫", "§e" + (index + 1) + ".25", "§a12", "§f1.52", "§71.0", "§a250", "§f200", "§e130", "§a1200"));
     }
 

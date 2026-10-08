@@ -24,7 +24,7 @@ public class TabOverlayRouter {
 
     private boolean wasActiveLastFrame;
     private StatScope lastScope;
-    private long lastStateVersion = Long.MIN_VALUE;
+    private long lastSessionId = Long.MIN_VALUE;
     private int lastDimensionId = Integer.MIN_VALUE;
     private boolean tabWasDown;
     private long tabPressStartedAtMs = NO_TIME;
@@ -111,18 +111,18 @@ public class TabOverlayRouter {
     }
 
     private boolean shouldResetScroll(StatScope scope) {
-        long stateVersion = getStateVersion();
+        long sessionId = getSessionId();
         int dimensionId = getDimensionId();
 
         boolean shouldReset =
             !wasActiveLastFrame ||
             scope != lastScope ||
-            stateVersion != lastStateVersion ||
+            sessionId != lastSessionId ||
             dimensionId != lastDimensionId;
 
         wasActiveLastFrame = true;
         lastScope = scope;
-        lastStateVersion = stateVersion;
+        lastSessionId = sessionId;
         lastDimensionId = dimensionId;
         return shouldReset;
     }
@@ -139,7 +139,7 @@ public class TabOverlayRouter {
 
         wasActiveLastFrame = false;
         lastScope = null;
-        lastStateVersion = Long.MIN_VALUE;
+        lastSessionId = Long.MIN_VALUE;
         lastDimensionId = Integer.MIN_VALUE;
     }
 
@@ -194,9 +194,9 @@ public class TabOverlayRouter {
         clearTapSequence();
     }
 
-    private long getStateVersion() {
+    private long getSessionId() {
         GameSnapshot snapshot = HypixelFeatures.getInstance().getGameSnapshot();
-        return snapshot == null ? Long.MIN_VALUE : snapshot.getStateVersion();
+        return snapshot == null ? Long.MIN_VALUE : snapshot.getSessionId();
     }
 
     private int getDimensionId() {

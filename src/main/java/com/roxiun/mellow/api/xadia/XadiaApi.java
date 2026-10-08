@@ -1,11 +1,12 @@
 package com.roxiun.mellow.api.xadia;
 
+import com.roxiun.mellow.api.provider.model.ProviderResult;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.util.cache.TimedValueCache;
+import com.roxiun.mellow.api.tags.TagRequests;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,10 +23,9 @@ public class XadiaApi {
 
     private static final String PLAYER_TAGS_ENDPOINT =
         "https://xadia.sniped.me/v1/players";
-    private static final long TAG_CACHE_TTL_MS = 120_000L;
 
-    private final TimedValueCache<String, List<XadiaTag>> tagCache =
-        new TimedValueCache<>(TAG_CACHE_TTL_MS);
+    private final TagRequests<XadiaTag> tagCache =
+        new TagRequests<>();
 
     public List<XadiaTag> fetchXadiaTags(
         String uuid,
@@ -44,10 +44,7 @@ public class XadiaApi {
         }
 
         String cacheKey = buildTagCacheKey(identifier, apiKey) + "|" + verifiedOnly;
-        if (tagCache.containsFresh(cacheKey)) {
-            return copyTags(tagCache.get(cacheKey));
-        }
-
+        return copyTags(tagCache.get(cacheKey, () -> {
         URL url = new URL(PLAYER_TAGS_ENDPOINT);
         HttpURLConnection connection = openConnection(url);
         connection.setRequestMethod("POST");
@@ -83,8 +80,53 @@ public class XadiaApi {
         } finally {
             connection.disconnect();
         }
-        tagCache.put(cacheKey, copyTags(tags));
         return copyTags(tags);
+        }));
+    }
+
+    public java.util.Map<String, ProviderResult<List<XadiaTag>>> fetchBatch(
+        java.util.Set<String> uuids, String key, boolean verifiedOnly) {
+        String apiKey = normalizeApiKey(key);
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        for (String id : uuids) ids.add(normalizeIdentifier(id));
+        return tagCache.getAll(ids, apiKey + "|" + verifiedOnly, missing -> {
+            if (apiKey.isEmpty()) throw new IOException("A Xadia API key is required.");
+            if (missing.size() > 100) throw new IOException("Batch exceeds 100 players");
+            HttpURLConnection connection = openConnection(new URL(PLAYER_TAGS_ENDPOINT));
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("X-API-Key", apiKey);
+            connection.setRequestProperty("User-Agent", Mellow.NAME + "/" + Mellow.VERSION);
+            connection.setConnectTimeout(5000); connection.setReadTimeout(5000);
+            try {
+                JsonArray array = new JsonArray();
+                for (String id : missing) array.add(new com.google.gson.JsonPrimitive(id));
+                JsonObject body = new JsonObject(); body.add("players", array); body.addProperty("verified_only", verifiedOnly);
+                try (java.io.OutputStream output = connection.getOutputStream()) {
+                    output.write(body.toString().getBytes(StandardCharsets.UTF_8));
+                }
+                int status = connection.getResponseCode();
+                if (status != 200) throw buildHttpException(connection, status);
+                JsonObject response;
+                try (InputStream input = connection.getInputStream()) {
+                    response = new JsonParser().parse(readBody(input)).getAsJsonObject();
+                }
+                java.util.Map<String, List<XadiaTag>> parsed = new java.util.LinkedHashMap<>();
+            JsonArray results = response.getAsJsonArray("results");
+            if (results == null) throw new IOException("Missing results");
+            for (JsonElement element : results) {
+                JsonObject player = element.getAsJsonObject();
+                String id = normalizeIdentifier(player.get("query").getAsString());
+                JsonObject single = new JsonObject();
+                JsonArray one = new JsonArray(); one.add(player); single.add("results", one);
+                parsed.put(id, parseTags(single.toString()));
+            }
+                return parsed;
+            } catch (RuntimeException error) {
+                throw new IOException("Malformed Xadia batch response", error);
+            } finally { connection.disconnect(); }
+        });
     }
 
     protected HttpURLConnection openConnection(URL url) throws IOException {

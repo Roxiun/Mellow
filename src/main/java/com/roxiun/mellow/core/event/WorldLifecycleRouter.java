@@ -26,11 +26,22 @@ public class WorldLifecycleRouter {
 
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event) {
+        if (!event.world.isRemote) return;
         numberDenicker.onWorldChange();
         pregameStats.onWorldChange();
         nickUtils.clearNicks();
 
         HypixelFeatures.getInstance().onWorldChange();
         ReplayManager.getInstance().onWorldChange();
+    }
+    @SubscribeEvent
+    public void onDisconnect(net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+        net.minecraft.client.Minecraft.getMinecraft().addScheduledTask(() -> {
+            numberDenicker.onWorldChange();
+            pregameStats.onWorldChange();
+            nickUtils.clearNicks();
+            HypixelFeatures.getInstance().onDisconnect();
+            ReplayManager.getInstance().onWorldChange();
+        });
     }
 }

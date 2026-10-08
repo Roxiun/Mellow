@@ -29,7 +29,7 @@ public class DiamondCounterHUD extends SingleTextHud {
     @Override
     public boolean shouldShow() {
         return (
-            super.shouldShow() && HypixelFeatures.getInstance().isInBedwars()
+            super.shouldShow() && HypixelFeatures.getInstance().isInBedwarsMatch()
         );
     }
 

@@ -44,26 +44,8 @@ public final class StatScopeResolver {
         if (snapshot == null || !snapshot.isOnHypixel()) {
             return false;
         }
-        if (snapshot.isInBedwarsMatch()) {
-            return true;
-        }
-        if (snapshot.isLobby()) {
-            return false;
-        }
-
-        GameType gameType = snapshot.getGameType();
-        if (
-            gameType == GameType.SKYWARS ||
-            gameType == GameType.DUELS ||
-            gameType == GameType.BUILD_BATTLE
-        ) {
-            return true;
-        }
-        if (gameType == GameType.TNTGAMES) {
-            return isTntRun(snapshot);
-        }
-
-        return false;
+        return snapshot.getPhase() == com.roxiun.mellow.gamestate.GamePhase.LIVE
+            && resolveSupportedScope(snapshot) != null;
     }
 
     public static boolean isTntRun(GameSnapshot snapshot) {

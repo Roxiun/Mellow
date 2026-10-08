@@ -1634,15 +1634,6 @@ public class MellowOneConfig extends Config {
     public static boolean ignoredApiKeysInfo;
 
     // Retain saved values for compatibility without exposing inactive features.
-    public String seraphKey = "";
-
-    public boolean seraph = false;
-
-    public boolean showSeraphTagsInTab = true;
-
-    public boolean showClientIconsInNametags = true;
-
-    public int nametagClientIconPosition = 0;
 
     public String getCoralApiKey() {
         return urchinKey;
@@ -1777,7 +1768,6 @@ public class MellowOneConfig extends Config {
         hitboxHueMode = clampIndex(hitboxHueMode, 2);
         hitboxSaturationMode = clampIndex(hitboxSaturationMode, 2);
         hitboxBrightnessMode = clampIndex(hitboxBrightnessMode, 2);
-        nametagClientIconPosition = clampIndex(nametagClientIconPosition, 2);
     }
 
     private int statIndex(int value, int retiredClientIndex, int noneIndex) {
