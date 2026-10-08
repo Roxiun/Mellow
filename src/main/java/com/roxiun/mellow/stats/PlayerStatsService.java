@@ -23,6 +23,6 @@ public final class PlayerStatsService {
             else if (failure == null) failure = result;
         }
         if (stats.isEmpty() && failure != null) return ProviderResult.failure(failure.getFailureReason(), failure.getError());
-        return ProviderResult.success(new PlayerProfile(uuid, name, stats, null));
+        return ProviderResult.success(new PlayerProfile(uuid, name, stats, null, decoded.getValue().firstLogin()));
     }
 }

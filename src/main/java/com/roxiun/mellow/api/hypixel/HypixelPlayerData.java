@@ -17,6 +17,18 @@ public final class HypixelPlayerData {
         this.formattedName = formattedName;
     }
     public JsonObject player() { return player; }
+    public long firstLogin() {
+        return getLong(player, "firstLogin", getLong(player, "first_login",
+            getLong(getObject(player, "profile"), "first_login", 0L)));
+    }
+    private static long getLong(JsonObject object, String key, long fallback) {
+        try {
+            JsonElement value = object.get(key);
+            return value == null || value.isJsonNull() ? fallback : value.getAsLong();
+        } catch (RuntimeException ignored) {
+            return fallback;
+        }
+    }
     public String name() { return name; }
     public String formattedName() { return formattedName; }
 

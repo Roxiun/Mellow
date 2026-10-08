@@ -236,7 +236,11 @@ public class CoralApi {
     }
 
     private String normalizeIdentifier(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        if (normalized.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            return normalized.replace("-", "");
+        }
+        return normalized;
     }
 
     private boolean matchesCachePrefix(String key, String prefix) {

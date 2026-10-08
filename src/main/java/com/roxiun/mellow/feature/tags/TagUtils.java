@@ -1,9 +1,5 @@
 package com.roxiun.mellow.feature.tags;
 
-import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.api.hypixel.provider.NadeshikoApi;
-import com.roxiun.mellow.api.hypixel.provider.StatsProvider;
-import com.roxiun.mellow.api.model.ProviderResult;
 import com.roxiun.mellow.util.cache.TimedValueCache;
 import com.roxiun.mellow.util.blacklist.BlacklistManager;
 import java.io.BufferedReader;
@@ -15,14 +11,12 @@ import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.util.EnumChatFormatting;
 
 public class TagUtils {
 
     private static final long SKIN_CACHE_TTL_MS = 300_000L;
-    private static final long NEW_LOGIN_CACHE_TTL_MS = 120_000L;
     private static final String[] DEFAULT_SKIN_IDS = {
         "a3bd16079f764cd541e072e888fe43885e711f98658323db0f9a6045da91ee7a ",
         "b66bc80f002b10371e2fa23de6f230dd5e2f3affc2e15786f65bc9be4c6eb71a",
@@ -36,15 +30,11 @@ public class TagUtils {
         "fece7017b1bb13926d1158864b283b8b930271f80a90482f174cca6a17e88236",
     };
 
-    private final Mellow mellow;
     private final BlacklistManager blacklistManager;
     private final TimedValueCache<String, Boolean> defaultSkinCache =
         new TimedValueCache<>(SKIN_CACHE_TTL_MS);
-    private final TimedValueCache<String, Boolean> newLoginCache =
-        new TimedValueCache<>(NEW_LOGIN_CACHE_TTL_MS);
 
-    public TagUtils(Mellow mellow, BlacklistManager blacklistManager) {
-        this.mellow = mellow;
+    public TagUtils(BlacklistManager blacklistManager) {
         this.blacklistManager = blacklistManager;
     }
 
@@ -55,7 +45,8 @@ public class TagUtils {
         double fkdr,
         int ws,
         int finals,
-        int fdeaths
+        int fdeaths,
+        long firstLogin
     ) {
         String totaltags = "";
 
@@ -121,8 +112,7 @@ public class TagUtils {
             totaltags = totaltags + EnumChatFormatting.DARK_AQUA + "SK §r";
         }
 
-        StatsProvider statsProvider = mellow.getStatsProvider();
-        if (isRecentFirstLogin(statsProvider, uuid)) {
+        if (isRecentFirstLogin(firstLogin)) {
             totaltags = totaltags + EnumChatFormatting.RED + "NL §r";
         }
 
@@ -144,15 +134,17 @@ public class TagUtils {
 
         boolean isDefaultSkin = false;
         boolean shouldCache = false;
+        HttpURLConnection connection = null;
         try {
             String urlString =
                 "https://sessionserver.mojang.com/session/minecraft/profile/" +
                 uuid;
 
             URL url = new URL(urlString);
-            HttpURLConnection connection =
-                (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
 
             int responseCode = connection.getResponseCode();
 
@@ -180,7 +172,10 @@ public class TagUtils {
                 }
                 shouldCache = true;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
 
         if (shouldCache) {
             defaultSkinCache.put(cacheKey, isDefaultSkin);
@@ -188,71 +183,29 @@ public class TagUtils {
         return isDefaultSkin;
     }
 
-    private boolean isRecentFirstLogin(StatsProvider statsProvider, String uuid) {
-        if (
-            statsProvider == null ||
-            uuid == null ||
-            uuid.trim().isEmpty()
-        ) {
-            return false;
-        }
+    private boolean isRecentFirstLogin(long firstLogin) {
+        if (firstLogin <= 0L) return false;
+        Date loginDate = new Date(firstLogin);
 
-        String cacheKey =
-            statsProvider.getClass().getName() + ":" + uuid.trim().toLowerCase();
-        if (newLoginCache.containsFresh(cacheKey)) {
-            return Boolean.TRUE.equals(newLoginCache.get(cacheKey));
-        }
+        Calendar currentCalendar = Calendar.getInstance();
+        Calendar loginCalendar = Calendar.getInstance();
 
-        ProviderResult<String> playerDataResult = statsProvider.fetchPlayerDataResult(
-            uuid
-        );
-        if (playerDataResult == null || !playerDataResult.isSuccess()) {
-            return false;
-        }
-        String playerData = playerDataResult.getValue();
+        currentCalendar.setTimeInMillis(System.currentTimeMillis());
+        currentCalendar.set(Calendar.HOUR_OF_DAY, 0);
+        currentCalendar.set(Calendar.MINUTE, 0);
+        currentCalendar.set(Calendar.SECOND, 0);
+        currentCalendar.set(Calendar.MILLISECOND, 0);
 
-        Pattern timestampPattern;
-        if (statsProvider instanceof NadeshikoApi) {
-            timestampPattern = Pattern.compile(
-                "\"first_login\":(\\d+),",
-                Pattern.CASE_INSENSITIVE
-            );
-        } else {
-            timestampPattern = Pattern.compile(
-                "\"firstLogin\":(\\d+),",
-                Pattern.CASE_INSENSITIVE
-            );
-        }
+        loginCalendar.setTime(loginDate);
+        loginCalendar.set(Calendar.HOUR_OF_DAY, 0);
+        loginCalendar.set(Calendar.MINUTE, 0);
+        loginCalendar.set(Calendar.SECOND, 0);
+        loginCalendar.set(Calendar.MILLISECOND, 0);
 
-        boolean recentFirstLogin = false;
-        Matcher timestampMatcher = timestampPattern.matcher(playerData);
-        if (timestampMatcher.find()) {
-            long timestamp = Long.parseLong(timestampMatcher.group(1));
-            Date loginDate = new Date(timestamp);
-
-            Calendar currentCalendar = Calendar.getInstance();
-            Calendar loginCalendar = Calendar.getInstance();
-
-            currentCalendar.setTimeInMillis(System.currentTimeMillis());
-            currentCalendar.set(Calendar.HOUR_OF_DAY, 0);
-            currentCalendar.set(Calendar.MINUTE, 0);
-            currentCalendar.set(Calendar.SECOND, 0);
-            currentCalendar.set(Calendar.MILLISECOND, 0);
-
-            loginCalendar.setTime(loginDate);
-            loginCalendar.set(Calendar.HOUR_OF_DAY, 0);
-            loginCalendar.set(Calendar.MINUTE, 0);
-            loginCalendar.set(Calendar.SECOND, 0);
-            loginCalendar.set(Calendar.MILLISECOND, 0);
-
-            long diff =
-                currentCalendar.getTimeInMillis() -
-                loginCalendar.getTimeInMillis();
-            long oneDayMillis = 24 * 60 * 60 * 1000;
-            recentFirstLogin = Math.abs(diff) <= oneDayMillis;
-        }
-
-        newLoginCache.put(cacheKey, recentFirstLogin);
-        return recentFirstLogin;
+        long diff =
+            currentCalendar.getTimeInMillis() -
+            loginCalendar.getTimeInMillis();
+        long oneDayMillis = 24 * 60 * 60 * 1000;
+        return Math.abs(diff) <= oneDayMillis;
     }
 }

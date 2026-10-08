@@ -124,10 +124,13 @@ public class StatsChecker {
             statsRequests.add(() -> {
                 try {
                     ProfileFetchResult result = playerCache.getProfileForIdentity(name, uuid.toString(), false, selection);
+                    PlayerProfile profile = result.getProfile();
+                    boolean hasStats = profile != null && hasStatsForScope(profile, scope);
+                    // Tag formatting may load a skin: finish it on the profile worker, never the client thread.
+                    String chatMessage = hasStats && config.printStats && passesScopeFilters(profile, scope, config.minFkdr)
+                        ? formatChatStats(profile, scope) : null;
                     mc.addScheduledTask(() -> {
                         if (!isCurrent(session, generation)) return;
-                        PlayerProfile profile = result.getProfile();
-                        boolean hasStats = profile != null && hasStatsForScope(profile, scope);
                         statsLookups.finish(key, statsAttempt, hasStats || result.getFailureReason() == FetchFailureReason.MISSING_API_KEY);
                         if (!hasStats) {
                             maybeReportLiveFetchFailure(name, result);
@@ -138,7 +141,7 @@ public class StatsChecker {
                             tabStats.containsKey(name) ? tabStats.get(name).getTags() : TagReport.empty());
                         updateTabRow(name, profile.withTags(tags), scope);
                         if (passesScopeFilters(profile, scope, config.minFkdr)) {
-                            if (config.printStats && (forceRefresh || alertedSources.add(key + ":stats"))) ChatUtils.sendMessage(formatChatStats(profile, scope));
+                            if (config.printStats && chatMessage != null && (forceRefresh || alertedSources.add(key + ":stats"))) ChatUtils.sendMessage(chatMessage);
                         }
                         warmHiddenWinstreakCache(profile, scope);
                     });
@@ -532,7 +535,8 @@ public class StatsChecker {
             player.getFkdr(),
             player.getWinstreak(),
             player.getFinalKills(),
-            player.getFinalDeaths()
+            player.getFinalDeaths(),
+            profile.getFirstLogin()
         );
 
         if (tagsValue.endsWith(" ")) {

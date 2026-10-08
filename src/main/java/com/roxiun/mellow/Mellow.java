@@ -173,7 +173,7 @@ public class Mellow {
 
         nickUtils = new NickUtils(playerCache, config);
 
-        TagUtils tagUtils = new TagUtils(this, blacklistManager);
+        TagUtils tagUtils = new TagUtils(blacklistManager);
         NumberDenicker numberDenicker = new NumberDenicker(
             config,
             nickUtils,

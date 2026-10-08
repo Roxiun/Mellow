@@ -25,4 +25,27 @@ public class CoralBatchTest {
         assertTrue(connection.getWrittenBody().contains(first));
         assertTrue(connection.getWrittenBody().contains(missing));
     }
+
+    @Test public void dashedAndCompactUuidsShareCacheAndInvalidation() throws Exception {
+        String compact = "069a79f444e94726a5befca90e38aaf5";
+        String dashed = "069a79f4-44e9-4726-a5be-fca90e38aaf5";
+        AtomicInteger calls = new AtomicInteger();
+        CoralApi api = new CoralApi() {
+            @Override protected HttpURLConnection openConnection(URL url) {
+                calls.incrementAndGet();
+                return new FakeHttpURLConnection(url, 200, url.getPath().endsWith("/players")
+                    ? "{\"players\":{\"" + compact + "\":[]}}" : "{\"tags\":[]}");
+            }
+        };
+        api.fetchBatch(Collections.singleton(compact), "key");
+        api.fetchCoralTags(dashed, null, "key");
+        assertEquals(1, calls.get());
+        api.clearPlayer(dashed, null);
+        api.fetchBatch(Collections.singleton(compact), "key");
+        assertEquals(2, calls.get());
+        api.clearPlayer(compact, null);
+        api.fetchCoralTags(dashed, null, "key");
+        api.fetchBatch(Collections.singleton(compact), "key");
+        assertEquals(3, calls.get());
+    }
 }
