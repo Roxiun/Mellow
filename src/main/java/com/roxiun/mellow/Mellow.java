@@ -16,9 +16,6 @@ import com.roxiun.mellow.api.provider.HypixelPublicApi;
 import com.roxiun.mellow.api.provider.NadeshikoApi;
 import com.roxiun.mellow.api.provider.ProviderManager;
 import com.roxiun.mellow.api.provider.StatsProvider;
-import com.roxiun.mellow.api.seraph.SeraphApi;
-import com.roxiun.mellow.api.seraph.SeraphClientCacheService;
-import com.roxiun.mellow.api.seraph.SeraphPingService;
 import com.roxiun.mellow.api.coral.CoralApi;
 import com.roxiun.mellow.autoupdate.ModrinthUpdater;
 import com.roxiun.mellow.cache.PlayerCache;
@@ -27,6 +24,9 @@ import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.event.ChatEventRouter;
 import com.roxiun.mellow.core.event.ClientTickRouter;
+//? if forge {
+/*import com.roxiun.mellow.core.event.NametagColorRouter;
+*///?}
 import com.roxiun.mellow.core.event.RequestPopupRouter;
 import com.roxiun.mellow.core.event.TabOverlayInputRouter;
 import com.roxiun.mellow.core.event.TabOverlayRouter;
@@ -40,9 +40,11 @@ import com.roxiun.mellow.feature.requestpopup.RequestPopupService;
 import com.roxiun.mellow.feature.replay.ReplayHudRouter;
 import com.roxiun.mellow.feature.replay.ReplayInputRouter;
 import com.roxiun.mellow.feature.replay.ReplayManager;
+//? if ornithe {
 import com.roxiun.mellow.feature.replay.ReplayPacketRouter;
 import net.ornithemc.osl.keybinds.api.KeybindEvents;
 import net.ornithemc.osl.keybinds.api.KeybindRegistry;
+//?}
 import com.roxiun.mellow.feature.stats.InGameTabStatsSyncService;
 import com.roxiun.mellow.feature.stats.PregameStats;
 import com.roxiun.mellow.feature.stats.ProviderHealthWarningService;
@@ -54,14 +56,33 @@ import com.roxiun.mellow.util.tagignore.TagIgnoreManager;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.settings.KeyBinding;
+//? if ornithe {
 import org.polyfrost.oneconfig.api.event.v1.EventManager;
+//?} else {
+/*import net.minecraftforge.fml.client.registry.ClientRegistry;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+*///?}
 import org.lwjgl.input.Keyboard;
 
+//? if ornithe {
 public class Mellow implements net.fabricmc.api.ClientModInitializer {
+//?} else {
+/*@Mod(modid = Mellow.MODID, name = Mellow.NAME, version = Mellow.VERSION)
+public class Mellow {
+
+*///?}
+    public static InGameTabStatsSyncService inGameTabStatsSyncService;
+    public static PartyBlacklistWarningService partyBlacklistWarningService;
 
     public static final String MODID = "mellow";
     public static final String NAME = "Mellow";
+    //? if ornithe {
     public static final String VERSION = net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(MODID).map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("development");
+    //?} else {
+    /*public static final String VERSION = BuildVersion.VERSION;
+    *///?}
 
     public static MellowOneConfig config;
     public static TabOverlayRouter tabOverlayRouter;
@@ -72,12 +93,9 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
     public static AuroraWinstreakService auroraWinstreakService;
     public static AuroraApi auroraApi;
     public static LunaPingService lunaPingService;
-    public static SeraphClientCacheService seraphClientCacheService;
-    public static SeraphPingService seraphPingService;
     public static MojangApi mojangApi;
     public static XadiaApi xadiaApi;
     public static CoralApi coralApi;
-    public static SeraphApi seraphApi;
     public static PlayerCache playerCache;
     public static BlacklistManager blacklistManager;
     public static AnnoylistManager annoylistManager;
@@ -85,9 +103,12 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
     private static AnticheatManager anticheatManager;
 
     private ProviderManager providerManager;
+    //? if ornithe {
     private KeyBinding requestAcceptKeybind;
     private KeyBinding requestDenyKeybind;
+    //?}
 
+    //? if ornithe {
     @Override
     public void onInitializeClient() {
         KeybindEvents.REGISTER_KEYBINDS.register(() -> {
@@ -100,10 +121,16 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
     }
 
     private void initializeFeatures() {
+    //?} else {
+    /*@Mod.EventHandler
+    public void init(FMLInitializationEvent event) {
+    *///?}
         config = new MellowOneConfig();
+        //? if ornithe {
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("polyhitbox")) {
             com.roxiun.mellow.platform.PolyHitboxIntegration.register();
         }
+        //?}
         ModrinthUpdater.init(config);
         ProviderHealthWarningService.init(config);
 
@@ -117,39 +144,32 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
         auroraPingService = new AuroraPingService();
         auroraWinstreakService = new AuroraWinstreakService();
         lunaPingService = new LunaPingService();
-        seraphPingService = new SeraphPingService();
         mojangApi = new MojangApi();
         providerManager = new ProviderManager();
-        providerManager.register(new HypixelPublicApi(mojangApi, config));
-        providerManager.register(new NadeshikoApi(mojangApi));
-        providerManager.register(new AbyssApi(mojangApi));
-        providerManager.register(new BordicApi(mojangApi));
-        providerManager.register(new BedlifyApi(mojangApi));
+        providerManager.register(new HypixelPublicApi(config));
+        providerManager.register(new NadeshikoApi());
+        providerManager.register(new AbyssApi());
+        providerManager.register(new BordicApi());
+        providerManager.register(new BedlifyApi());
 
         coralApi = new CoralApi();
         xadiaApi = new XadiaApi();
-        seraphApi = new SeraphApi(mojangApi);
-        seraphClientCacheService = new SeraphClientCacheService(seraphApi, config);
         auroraApi = new AuroraApi();
 
         playerCache = new PlayerCache(
             mojangApi,
             providerManager,
             coralApi,
-            seraphApi,
             xadiaApi,
             config
         );
-        PartyBlacklistWarningService partyBlacklistWarningService =
+        partyBlacklistWarningService =
             new PartyBlacklistWarningService(
                 blacklistManager,
                 config,
                 playerCache,
                 tagIgnoreManager
             );
-        HypixelFeatures
-            .getInstance()
-            .addGameStateListener(partyBlacklistWarningService::onSnapshotUpdate);
 
         nickUtils = new NickUtils(playerCache, config);
 
@@ -172,7 +192,9 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             requestPopupManager
         );
         ReplayManager replayManager = ReplayManager.getInstance();
+        //? if ornithe {
         EventManager.INSTANCE.register(new ReplayPacketRouter(replayManager));
+        //?}
         Runtime.getRuntime().addShutdownHook(
             new Thread(
                 new Runnable() {
@@ -186,7 +208,23 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             )
         );
 
+        //? if ornithe {
         EventManager.INSTANCE.register(
+        //?} else {
+        /*KeyBinding requestAcceptKeybind = new KeyBinding(
+            "Accept Request",
+            Keyboard.KEY_Y,
+            "Mellow Requests"
+        );
+        KeyBinding requestDenyKeybind = new KeyBinding(
+            "Deny Request",
+            Keyboard.KEY_N,
+            "Mellow Requests"
+        );
+        ClientRegistry.registerKeyBinding(requestAcceptKeybind);
+        ClientRegistry.registerKeyBinding(requestDenyKeybind);
+        MinecraftForge.EVENT_BUS.register(
+        *///?}
             new RequestPopupRouter(
                 config,
                 requestPopupManager,
@@ -205,14 +243,15 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             annoylistManager,
             tagIgnoreManager
         );
-        InGameTabStatsSyncService inGameTabStatsSyncService =
+        inGameTabStatsSyncService =
             new InGameTabStatsSyncService(statsChecker, nickUtils, config, tabStats);
-        HypixelFeatures
-            .getInstance()
-            .addGameStateListener(inGameTabStatsSyncService::onSnapshotUpdate);
         HypixelFeatures.getInstance().addGameStateListener(replayManager::onGameSnapshot);
 
+        //? if ornithe {
         EventManager.INSTANCE.register(
+        //?} else {
+        /*MinecraftForge.EVENT_BUS.register(
+        *///?}
             new ChatEventRouter(
                 config,
                 numberDenicker,
@@ -220,17 +259,36 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
                 requestPopupService
             )
         );
+        //? if ornithe {
         EventManager.INSTANCE.register(
             new WorldLifecycleRouter(numberDenicker, pregameStats, nickUtils)
         );
         EventManager.INSTANCE.register(
+        //?} else {
+        /*WorldLifecycleRouter lifecycle = new WorldLifecycleRouter(numberDenicker, pregameStats, nickUtils);
+        MinecraftForge.EVENT_BUS.register(lifecycle);
+        if (net.minecraftforge.fml.common.FMLCommonHandler.instance().bus() != MinecraftForge.EVENT_BUS)
+            net.minecraftforge.fml.common.FMLCommonHandler.instance().bus().register(lifecycle);
+        MinecraftForge.EVENT_BUS.register(
+        *///?}
             new ClientTickRouter(HypixelFeatures.getInstance())
         );
+        //? if ornithe {
         EventManager.INSTANCE.register(new ReplayHudRouter(replayManager));
         EventManager.INSTANCE.register(new ReplayInputRouter(replayManager));
+        //?} else {
+        /*MinecraftForge.EVENT_BUS.register(new ReplayHudRouter(replayManager));
+        MinecraftForge.EVENT_BUS.register(new ReplayInputRouter(replayManager));
+        MinecraftForge.EVENT_BUS.register(new NametagColorRouter(config));
+        *///?}
         tabOverlayRouter = new TabOverlayRouter(config);
+        //? if ornithe {
         EventManager.INSTANCE.register(tabOverlayRouter);
         EventManager.INSTANCE.register(
+        //?} else {
+        /*MinecraftForge.EVENT_BUS.register(tabOverlayRouter);
+        MinecraftForge.EVENT_BUS.register(
+        *///?}
             new TabOverlayInputRouter(tabOverlayRouter)
         );
 
@@ -258,7 +316,7 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             new SkinDenickCommand(nickUtils)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
-            new BlacklistCommand(blacklistManager, mojangApi, seraphApi, config)
+            new BlacklistCommand(blacklistManager, mojangApi)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
             new AnnoylistCommand(annoylistManager, mojangApi)
@@ -273,16 +331,10 @@ public class Mellow implements net.fabricmc.api.ClientModInitializer {
             new CoralCommand(coralApi, config)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
-            new SeraphCommand(seraphApi, mojangApi, config)
-        );
-        com.roxiun.mellow.platform.ClientCommands.register(
             new StatusCommand(mojangApi, config)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
             new NameHistoryCommand(mojangApi)
-        );
-        com.roxiun.mellow.platform.ClientCommands.register(
-            new ClientCommand(seraphApi, mojangApi, config)
         );
         com.roxiun.mellow.platform.ClientCommands.register(
             new WinstreakCommand(playerCache, config)

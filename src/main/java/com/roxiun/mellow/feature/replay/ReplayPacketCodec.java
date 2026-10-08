@@ -9,6 +9,7 @@ public final class ReplayPacketCodec {
 
     private ReplayPacketCodec() {}
 
+    //? if ornithe {
     private static final java.util.Properties PACKET_TYPES = new java.util.Properties();
     static {
         try (java.io.InputStream input = ReplayPacketCodec.class.getResourceAsStream("/mellow-packet-types.properties")) {
@@ -34,6 +35,7 @@ public final class ReplayPacketCodec {
             .mapClassName("intermediary", intermediary);
     }
 
+    //?}
     public static ReplayPacketFrame encode(int timestampMs, Packet<?> packet)
         throws Exception {
         PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
@@ -41,7 +43,12 @@ public final class ReplayPacketCodec {
             packet.writePacketData(buffer);
             byte[] payload = new byte[buffer.readableBytes()];
             buffer.readBytes(payload);
-            return new ReplayPacketFrame(timestampMs, typeName(packet.getClass()), payload);
+            //? if ornithe {
+            String name = typeName(packet.getClass());
+            //?} else {
+            /*String name = packet.getClass().getName();
+            *///?}
+            return new ReplayPacketFrame(timestampMs, name, payload);
         } finally {
             buffer.release();
         }
@@ -49,10 +56,14 @@ public final class ReplayPacketCodec {
 
     @SuppressWarnings("unchecked")
     public static Packet<?> decode(ReplayPacketFrame frame) throws Exception {
+        //? if ornithe {
         Class<?> rawClass = Class.forName(runtimeTypeName(frame.getClassName()));
         if (!Packet.class.isAssignableFrom(rawClass)) {
             throw new IllegalArgumentException("Not a replay packet: " + frame.getClassName());
         }
+        //?} else {
+        /*Class<?> rawClass = Class.forName(frame.getClassName());
+        *///?}
         Constructor<?> constructor = rawClass.getDeclaredConstructor();
         constructor.setAccessible(true);
         Object instance = constructor.newInstance();

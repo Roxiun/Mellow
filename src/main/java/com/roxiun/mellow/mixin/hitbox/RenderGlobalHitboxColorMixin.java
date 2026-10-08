@@ -1,6 +1,10 @@
 package com.roxiun.mellow.mixin.hitbox;
 
+//? if ornithe {
 import com.roxiun.mellow.util.RgbaColor;
+//?} else {
+/*import cc.polyfrost.oneconfig.config.core.OneColor;
+*///?}
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.util.hitbox.HitboxRenderContext;
@@ -45,7 +49,11 @@ public abstract class RenderGlobalHitboxColorMixin {
         }
 
         Entity current = HitboxRenderContext.getCurrentEntity();
+        //? if ornithe {
         RgbaColor teamColor = TeamHitboxColorResolver.resolveTeamHitboxColor(
+        //?} else {
+        /*OneColor teamColor = TeamHitboxColorResolver.resolveTeamHitboxColor(
+        *///?}
             current,
             config,
             alpha

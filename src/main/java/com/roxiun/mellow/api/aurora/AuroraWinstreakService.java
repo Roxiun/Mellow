@@ -19,6 +19,8 @@ public class AuroraWinstreakService {
     private static final String WINSTREAK_URL =
         "https://bordic.xyz/api/v2/resources/winstreak";
 
+    private volatile long generation;
+    public long getGeneration() { return generation; }
     private final OkHttpClient client;
     private final TimedValueCache<String, Integer> winstreakCache =
         new TimedValueCache<>(WINSTREAK_CACHE_TTL_MS);
@@ -59,11 +61,14 @@ public class AuroraWinstreakService {
             return;
         }
 
+        generation++;
+        fetchInProgress.clear();
         winstreakCache.remove(compactUuid);
         fetchInProgress.remove(compactUuid);
     }
 
     public void clearCache() {
+        generation++;
         winstreakCache.clear();
         fetchInProgress.clear();
     }

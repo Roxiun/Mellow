@@ -1,0 +1,27 @@
+{
+  "compatibilityLevel": "JAVA_8",
+  "minVersion": "0.7",
+  "package": "com.roxiun.mellow.mixin",
+  "refmap": "mixins.${id}.refmap.json",
+  "injectors": {
+    "maxShiftBy": 5
+  },
+  "client": [
+    "GuiPlayerTabOverlayMixin",
+    "hitbox.RenderGlobalHitboxColorMixin",
+    "hitbox.RenderManagerHitboxContextMixin",
+    "nametag.RenderNametagColorMixin",
+    "nametag.RendererLivingEntityNametagColorMixin",
+    "PingMixin",
+    "replay.NetworkManagerReplayCaptureMixin",
+    "replay.NetHandlerPlayClientAccessor",
+    "ExtendedPlayerTabMixin",
+    "PlayerTabOverlayAccessor",
+    "PlayerTabVisibilityMixin"
+  ],
+  "mixins": [
+    "compat.polynametag.PolyNametagRenderingMixin",
+    "compat.polyhitbox.PolyHitboxRendererMixin"
+  ],
+  "verbose": true
+}

@@ -12,7 +12,6 @@ import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.data.PlayerProfile;
 import com.roxiun.mellow.feature.stats.StatsFetchFailureFormatter;
 import com.roxiun.mellow.util.ChatUtils;
-import com.roxiun.mellow.util.formatting.FormattingUtils;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -65,6 +64,9 @@ public class SkywarsCommand extends CommandBase {
                 true
             );
             PlayerProfile profile = result.getProfile();
+            if (profile != null) MainThreadDispatcher.run(() -> {
+                for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
+            });
 
             if (profile == null || profile.getSkywarsPlayer() == null) {
                 MainThreadDispatcher.run(() ->
@@ -95,54 +97,6 @@ public class SkywarsCommand extends CommandBase {
                 ChatUtils.sendMultilineCommandMessage(sender, statsLines)
             );
 
-            if (config.isCoralEnabled() && profile.isCoralTagged()) {
-                String tags = FormattingUtils.formatCoralTags(
-                    profile.getCoralTags()
-                );
-                String coralMessage = "§5§lCoral§r§5: " + tags;
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendMultilineCommandMessage(sender, coralMessage)
-                );
-            }
-
-            if (config.xadia && profile.isXadiaTagged()) {
-                String tags = FormattingUtils.formatXadiaTags(
-                    profile.getXadiaTags()
-                );
-                String xadiaMessage = "§d§lXadia§r§d: " + tags;
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendMultilineCommandMessage(sender, xadiaMessage)
-                );
-            }
-
-            if (config.seraph && profile.isSeraphTagged()) {
-                String formattedTags = FormattingUtils.formatSeraphTags(
-                    profile.getSeraphTags()
-                );
-                String[] tagMessages = formattedTags.split("\n§c");
-                if (
-                    tagMessages.length > 0 && !tagMessages[0].trim().isEmpty()
-                ) {
-                    String firstMessage = "§3§lSeraph§r§3: " + tagMessages[0];
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendMultilineCommandMessage(
-                            sender,
-                            firstMessage
-                        )
-                    );
-                    for (int i = 1; i < tagMessages.length; i++) {
-                        if (!tagMessages[i].trim().isEmpty()) {
-                            String additionalMessage = "§c" + tagMessages[i];
-                            MainThreadDispatcher.run(() ->
-                                ChatUtils.sendMultilineCommandMessage(
-                                    sender,
-                                    additionalMessage
-                                )
-                            );
-                        }
-                    }
-                }
-            }
         });
     }
 

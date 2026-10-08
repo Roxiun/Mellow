@@ -56,4 +56,4 @@ for line in out:
     parts = line.split('\t')
     if parts[0] == 'c' and parts[2].startswith('net/minecraft/network/play/server/'):
         packet_types.append(parts[2].replace('/', '.') + '=' + parts[1].replace('/', '.'))
-Path('src/main/resources/mellow-packet-types.properties').write_text('\n'.join(packet_types) + '\n')
+Path('src/ornithe/main/resources/mellow-packet-types.properties').write_text('\n'.join(packet_types) + '\n')

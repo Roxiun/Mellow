@@ -1,5 +1,12 @@
 package com.roxiun.mellow.cache;
 
+import com.roxiun.mellow.api.provider.model.ProviderId;
+import com.roxiun.mellow.api.xadia.XadiaTag;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
+import com.roxiun.mellow.util.cache.TimedValueCache;
+import com.roxiun.mellow.util.cache.RequestCache;
+import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.api.xadia.XadiaApi;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
@@ -13,8 +20,6 @@ import com.roxiun.mellow.api.provider.StatsProvider;
 import com.roxiun.mellow.api.provider.model.FetchFailureReason;
 import com.roxiun.mellow.api.provider.model.ProviderResult;
 import com.roxiun.mellow.api.provider.model.StatScope;
-import com.roxiun.mellow.api.seraph.SeraphApi;
-import com.roxiun.mellow.api.seraph.SeraphTag;
 import com.roxiun.mellow.api.skywars.SkywarsPlayer;
 import com.roxiun.mellow.api.tnt.TntRunPlayer;
 import com.roxiun.mellow.api.coral.CoralApi;
@@ -37,18 +42,15 @@ public class PlayerCache {
 
     private static final long CACHE_TTL_MS = 120_000L;
 
-    private final Map<String, CachedProfile> cache = new ConcurrentHashMap<>();
-    private final Map<String, CachedRawData> rawDataCache =
-        new ConcurrentHashMap<>();
+    private final RequestCache<String, ProviderResult<JsonObject>> rawDataCache =
+        new RequestCache<>(2048, CACHE_TTL_MS, 5_000L, ProviderResult::isSuccess);
+    private final TimedValueCache<String, String> resolvedNames = new TimedValueCache<>(300_000L);
+    private final Map<String, Long> providerCooldown = new ConcurrentHashMap<>();
     private final MojangApi mojangApi;
     private final ProviderManager providerManager;
     private final XadiaApi xadiaApi;
-    private volatile String lastXadiaSettings = "";
     private final CoralApi coralApi;
-    private final SeraphApi seraphApi;
     private final MellowOneConfig config;
-    private volatile String lastCoralApiKey;
-    private volatile String lastSeraphApiKey;
 
     private final AtomicBoolean hasWarnedMissingApiKey = new AtomicBoolean(false);
 
@@ -56,24 +58,20 @@ public class PlayerCache {
         MojangApi mojangApi,
         ProviderManager providerManager,
         CoralApi coralApi,
-        SeraphApi seraphApi,
         MellowOneConfig config
     ) {
-        this(mojangApi, providerManager, coralApi, seraphApi,
+        this(mojangApi, providerManager, coralApi,
             new XadiaApi(), config);
     }
 
     public PlayerCache(MojangApi mojangApi, ProviderManager providerManager,
-        CoralApi coralApi, SeraphApi seraphApi,
+        CoralApi coralApi,
         XadiaApi xadiaApi, MellowOneConfig config) {
         this.xadiaApi = xadiaApi;
         this.mojangApi = mojangApi;
         this.providerManager = providerManager;
         this.coralApi = coralApi;
-        this.seraphApi = seraphApi;
         this.config = config;
-        this.lastCoralApiKey = normalizeApiKey(config.getCoralApiKey());
-        this.lastSeraphApiKey = normalizeApiKey(config.seraphKey);
     }
 
     public PlayerProfile getProfile(String playerName) {
@@ -87,174 +85,24 @@ public class PlayerCache {
         return result.getProfile();
     }
 
-    public ProfileFetchResult getProfileResult(String playerName) {
-        maybeInvalidateCacheOnApiKeyChange();
-        StatsProvider provider = providerManager.getSelectedProvider(config);
-        if (provider == null) {
-            return ProfileFetchResult.failure(
-                FetchFailureReason.PROVIDER_ERROR,
-                "No provider selected",
-                null
-            );
-        }
-
-        DuelsMode duelsMode = resolveActiveDuelsMode();
-        String cacheKey = buildCacheKey(
-            provider,
-            playerName,
-            null,
-            ProfileFetchContext.GENERAL,
-            true,
-            duelsMode
-        );
-        CachedProfile cached = cache.get(cacheKey);
-        if (cached != null && !cached.isExpired()) {
-            return ProfileFetchResult.success(
-                cached.profile,
-                provider.getDisplayName()
-            );
-        }
-
-        ResolvedUuid uuidResult = resolveUuid(playerName, ProfileFetchContext.GENERAL);
-        if (!uuidResult.isSuccess()) {
-            return ProfileFetchResult.failure(
-                uuidResult.failureReason,
-                uuidResult.detail,
-                provider.getDisplayName()
-            );
-        }
-
-        if (provider.requiresApiKey() && !provider.isConfigured()) {
-            return withAvailableProfile(
-                ProfileFetchResult.failure(
-                    FetchFailureReason.MISSING_API_KEY,
-                    "Missing API key",
-                    provider.getDisplayName()
-                ),
-                playerName,
-                uuidResult.uuid,
-                true
-            );
-        }
-
-        ProviderResult<String> rawResult = provider.fetchPlayerDataResult(uuidResult.uuid);
-        if (!rawResult.isSuccess()) {
-            return withAvailableProfile(
-                toProfileFailure(rawResult, provider.getDisplayName()),
-                playerName,
-                uuidResult.uuid,
-                true
-            );
-        }
-        storeRawData(provider, uuidResult.uuid, rawResult.getValue());
-
-        ProfileFetchResult result = buildFullProfileResult(
-            playerName,
-            uuidResult.uuid,
-            rawResult.getValue(),
-            provider,
-            duelsMode,
-            true
-        );
-        if (result.isSuccess()) {
-            cache.put(cacheKey, new CachedProfile(result.getProfile()));
-        }
-        return withAvailableProfile(
-            result,
-            playerName,
-            uuidResult.uuid,
-            true
-        );
+    public ProfileFetchResult getIdentityResult(String name, ProfileFetchContext context) {
+        ResolvedUuid identity = resolveUuid(name, context);
+        return identity.isSuccess() ? ProfileFetchResult.success(PlayerProfile.identity(identity.uuid, name), null)
+            : ProfileFetchResult.failure(identity.failureReason, identity.detail, null);
     }
 
-    public ProfileFetchResult getScopedProfileResult(
-        String playerName,
-        StatScope scope,
-        ProfileFetchContext context,
-        boolean includeTags
-    ) {
-        maybeInvalidateCacheOnApiKeyChange();
-        StatsProvider provider = providerManager.getSelectedProvider(config);
-        if (provider == null) {
-            return ProfileFetchResult.failure(
-                FetchFailureReason.PROVIDER_ERROR,
-                "No provider selected",
-                null
-            );
-        }
+    public ProfileFetchResult getProfileResult(String playerName) {
+        return getScopedProfileResult(playerName, null, ProfileFetchContext.GENERAL, true);
+    }
 
-        StatScope resolvedScope = scope == null ? StatScope.BEDWARS : scope;
-        DuelsMode duelsMode = resolveActiveDuelsMode();
-        String cacheKey = buildCacheKey(
-            provider,
-            playerName,
-            resolvedScope,
-            context == null ? ProfileFetchContext.GENERAL : context,
-            includeTags,
-            duelsMode
-        );
-        CachedProfile cached = cache.get(cacheKey);
-        if (cached != null && !cached.isExpired()) {
-            return ProfileFetchResult.success(
-                cached.profile,
-                provider.getDisplayName()
-            );
+    public ProfileFetchResult getScopedProfileResult(String name, StatScope scope,
+        ProfileFetchContext context, boolean includeTags) {
+        ResolvedUuid identity = resolveUuid(name, context == null ? ProfileFetchContext.GENERAL : context);
+        if (!identity.isSuccess()) {
+            return ProfileFetchResult.failure(identity.failureReason, identity.detail,
+                getSelectedProvider() == null ? null : getSelectedProvider().getDisplayName());
         }
-
-        ResolvedUuid uuidResult = resolveUuid(
-            playerName,
-            context == null ? ProfileFetchContext.GENERAL : context
-        );
-        if (!uuidResult.isSuccess()) {
-            return ProfileFetchResult.failure(
-                uuidResult.failureReason,
-                uuidResult.detail,
-                provider.getDisplayName()
-            );
-        }
-
-        if (provider.requiresApiKey() && !provider.isConfigured()) {
-            return withAvailableProfile(
-                ProfileFetchResult.failure(
-                    FetchFailureReason.MISSING_API_KEY,
-                    "Missing API key",
-                    provider.getDisplayName()
-                ),
-                playerName,
-                uuidResult.uuid,
-                includeTags
-            );
-        }
-
-        ProviderResult<String> rawResult = provider.fetchPlayerDataResult(uuidResult.uuid);
-        if (!rawResult.isSuccess()) {
-            return withAvailableProfile(
-                toProfileFailure(rawResult, provider.getDisplayName()),
-                playerName,
-                uuidResult.uuid,
-                includeTags
-            );
-        }
-        storeRawData(provider, uuidResult.uuid, rawResult.getValue());
-
-        ProfileFetchResult result = buildScopedProfileResult(
-            playerName,
-            uuidResult.uuid,
-            rawResult.getValue(),
-            provider,
-            resolvedScope,
-            duelsMode,
-            includeTags
-        );
-        if (result.isSuccess()) {
-            cache.put(cacheKey, new CachedProfile(result.getProfile()));
-        }
-        return withAvailableProfile(
-            result,
-            playerName,
-            uuidResult.uuid,
-            includeTags
-        );
+        return getProfileForIdentity(name, identity.uuid, includeTags);
     }
 
     private ProfileFetchResult withAvailableProfile(
@@ -283,7 +131,8 @@ public class PlayerCache {
             return profile;
         }
 
-        List<CoralTag> coralTags = profile.getCoralTags();
+        Map<String, String> failures = new java.util.LinkedHashMap<>();
+        List<CoralTag> coralTags = java.util.Collections.emptyList();
         if (config.isCoralEnabled()) {
             try {
                 coralTags = coralApi.fetchCoralTags(
@@ -291,27 +140,73 @@ public class PlayerCache {
                     profile.getName(),
                     normalizeApiKey(config.getCoralApiKey())
                 );
-            } catch (IOException ignored) {}
+            } catch (IOException error) { failures.put("Coral", error.getMessage()); }
         }
 
-        List<SeraphTag> seraphTags = profile.getSeraphTags();
-        if (config.seraph && com.roxiun.mellow.api.seraph.SeraphAvailability.isEnabled()) {
-            try {
-                seraphTags = seraphApi.fetchSeraphTags(
-                    uuid,
-                    normalizeApiKey(config.seraphKey)
-                );
-            } catch (IOException ignored) {}
-        }
-
-        profile = profile.withTags(coralTags, seraphTags);
+        java.util.List<XadiaTag> xadiaTags = java.util.Collections.emptyList();
         if (config.xadia) {
             try {
-                return profile.withXadiaTags(xadiaApi.fetchXadiaTags(
-                    uuid, profile.getName(), config.xadiaKey, config.xadiaVerifiedOnly));
-            } catch (IOException ignored) {}
+                xadiaTags = xadiaApi.fetchXadiaTags(
+                    uuid, profile.getName(), config.xadiaKey, config.xadiaVerifiedOnly);
+            } catch (IOException error) { failures.put("Xadia", error.getMessage()); }
         }
-        return profile.withXadiaTags(java.util.Collections.emptyList());
+        return profile.withTags(TagReport.nativeTags(coralTags, xadiaTags, failures));
+    }
+
+    public void prefetchStats(java.util.Set<String> uuids) {
+        StatsProvider provider = getSelectedProvider();
+        if (provider == null || !provider.supportsBatch()) return;
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        for (String uuid : uuids) ids.add(normalizeUuidKey(uuid));
+        for (int start = 0; start < ids.size(); start += 100) {
+            java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+            for (String id : ids.subList(start, Math.min(start + 100, ids.size()))) keys.add(buildRawDataCacheKey(provider, id));
+            rawDataCache.getAll(keys, missing -> {
+                java.util.Set<String> players = new java.util.LinkedHashSet<>();
+                for (String key : missing) players.add(key.substring(key.lastIndexOf(':') + 1));
+                Map<String, ProviderResult<String>> fetched = coolingDown(provider) ? java.util.Collections.emptyMap() : provider.fetchBatch(players);
+                Map<String, ProviderResult<JsonObject>> result = new java.util.LinkedHashMap<>();
+                for (String key : missing) {
+                    String id = key.substring(key.lastIndexOf(':') + 1);
+                    result.put(key, fetched.isEmpty() ? ProviderResult.failure(FetchFailureReason.RATE_LIMITED, "Provider is cooling down") : parseResponse(provider, fetched.get(id)));
+                }
+                return result;
+            });
+        }
+    }
+
+    public Map<String, TagReport> fetchTagReports(java.util.Set<String> uuids) {
+        Map<String, TagReport> reports = new java.util.LinkedHashMap<>();
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        for (String uuid : uuids) ids.add(normalizeUuidKey(uuid));
+        for (int start = 0; start < ids.size(); start += 100) {
+            java.util.Set<String> batch = new java.util.LinkedHashSet<>(ids.subList(start, Math.min(ids.size(), start + 100)));
+            Map<String, ProviderResult<List<CoralTag>>> coral = config.isCoralEnabled()
+                ? coralApi.fetchBatch(batch, config.getCoralApiKey()) : java.util.Collections.emptyMap();
+            Map<String, ProviderResult<List<XadiaTag>>> xadia = config.xadia
+                ? xadiaApi.fetchBatch(batch, config.xadiaKey, config.xadiaVerifiedOnly) : java.util.Collections.emptyMap();
+            for (String id : batch) {
+                Map<String, String> errors = new java.util.LinkedHashMap<>();
+                ProviderResult<List<CoralTag>> c = coral.get(id);
+                ProviderResult<List<XadiaTag>> x = xadia.get(id);
+                if (c != null && !c.isSuccess()) errors.put("Coral", c.getError());
+                if (x != null && !x.isSuccess()) errors.put("Xadia", x.getError());
+                reports.put(id, TagReport.nativeTags(
+                    c == null ? null : c.getValue(), x == null ? null : x.getValue(), errors));
+            }
+        }
+        return reports;
+    }
+
+    public ProfileFetchResult getProfileForIdentity(String name, String uuid, boolean tags) {
+        StatsProvider provider = getSelectedProvider();
+        if (provider == null) return ProfileFetchResult.failure(FetchFailureReason.PROVIDER_ERROR, "No provider", null);
+        resolvedNames.put(name.toLowerCase(Locale.ROOT), uuid);
+        ProviderResult<JsonObject> raw = fetchRaw(provider, uuid);
+        ProfileFetchResult result = raw.isSuccess()
+            ? buildFullProfileResult(name, uuid, raw.getValue(), provider, resolveActiveDuelsMode(), tags)
+            : toProfileFailure(raw, provider.getDisplayName());
+        return withAvailableProfile(result, name, uuid, tags);
     }
 
     public StatsProvider getSelectedProvider() {
@@ -319,7 +214,6 @@ public class PlayerCache {
     }
 
     public String fetchRawPlayerData(String playerName) {
-        maybeInvalidateCacheOnApiKeyChange();
         StatsProvider provider = providerManager.getSelectedProvider(config);
         if (provider == null) {
             return "";
@@ -334,52 +228,41 @@ public class PlayerCache {
             return "";
         }
 
-        CachedRawData cachedRawData = rawDataCache.get(
-            buildRawDataCacheKey(provider, uuid.uuid)
-        );
-        if (cachedRawData != null && !cachedRawData.isExpired()) {
-            return cachedRawData.rawData;
-        }
-
-        ProviderResult<String> rawResult = provider.fetchPlayerDataResult(uuid.uuid);
-        if (!rawResult.isSuccess()) {
-            return "";
-        }
-
-        storeRawData(provider, uuid.uuid, rawResult.getValue());
-        return rawResult.getValue();
+        ProviderResult<JsonObject> rawResult = fetchRaw(provider, uuid.uuid);
+        if (!rawResult.isSuccess()) return "";
+        return rawResult.getValue().toString();
     }
 
     private ProfileFetchResult buildFullProfileResult(
         String playerName,
         String uuid,
-        String rawData,
+        JsonObject root,
         StatsProvider provider,
         DuelsMode duelsMode,
         boolean includeTags
     ) {
         ProviderResult<BedwarsPlayer> bedwarsResult = HypixelApiUtils.parsePlayerDataResult(
-            rawData,
+            root,
             provider.getProviderId()
         );
         ProviderResult<SkywarsPlayer> skywarsResult =
             HypixelApiUtils.parseSkywarsPlayerDataResult(
-                rawData,
+                root,
                 provider.getProviderId()
             );
         ProviderResult<DuelsPlayer> duelsResult = HypixelApiUtils.parseDuelsPlayerDataResult(
-            rawData,
+            root,
             provider.getProviderId(),
             duelsMode
         );
         ProviderResult<BuildBattlePlayer> buildBattleResult =
             HypixelApiUtils.parseBuildBattlePlayerDataResult(
-                rawData,
+                root,
                 provider.getProviderId()
             );
         ProviderResult<TntRunPlayer> tntRunResult =
             HypixelApiUtils.parseTntRunPlayerDataResult(
-                rawData,
+                root,
                 provider.getProviderId()
             );
 
@@ -408,7 +291,6 @@ public class PlayerCache {
             duelsResult.getValue(),
             buildBattleResult.getValue(),
             tntRunResult.getValue(),
-            null,
             null
         );
 
@@ -417,228 +299,6 @@ public class PlayerCache {
         }
 
         return ProfileFetchResult.success(profile, provider.getDisplayName());
-    }
-
-    private ProfileFetchResult buildScopedProfileResult(
-        String playerName,
-        String uuid,
-        String rawData,
-        StatsProvider provider,
-        StatScope scope,
-        DuelsMode duelsMode,
-        boolean includeTags
-    ) {
-        ProfileFetchResult result;
-        switch (scope) {
-            case SKYWARS:
-                result = createSkywarsProfileResult(
-                    playerName,
-                    uuid,
-                    rawData,
-                    provider
-                );
-                break;
-            case DUELS:
-                result = createDuelsProfileResult(
-                    playerName,
-                    uuid,
-                    rawData,
-                    provider,
-                    duelsMode
-                );
-                break;
-            case BUILD_BATTLE:
-                result = createBuildBattleProfileResult(
-                    playerName,
-                    uuid,
-                    rawData,
-                    provider
-                );
-                break;
-            case TNT_RUN:
-                result = createTntRunProfileResult(
-                    playerName,
-                    uuid,
-                    rawData,
-                    provider
-                );
-                break;
-            case BEDWARS:
-            default:
-                result = createBedwarsProfileResult(
-                    playerName,
-                    uuid,
-                    rawData,
-                    provider
-                );
-                break;
-        }
-
-        if (!result.isSuccess()) {
-            return result;
-        }
-
-        PlayerProfile profile = result.getProfile();
-        if (includeTags) {
-            profile = enrichProfileWithTags(profile);
-        }
-
-        return ProfileFetchResult.success(profile, provider.getDisplayName());
-    }
-
-    private ProfileFetchResult createBedwarsProfileResult(
-        String playerName,
-        String uuid,
-        String rawData,
-        StatsProvider provider
-    ) {
-        ProviderResult<BedwarsPlayer> bedwarsResult = HypixelApiUtils.parsePlayerDataResult(
-            rawData,
-            provider.getProviderId()
-        );
-        if (!bedwarsResult.isSuccess()) {
-            return toProfileFailure(bedwarsResult, provider.getDisplayName());
-        }
-
-        return ProfileFetchResult.success(
-            new PlayerProfile(
-                uuid,
-                playerName,
-                bedwarsResult.getValue(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            ),
-            provider.getDisplayName()
-        );
-    }
-
-    private ProfileFetchResult createSkywarsProfileResult(
-        String playerName,
-        String uuid,
-        String rawData,
-        StatsProvider provider
-    ) {
-        ProviderResult<SkywarsPlayer> skywarsResult =
-            HypixelApiUtils.parseSkywarsPlayerDataResult(
-                rawData,
-                provider.getProviderId()
-            );
-        if (!skywarsResult.isSuccess()) {
-            return toProfileFailure(skywarsResult, provider.getDisplayName());
-        }
-
-        return ProfileFetchResult.success(
-            new PlayerProfile(
-                uuid,
-                playerName,
-                null,
-                skywarsResult.getValue(),
-                null,
-                null,
-                null,
-                null,
-                null
-            ),
-            provider.getDisplayName()
-        );
-    }
-
-    private ProfileFetchResult createDuelsProfileResult(
-        String playerName,
-        String uuid,
-        String rawData,
-        StatsProvider provider,
-        DuelsMode duelsMode
-    ) {
-        ProviderResult<DuelsPlayer> duelsResult = HypixelApiUtils.parseDuelsPlayerDataResult(
-            rawData,
-            provider.getProviderId(),
-            duelsMode
-        );
-        if (!duelsResult.isSuccess()) {
-            return toProfileFailure(duelsResult, provider.getDisplayName());
-        }
-
-        return ProfileFetchResult.success(
-            new PlayerProfile(
-                uuid,
-                playerName,
-                null,
-                null,
-                duelsResult.getValue(),
-                null,
-                null,
-                null,
-                null
-            ),
-            provider.getDisplayName()
-        );
-    }
-
-    private ProfileFetchResult createBuildBattleProfileResult(
-        String playerName,
-        String uuid,
-        String rawData,
-        StatsProvider provider
-    ) {
-        ProviderResult<BuildBattlePlayer> buildBattleResult =
-            HypixelApiUtils.parseBuildBattlePlayerDataResult(
-                rawData,
-                provider.getProviderId()
-            );
-        if (!buildBattleResult.isSuccess()) {
-            return toProfileFailure(buildBattleResult, provider.getDisplayName());
-        }
-
-        return ProfileFetchResult.success(
-            new PlayerProfile(
-                uuid,
-                playerName,
-                null,
-                null,
-                null,
-                buildBattleResult.getValue(),
-                null,
-                null,
-                null
-            ),
-            provider.getDisplayName()
-        );
-    }
-
-    private ProfileFetchResult createTntRunProfileResult(
-        String playerName,
-        String uuid,
-        String rawData,
-        StatsProvider provider
-    ) {
-        ProviderResult<TntRunPlayer> tntRunResult =
-            HypixelApiUtils.parseTntRunPlayerDataResult(
-                rawData,
-                provider.getProviderId()
-            );
-        if (!tntRunResult.isSuccess()) {
-            return toProfileFailure(tntRunResult, provider.getDisplayName());
-        }
-
-        return ProfileFetchResult.success(
-            new PlayerProfile(
-                uuid,
-                playerName,
-                null,
-                null,
-                null,
-                null,
-                tntRunResult.getValue(),
-                null,
-                null
-            ),
-            provider.getDisplayName()
-        );
     }
 
     private ProfileFetchResult selectProfileFailure(
@@ -706,7 +366,7 @@ public class PlayerCache {
 
     public void clearCache() {
         xadiaApi.clearCache();
-        cache.clear();
+        resolvedNames.clear();
         rawDataCache.clear();
         if (mojangApi != null) {
             mojangApi.clearCache();
@@ -714,15 +374,11 @@ public class PlayerCache {
         if (Mellow.coralApi != null) {
             Mellow.coralApi.clearCache();
         }
-        if (Mellow.seraphApi != null) {
-            Mellow.seraphApi.clearCache();
-        }
+
         if (Mellow.auroraApi != null) {
             Mellow.auroraApi.clearCache();
         }
-        if (Mellow.seraphClientCacheService != null) {
-            Mellow.seraphClientCacheService.clearCache();
-        }
+
         if (Mellow.auroraPingService != null) {
             Mellow.auroraPingService.clearCache();
         }
@@ -732,9 +388,7 @@ public class PlayerCache {
         if (Mellow.lunaPingService != null) {
             Mellow.lunaPingService.clearCache();
         }
-        if (Mellow.seraphPingService != null) {
-            Mellow.seraphPingService.clearCache();
-        }
+
     }
 
     public void clearPlayer(String playerName) {
@@ -749,9 +403,6 @@ public class PlayerCache {
         }
         if (Mellow.coralApi != null) {
             Mellow.coralApi.clearPlayer(null, playerName);
-        }
-        if (Mellow.seraphClientCacheService != null) {
-            Mellow.seraphClientCacheService.clearPlayer(playerName);
         }
 
         UUID trustedTabUuid = PlayerUtils.getTrustedTabUuid(playerName);
@@ -771,51 +422,33 @@ public class PlayerCache {
         if (Mellow.lunaPingService != null) {
             Mellow.lunaPingService.clearPlayer(fullUuid);
         }
-        if (Mellow.seraphPingService != null) {
-            Mellow.seraphPingService.clearPlayer(fullUuid);
-        }
+
         if (Mellow.coralApi != null) {
             Mellow.coralApi.clearPlayer(fullUuid, playerName);
         }
-        if (Mellow.seraphApi != null) {
-            Mellow.seraphApi.clearPlayer(fullUuid);
-        }
+
     }
 
     /** Clears only stats-provider data, preserving supplemental API gates. */
+    public void clearPlayerTags(String uuid, String name) {
+        coralApi.clearPlayer(uuid, name);
+        xadiaApi.clearPlayer(uuid, name);
+    }
+
     public void clearPlayerStats(String playerName) {
         if (playerName == null || playerName.trim().isEmpty()) {
             return;
         }
 
-        String lower = playerName.toLowerCase(Locale.ROOT);
-        cache.keySet().removeIf(key -> key.endsWith(":" + lower));
-
-        UUID trustedTabUuid = PlayerUtils.getTrustedTabUuid(playerName);
-        if (trustedTabUuid == null) {
-            return;
+        String uuid = resolvedNames.get(playerName.toLowerCase(Locale.ROOT));
+        if (uuid == null) {
+            UUID tabUuid = PlayerUtils.getTrustedTabUuid(playerName);
+            if (tabUuid != null) uuid = tabUuid.toString();
         }
-
-        String compactUuid = trustedTabUuid.toString().replace("-", "");
-        rawDataCache.keySet().removeIf(key -> key.endsWith(":" + compactUuid));
-    }
-
-    private void maybeInvalidateCacheOnApiKeyChange() {
-        String currentCoralApiKey = normalizeApiKey(config.getCoralApiKey());
-        String currentSeraphApiKey = normalizeApiKey(config.seraphKey);
-
-        boolean coralChanged = !currentCoralApiKey.equals(lastCoralApiKey);
-        boolean seraphChanged = !currentSeraphApiKey.equals(lastSeraphApiKey);
-        String xadiaSettings = normalizeApiKey(config.xadiaKey) + "|" + config.xadia + "|" + config.xadiaVerifiedOnly;
-        boolean xadiaChanged = !xadiaSettings.equals(lastXadiaSettings);
-        lastXadiaSettings = xadiaSettings;
-        if (!coralChanged && !seraphChanged && !xadiaChanged) {
-            return;
+        if (uuid != null) {
+            final String suffix = ":" + normalizeUuidKey(uuid);
+            rawDataCache.removeMatching(key -> key.endsWith(suffix));
         }
-
-        lastCoralApiKey = currentCoralApiKey;
-        lastSeraphApiKey = currentSeraphApiKey;
-        clearCache();
     }
 
     private ResolvedUuid resolveUuid(
@@ -838,6 +471,7 @@ public class PlayerCache {
         ) {
             String uuid = PlayerUtils.getUUIDFromPlayerName(playerName);
             if (uuid != null && !uuid.trim().isEmpty()) {
+                resolvedNames.put(playerName.toLowerCase(Locale.ROOT), uuid);
                 return ResolvedUuid.success(uuid);
             }
         }
@@ -857,34 +491,12 @@ public class PlayerCache {
             );
         }
 
-        return ResolvedUuid.success(uuid);
-    }
-
-    private String buildCacheKey(
-        StatsProvider provider,
-        String playerName,
-        StatScope scope,
-        ProfileFetchContext context,
-        boolean includeTags,
-        DuelsMode duelsMode
-    ) {
-        return provider.getProviderId().name() +
-        ":" +
-        (context == null ? ProfileFetchContext.GENERAL.name() : context.name()) +
-        ":" +
-        (scope == null ? "ALL" : scope.name()) +
-        ":" +
-        (duelsMode == null ? DuelsMode.OVERALL.name() : duelsMode.name()) +
-        ":" +
-        (includeTags ? "tags" : "notags") +
-        ":" +
-        playerName.toLowerCase(Locale.ROOT);
+        resolvedNames.put(playerName.toLowerCase(Locale.ROOT), uuid);
+                return ResolvedUuid.success(uuid);
     }
 
     private String buildRawDataCacheKey(StatsProvider provider, String uuid) {
-        return provider.getProviderId().name() +
-        ":" +
-        normalizeUuidKey(uuid);
+        return provider.getProviderId().name() + ":" + normalizeApiKey(config.hypixelApiKey) + ":" + normalizeUuidKey(uuid);
     }
 
     private String normalizeUuidKey(String uuid) {
@@ -894,15 +506,37 @@ public class PlayerCache {
         return uuid.replace("-", "").toLowerCase(Locale.ROOT).trim();
     }
 
-    private void storeRawData(StatsProvider provider, String uuid, String rawData) {
-        if (provider == null || rawData == null || rawData.isEmpty()) {
-            return;
-        }
+    private boolean coolingDown(StatsProvider provider) {
+        return providerCooldown.getOrDefault(provider.getProviderId().name(), 0L) > System.currentTimeMillis();
+    }
 
-        rawDataCache.put(
-            buildRawDataCacheKey(provider, uuid),
-            new CachedRawData(rawData)
-        );
+    private ProviderResult<JsonObject> fetchRaw(StatsProvider provider, String uuid) {
+        return rawDataCache.get(buildRawDataCacheKey(provider, uuid), () -> {
+            if (coolingDown(provider)) return ProviderResult.failure(FetchFailureReason.RATE_LIMITED, "Provider is cooling down");
+            return parseResponse(provider, provider.fetchPlayerDataResult(uuid));
+        });
+    }
+
+    private ProviderResult<JsonObject> parseResponse(StatsProvider provider, ProviderResult<String> response) {
+        if (response == null) return ProviderResult.failure(FetchFailureReason.NO_PLAYER_DATA, "Provider omitted player");
+        if (!response.isSuccess()) {
+            if (response.getFailureReason() == FetchFailureReason.RATE_LIMITED)
+                providerCooldown.put(provider.getProviderId().name(), System.currentTimeMillis() + 30_000L);
+            return ProviderResult.failure(response.getFailureReason(), response.getError());
+        }
+        try {
+            JsonObject root = new JsonParser().parse(response.getValue()).getAsJsonObject();
+            if (provider.getProviderId() != ProviderId.NADESHIKO) {
+                if (!root.has("success") || !root.get("success").getAsBoolean())
+                    return ProviderResult.failure(FetchFailureReason.PROVIDER_ERROR,
+                        root.has("cause") ? root.get("cause").getAsString() : "Provider returned success=false");
+                if (!root.has("player") || root.get("player").isJsonNull())
+                    return ProviderResult.failure(FetchFailureReason.NO_PLAYER_DATA, "No player data");
+            }
+            return ProviderResult.success(root);
+        } catch (RuntimeException error) {
+            return ProviderResult.failure(FetchFailureReason.PARSE_ERROR, error.getMessage());
+        }
     }
 
     private String normalizeApiKey(String apiKey) {
@@ -916,36 +550,6 @@ public class PlayerCache {
             );
         } catch (Exception ignored) {
             return DuelsMode.OVERALL;
-        }
-    }
-
-    private static class CachedProfile {
-
-        private final PlayerProfile profile;
-        private final long cachedAt;
-
-        private CachedProfile(PlayerProfile profile) {
-            this.profile = profile;
-            this.cachedAt = System.currentTimeMillis();
-        }
-
-        private boolean isExpired() {
-            return System.currentTimeMillis() - cachedAt > CACHE_TTL_MS;
-        }
-    }
-
-    private static class CachedRawData {
-
-        private final String rawData;
-        private final long cachedAt;
-
-        private CachedRawData(String rawData) {
-            this.rawData = rawData;
-            this.cachedAt = System.currentTimeMillis();
-        }
-
-        private boolean isExpired() {
-            return System.currentTimeMillis() - cachedAt > CACHE_TTL_MS;
         }
     }
 

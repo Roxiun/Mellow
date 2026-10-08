@@ -6,10 +6,15 @@ import com.roxiun.mellow.feature.nicks.NumberDenicker;
 import com.roxiun.mellow.feature.requestpopup.RequestPopupService;
 import com.roxiun.mellow.feature.replay.ReplayManager;
 import com.roxiun.mellow.feature.stats.PregameStats;
-import com.roxiun.mellow.module.bedwars.BedwarsChatSignalParser;
+import com.roxiun.mellow.feature.bedwars.BedwarsChatSignalParser;
 import net.minecraft.client.Minecraft;
+//? if ornithe {
 import com.roxiun.mellow.platform.event.ClientChatReceivedEvent;
 import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
+//?} else {
+/*import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+*///?}
 
 public class ChatEventRouter {
 
@@ -31,8 +36,13 @@ public class ChatEventRouter {
         this.requestPopupService = requestPopupService;
     }
 
+    //? if ornithe {
     @Subscribe
+    //?} else {
+    /*@SubscribeEvent
+    *///?}
     public void onChat(ClientChatReceivedEvent event) {
+        HypixelFeatures.getInstance().onChat(event.message.getUnformattedText());
         numberDenicker.onChat(event);
         pregameStats.onChat(event);
 
@@ -40,7 +50,6 @@ public class ChatEventRouter {
         if (requestPopupService != null) {
             requestPopupService.onChatMessage(message);
         }
-        HypixelFeatures.getInstance().onChat(message);
         ReplayManager.getInstance().onChatReceived(event.message, event.type);
 
         if (

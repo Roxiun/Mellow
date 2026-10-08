@@ -1,8 +1,8 @@
 package com.roxiun.mellow.feature.stats;
 
+import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.api.provider.model.StatScope;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
@@ -19,11 +19,9 @@ import com.roxiun.mellow.util.annoylist.AnnoylistManager;
 import com.roxiun.mellow.util.annoylist.AnnoylistedPlayer;
 import com.roxiun.mellow.util.blacklist.BlacklistManager;
 import com.roxiun.mellow.util.blacklist.BlacklistedPlayer;
-import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.player.PlayerUtils;
 import com.roxiun.mellow.util.tagignore.TagIgnoreManager;
 import java.util.Locale;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +29,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
 import net.hypixel.data.type.GameType;
+//? if ornithe {
 import com.roxiun.mellow.platform.event.ClientChatReceivedEvent;
+//?} else {
+/*import net.minecraftforge.client.event.ClientChatReceivedEvent;
+*///?}
 
 public class PregameStats {
 
@@ -43,22 +45,13 @@ public class PregameStats {
     private final TagIgnoreManager tagIgnoreManager;
 
     private final Set<String> alreadyLookedUp = ConcurrentHashMap.newKeySet();
+    private final Set<String> alertedSources = ConcurrentHashMap.newKeySet();
     private final AlertSoundGate pregameAlertSoundGate = new AlertSoundGate();
     private boolean autoLeaveTriggeredThisPregame;
 
     private static final Pattern BEDWARS_CHAT_PATTERN = Pattern.compile(
         "^(?:\\[.*?\\]\\s*)*(\\w{3,16})(?::| ») (.*)$"
     );
-    private static final Pattern START_SECONDS_PATTERN = Pattern.compile(
-        "(?i).*start(?:s|ing)?\\s+in\\s+(\\d{1,2})\\s*s.*"
-    );
-    private static final Pattern START_CLOCK_PATTERN = Pattern.compile(
-        "(?i).*start(?:s|ing)?\\s+in\\s+(\\d{1,2}):(\\d{2}).*"
-    );
-    private static final Pattern START_WORD_SECONDS_PATTERN = Pattern.compile(
-        "(?i).*start(?:s|ing)?\\s+in\\s+(\\d{1,2})\\s*seconds?.*"
-    );
-
     public PregameStats(
         PlayerCache playerCache,
         MellowOneConfig config,
@@ -75,6 +68,7 @@ public class PregameStats {
 
     public void onWorldChange() {
         alreadyLookedUp.clear();
+        alertedSources.clear();
         pregameAlertSoundGate.reset();
         autoLeaveTriggeredThisPregame = false;
     }
@@ -85,10 +79,7 @@ public class PregameStats {
         }
 
         GameSnapshot snapshot = HypixelFeatures.getInstance().getGameSnapshot();
-        boolean inPregameLobby = HypixelFeatures
-            .getInstance()
-            .getGameContext()
-            .isPregameBedwarsLobby();
+        boolean inPregameLobby = snapshot.isInBedwarsSession() && snapshot.isPregame();
         boolean inBedwarsLobby = isInBedwarsLobby(snapshot);
 
         boolean pregameTriggerEnabled = config.pregameStats && inPregameLobby;
@@ -132,7 +123,8 @@ public class PregameStats {
             return;
         }
 
-        AsyncExecutor.getInstance().profileIo(() -> handlePlayer(username, true));
+        long session = snapshot.getSessionId();
+        AsyncExecutor.getInstance().profileIo(() -> handlePlayer(username, true, session));
     }
 
     private ParsedChatMessage parseChatMessage(String message) {
@@ -177,24 +169,37 @@ public class PregameStats {
             .contains("bed wars");
     }
 
-    private void handlePlayer(String username, boolean sendStats) {
-        ProfileFetchResult result = playerCache.getScopedProfileResult(
-            username,
-            StatScope.BEDWARS,
-            ProfileFetchContext.PREGAME,
-            true
-        );
+    private void handlePlayer(String username, boolean sendStats, long session) {
+        ProfileFetchResult identityResult = playerCache.getIdentityResult(username, ProfileFetchContext.PREGAME);
+        PlayerProfile identity = identityResult.getProfile();
+        if (identity == null) {
+            inSession(session, () -> { alreadyLookedUp.remove(username.toLowerCase(Locale.ROOT)); });
+            return;
+        }
+        inSession(session, () -> publishProfile(username, identityResult, false, session));
+        if (config.printBlacklistTags && (config.isCoralEnabled() || config.xadia)) {
+            AsyncExecutor.getInstance().supplementalIo(() -> {
+                PlayerProfile tagged = playerCache.enrichProfileWithTags(identity);
+                inSession(session, () -> publishProfile(username, ProfileFetchResult.success(tagged, null), false, session));
+            });
+        }
+        ProfileFetchResult result = playerCache.getProfileForIdentity(username, identity.getUuid(), false);
+        inSession(session, () -> publishProfile(username, result, sendStats, session));
+    }
+
+    private void publishProfile(String username, ProfileFetchResult result, boolean sendStats, long session) {
         PlayerProfile profile = result.getProfile();
         BedwarsPlayer player = profile == null
             ? null
             : profile.getBedwarsPlayer();
 
-        if (player == null) {
+        if (sendStats && player == null) {
+            alreadyLookedUp.remove(username.toLowerCase(Locale.ROOT));
             if (shouldSuppressFailureMessage(result)) {
                 return;
             }
             if (sendStats && config.showAutomaticStatsErrors) {
-                MainThreadDispatcher.run(() ->
+                inSession(session, () ->
                     ChatUtils.sendMessage(
                         "§cFailed to fetch stats for: §r" +
                             username +
@@ -209,21 +214,23 @@ public class PregameStats {
             }
         }
 
+        if (config.showAutomaticStatsErrors) for (java.util.Map.Entry<String, String> failure : profile.getTags().getFailures().entrySet()) {
+            if (alertedSources.add("error:" + failure.getKey()))
+                ChatUtils.sendMessage("§e" + failure.getKey() + " tags unavailable: " + failure.getValue());
+        }
         UUID uuid = UUIDUtils.fromString(profile.getUuid());
         if (isPartyMember(uuid)) {
             return;
         }
 
-        boolean blacklisted = blacklistManager.isBlacklisted(uuid);
+        boolean blacklisted = blacklistManager.isBlacklisted(uuid) && alertedSources.add(uuid + ":local");
         boolean annoylisted =
-            annoylistManager != null && annoylistManager.isAnnoylisted(uuid);
+            annoylistManager != null && annoylistManager.isAnnoylisted(uuid) && alertedSources.add(uuid + ":annoy");
         boolean tagsIgnored =
             tagIgnoreManager != null && tagIgnoreManager.isTagIgnored(uuid);
-        boolean coralTagged = config.isCoralEnabled() && profile.isCoralTagged();
-        boolean shouldPrintXadiaTagAlert = config.xadia && profile.isXadiaTagged() && !tagsIgnored;
-        boolean seraphTagged = config.seraph && profile.isSeraphTagged();
-        boolean shouldPrintCoralTagAlert = coralTagged && !tagsIgnored;
-        boolean shouldPrintSeraphTagAlert = seraphTagged && !tagsIgnored;
+        java.util.Map<String, String> tagWarnings = TagPolicy.warnings(
+            profile.getTags(), config.printBlacklistTags, tagsIgnored);
+        tagWarnings.entrySet().removeIf(entry -> !alertedSources.add(uuid + ":" + entry.getKey()));
         if (blacklisted || annoylisted) {
             BlacklistedPlayer blacklistedPlayer = blacklisted
                 ? blacklistManager.getBlacklistedPlayer(uuid)
@@ -238,7 +245,7 @@ public class PregameStats {
                 annoylistedPlayer == null ? null : annoylistedPlayer.getReason()
             );
 
-            MainThreadDispatcher.run(() -> {
+            inSession(session, () -> {
                 if (blacklisted) {
                     ChatUtils.sendMessage(
                         "§6" +
@@ -267,54 +274,14 @@ public class PregameStats {
                 " §7|§r FKDR: " +
                 player.getFkdrColor() +
                 player.getFormattedFkdr();
-            MainThreadDispatcher.run(() -> ChatUtils.sendMessage(stats));
+            inSession(session, () -> ChatUtils.sendMessage(stats));
         }
 
-        if (shouldPrintCoralTagAlert) {
-            String tags = FormattingUtils.formatCoralTags(profile.getCoralTags());
-            String coralMessage =
-                "§c" + username + " is tagged on §5Coral§c for: " + tags;
-            MainThreadDispatcher.run(() -> ChatUtils.sendMessage(coralMessage));
+        for (java.util.Map.Entry<String, String> source : tagWarnings.entrySet()) {
+            inSession(session, () -> ChatUtils.sendMessage("§c" + username + " is tagged on §d" + source.getKey() + "§c for: " + source.getValue()));
         }
-
-        if (shouldPrintXadiaTagAlert) {
-            String tags = FormattingUtils.formatXadiaTags(profile.getXadiaTags());
-            String xadiaMessage =
-                "§c" + username + " is tagged on §dXadia§c for: " + tags;
-            MainThreadDispatcher.run(() -> ChatUtils.sendMessage(xadiaMessage));
-        }
-
-        if (shouldPrintSeraphTagAlert) {
-            String formattedTags = FormattingUtils.formatSeraphTags(
-                profile.getSeraphTags()
-            );
-            String[] tagMessages = formattedTags.split("\\n§c");
-            if (tagMessages.length > 0 && !tagMessages[0].trim().isEmpty()) {
-                String firstMessage =
-                    "§c" + username + " is tagged on §3Seraph§c for: " + tagMessages[0];
-                MainThreadDispatcher.run(() -> ChatUtils.sendMessage(firstMessage));
-                for (int i = 1; i < tagMessages.length; i++) {
-                    if (!tagMessages[i].trim().isEmpty()) {
-                        String additionalMessage = "§c" + tagMessages[i];
-                        MainThreadDispatcher.run(() ->
-                            ChatUtils.sendMessage(additionalMessage)
-                        );
-                    }
-                }
-            }
-        }
-
-        if (
-            blacklisted ||
-            annoylisted ||
-            shouldPrintXadiaTagAlert ||
-            shouldPrintCoralTagAlert ||
-            shouldPrintSeraphTagAlert
-        ) {
-            MainThreadDispatcher.run(() ->
-                pregameAlertSoundGate.tryPlayPling(mc, 1.0F, 1.0F)
-            );
-        }
+        if (blacklisted || annoylisted || !tagWarnings.isEmpty())
+            inSession(session, () -> pregameAlertSoundGate.tryPlayPling(mc, 1.0F, 1.0F));
     }
 
     private boolean hasObfuscatedSender(String formattedMessage) {
@@ -407,7 +374,7 @@ public class PregameStats {
             return;
         }
 
-        int secondsUntilStart = extractPregameStartSeconds(snapshot.getScoreboardLines());
+        int secondsUntilStart = snapshot.getObservation().countdownSeconds;
         if (secondsUntilStart <= 2) {
             return;
         }
@@ -445,41 +412,11 @@ public class PregameStats {
         return command;
     }
 
-    private int extractPregameStartSeconds(List<String> lines) {
-        if (lines == null || lines.isEmpty()) {
-            return -1;
-        }
-
-        for (String line : lines) {
-            if (line == null || line.isEmpty()) {
-                continue;
-            }
-
-            Matcher mmss = START_CLOCK_PATTERN.matcher(line);
-            if (mmss.matches()) {
-                try {
-                    int minutes = Integer.parseInt(mmss.group(1));
-                    int seconds = Integer.parseInt(mmss.group(2));
-                    return minutes * 60 + seconds;
-                } catch (NumberFormatException ignored) {}
-            }
-
-            Matcher secondsShort = START_SECONDS_PATTERN.matcher(line);
-            if (secondsShort.matches()) {
-                try {
-                    return Integer.parseInt(secondsShort.group(1));
-                } catch (NumberFormatException ignored) {}
-            }
-
-            Matcher secondsWord = START_WORD_SECONDS_PATTERN.matcher(line);
-            if (secondsWord.matches()) {
-                try {
-                    return Integer.parseInt(secondsWord.group(1));
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-
-        return -1;
+    private void inSession(long session, Runnable action) {
+        MainThreadDispatcher.run(() -> {
+            GameSnapshot current = HypixelFeatures.getInstance().getGameSnapshot();
+            if (current.isOnHypixel() && current.getSessionId() == session && !current.isInBedwarsMatch()) action.run();
+        });
     }
 
     private static class ParsedChatMessage {

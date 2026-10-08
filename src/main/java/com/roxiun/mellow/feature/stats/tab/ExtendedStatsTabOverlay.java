@@ -1,20 +1,17 @@
 package com.roxiun.mellow.feature.stats.tab;
 
-import com.roxiun.mellow.api.xadia.XadiaTag;
+import com.roxiun.mellow.feature.tags.TagPolicy;
+import com.roxiun.mellow.api.tags.PlayerTag;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.mojang.authlib.GameProfile;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.provider.model.StatScope;
-import com.roxiun.mellow.api.seraph.SeraphClientType;
-import com.roxiun.mellow.api.seraph.SeraphTag;
-import com.roxiun.mellow.api.coral.CoralTag;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.player.PlayerUtils;
-import com.roxiun.mellow.util.render.SeraphClientIconRenderer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -52,7 +49,6 @@ public class ExtendedStatsTabOverlay extends Gui {
     private static final int HEAD_ICON_SIZE = 8;
     private static final int HEAD_TEXT_GAP = 2;
     private static final int TEAM_COLLAPSED_GAP = 1;
-    private static final int CLIENT_ICON_SIZE = ENTRY_HEIGHT - 1;
 
     private final Minecraft mc;
     private final MellowOneConfig config;
@@ -71,10 +67,56 @@ public class ExtendedStatsTabOverlay extends Gui {
     }
 
     /** One measurement is shared by the vanilla shell and the custom row pass. */
+    //? if ornithe {
     public record Layout(StatScope scope, List<NetworkPlayerInfo> players,
                          List<Integer> columns, List<Integer> widths, int tableWidth,
                          int width, int bodyHeight, int totalHeight, int headerHeight, float scale,
                          int visibleCount, int objectiveWidth, ScoreObjective objective) {}
+    //?} else {
+    /*public static final class Layout {
+        private final StatScope scope;
+        private final List<NetworkPlayerInfo> players;
+        private final List<Integer> columns;
+        private final List<Integer> widths;
+        private final int tableWidth;
+        private final int width;
+        private final int bodyHeight;
+        private final int totalHeight;
+        private final int headerHeight;
+        private final float scale;
+        private final int visibleCount;
+        private final int objectiveWidth;
+        private final ScoreObjective objective;
+        public Layout(StatScope scope, List<NetworkPlayerInfo> players, List<Integer> columns, List<Integer> widths, int tableWidth, int width, int bodyHeight, int totalHeight, int headerHeight, float scale, int visibleCount, int objectiveWidth, ScoreObjective objective) {
+            this.scope = scope;
+            this.players = players;
+            this.columns = columns;
+            this.widths = widths;
+            this.tableWidth = tableWidth;
+            this.width = width;
+            this.bodyHeight = bodyHeight;
+            this.totalHeight = totalHeight;
+            this.headerHeight = headerHeight;
+            this.scale = scale;
+            this.visibleCount = visibleCount;
+            this.objectiveWidth = objectiveWidth;
+            this.objective = objective;
+        }
+        public StatScope scope() { return scope; }
+        public List<NetworkPlayerInfo> players() { return players; }
+        public List<Integer> columns() { return columns; }
+        public List<Integer> widths() { return widths; }
+        public int tableWidth() { return tableWidth; }
+        public int width() { return width; }
+        public int bodyHeight() { return bodyHeight; }
+        public int totalHeight() { return totalHeight; }
+        public int headerHeight() { return headerHeight; }
+        public float scale() { return scale; }
+        public int visibleCount() { return visibleCount; }
+        public int objectiveWidth() { return objectiveWidth; }
+        public ScoreObjective objective() { return objective; }
+    }
+    *///?}
 
     public Layout measure(StatScope scope, int screenWidth, int screenHeight,
                           IChatComponent header,
@@ -129,7 +171,9 @@ public class ExtendedStatsTabOverlay extends Gui {
     }
 
     public void drawBody(Layout layout, int screenWidth, int top, GuiPlayerTabOverlay vanilla) {
+        //? if ornithe {
         ArgentumTabBatchCompat.Boundary batch = ArgentumTabBatchCompat.pause(vanilla);
+        //?}
         GlStateManager.pushMatrix();
         try {
             GlStateManager.translate(screenWidth / 2 - layout.tableWidth() * layout.scale() / 2, top, 0);
@@ -149,9 +193,24 @@ public class ExtendedStatsTabOverlay extends Gui {
                 if (background != 0) drawRect(0, y, layout.tableWidth(), y + ENTRY_HEIGHT, background);
                 drawValues(layout.columns(), layout.widths(), layout.scope(), info, 0, y);
                 if (layout.objectiveWidth() > 0 && info.getGameType() != WorldSettings.GameType.SPECTATOR) {
+                    //? if ornithe {
                     ((PlayerTabOverlayAccessor) vanilla).mellow$drawScoreboardValues(
                         layout.objective(), y, info.getGameProfile().getName(), scoreX + 3,
                         layout.tableWidth() - 3, info);
+                    //?} else {
+                    /*if (layout.objective().getRenderType() == IScoreObjectiveCriteria.EnumRenderType.HEARTS) {
+                        ((PlayerTabOverlayAccessor) vanilla).mellow$drawScoreboardValues(
+                            layout.objective(), y, info.getGameProfile().getName(), scoreX + 3,
+                            layout.tableWidth() - 3, info);
+                    } else {
+                        // VanillaHUD's native numeric-score redirect assumes vanilla row/ping
+                        // coordinates. Draw the same value in our measured score column.
+                        String score = "§e" + layout.objective().getScoreboard().getValueFromObjective(
+                            info.getGameProfile().getName(), layout.objective()).getScorePoints();
+                        mc.fontRendererObj.drawStringWithShadow(score,
+                            layout.tableWidth() - 3 - mc.fontRendererObj.getStringWidth(score), y, -1);
+                    }
+                    *///?}
                 }
                 y += ENTRY_HEIGHT;
             }
@@ -161,6 +220,7 @@ public class ExtendedStatsTabOverlay extends Gui {
                     (layout.tableWidth() - mc.fontRendererObj.getStringWidth(status)) / 2, y, -1);
             }
         } finally {
+            //? if ornithe {
             try {
                 batch.flushIcons();
             } finally {
@@ -168,6 +228,10 @@ public class ExtendedStatsTabOverlay extends Gui {
                 GlStateManager.color(1, 1, 1, 1);
                 batch.resume();
             }
+            //?} else {
+            /*GlStateManager.popMatrix();
+            GlStateManager.color(1, 1, 1, 1);
+            *///?}
         }
     }
 
@@ -405,15 +469,6 @@ public class ExtendedStatsTabOverlay extends Gui {
 
             int maxTextWidth = Math.max(1, width - reservedLeft);
 
-            if (ExtendedTabStatsColumns.isClientColumn(scope, column)) {
-                drawClientIcon(info, x, width, baselineY);
-                x += width;
-                if (i < columns.size() - 1) {
-                    x += getGapAfterColumn(columns, i);
-                }
-                continue;
-            }
-
             String value = fitToWidth(
                 getDisplayValue(info, column, scope, i),
                 maxTextWidth
@@ -446,9 +501,7 @@ public class ExtendedStatsTabOverlay extends Gui {
         StatScope scope,
         int columnIndex
     ) {
-        if (ExtendedTabStatsColumns.isClientColumn(scope, column)) {
-            return getCachedClientType(info) == null ? 0 : CLIENT_ICON_SIZE;
-        }
+
         return mc.fontRendererObj.getStringWidth(
             getDisplayValue(info, column, scope, columnIndex)
         );
@@ -675,11 +728,12 @@ public class ExtendedStatsTabOverlay extends Gui {
             return "";
         }
         String label = ExtendedTabStatsColumns.getHeaderLabel(scope, column);
-        return switch (label) {
-            case "TEAM", "STARS", "NAME", "LEVEL", "WINS", "KILLS", "BEDS", "FINALS", "TAGS", "PING", "CLIENT" ->
-                label.charAt(0) + label.substring(1).toLowerCase(java.util.Locale.ROOT);
-            default -> label;
-        };
+        switch (label) {
+            case "TEAM": case "STARS": case "NAME": case "LEVEL": case "WINS":
+            case "KILLS": case "BEDS": case "FINALS": case "TAGS": case "PING":
+                return label.charAt(0) + label.substring(1).toLowerCase(java.util.Locale.ROOT);
+            default: return label;
+        }
     }
 
     private int getMinimumColumnWidth(StatScope scope, int column) {
@@ -845,9 +899,6 @@ public class ExtendedStatsTabOverlay extends Gui {
         }
         if (ExtendedTabStatsColumns.isPingColumn(scope, column)) {
             return buildPingColumnValue(info);
-        }
-        if (ExtendedTabStatsColumns.isClientColumn(scope, column)) {
-            return buildClientColumnValue(playerName);
         }
 
         String[] tabData = PlayerUtils.getTabDisplayName2(playerName);
@@ -1219,23 +1270,8 @@ public class ExtendedStatsTabOverlay extends Gui {
 
         String safe = value == null ? "" : value;
 
-        if (Mellow.config.shouldShowCoralTagsInTab() && stats.isCoralTagged()) {
-            for (CoralTag tag : stats.getCoralTags()) {
-                safe += " " + FormattingUtils.formatCoralTagIcon(tag);
-            }
-        }
-
-        if (Mellow.config.xadia && Mellow.config.showXadiaTagsInTab && stats.isXadiaTagged()) {
-            for (XadiaTag tag : stats.getXadiaTags()) {
-                safe += " " + FormattingUtils.formatXadiaTagIcon(tag);
-            }
-        }
-
-        if (Mellow.config.showSeraphTagsInTab && stats.isSeraphTagged()) {
-            for (SeraphTag tag : stats.getSeraphTags()) {
-                safe += " " + FormattingUtils.formatSeraphTagIcon(tag);
-            }
-        }
+        for (PlayerTag tag : TagPolicy.visible(stats.getTags(), Mellow.config))
+            safe += " " + tag.getIcon();
 
         return safe;
     }
@@ -1259,7 +1295,7 @@ public class ExtendedStatsTabOverlay extends Gui {
         String playerName = info.getGameProfile().getName();
         if (playerName != null) {
             TabStats stats = Mellow.tabStats.get(playerName);
-            if (stats != null && (stats.isCoralTagged() || stats.isSeraphTagged() || (Mellow.config.xadia && stats.isXadiaTagged()))) {
+            if (stats != null && !TagPolicy.visible(stats.getTags(), Mellow.config).isEmpty()) {
                 return true;
             }
         }
@@ -1305,31 +1341,10 @@ public class ExtendedStatsTabOverlay extends Gui {
             builder.append("§8[§3AL§8]§r");
         }
 
-        if (stats != null && Mellow.config != null) {
-            if (Mellow.config.shouldShowCoralTagsInTab() && stats.isCoralTagged()) {
-                for (CoralTag tag : stats.getCoralTags()) {
-                    if (builder.length() > 0) {
-                        builder.append(" ");
-                    }
-                    builder.append(FormattingUtils.formatCoralTagIcon(tag));
-                }
-            }
-
-            if (Mellow.config.xadia && Mellow.config.showXadiaTagsInTab && stats.isXadiaTagged()) {
-                for (XadiaTag tag : stats.getXadiaTags()) {
-                    if (builder.length() > 0) {
-                        builder.append(" ");
-                    }
-                    builder.append(FormattingUtils.formatXadiaTagIcon(tag));
-                }
-            }
-            if (Mellow.config.showSeraphTagsInTab && stats.isSeraphTagged()) {
-                for (SeraphTag tag : stats.getSeraphTags()) {
-                    if (builder.length() > 0) {
-                        builder.append(" ");
-                    }
-                    builder.append(FormattingUtils.formatSeraphTagIcon(tag));
-                }
+        if (stats != null) {
+            for (PlayerTag tag : TagPolicy.visible(stats.getTags(), Mellow.config)) {
+                if (builder.length() > 0) builder.append(" ");
+                builder.append(tag.getIcon());
             }
         }
 
@@ -1360,11 +1375,6 @@ public class ExtendedStatsTabOverlay extends Gui {
             return "§6" + ping;
         }
         return "§c" + ping;
-    }
-
-    private String buildClientColumnValue(String playerName) {
-        SeraphClientType clientType = getCachedClientType(playerName);
-        return clientType == null ? "" : clientType.getDisplayName();
     }
 
     private String buildBedwarsWinstreakValue(
@@ -1409,46 +1419,6 @@ public class ExtendedStatsTabOverlay extends Gui {
         return FormattingUtils.isHiddenOrEmptyWinstreakDisplay(value);
     }
 
-    private SeraphClientType getCachedClientType(String playerName) {
-        if (
-            Mellow.config == null ||
-            !Mellow.config.seraph ||
-            playerName == null ||
-            Mellow.seraphClientCacheService == null
-        ) {
-            return null;
-        }
-
-        return Mellow.seraphClientCacheService.getCachedClient(playerName);
-    }
-
-    private SeraphClientType getCachedClientType(NetworkPlayerInfo info) {
-        if (info == null || info.getGameProfile() == null) {
-            return null;
-        }
-
-        String playerName = info.getGameProfile().getName();
-        SeraphClientType clientType = getCachedClientType(playerName);
-        if (clientType != null) {
-            return clientType;
-        }
-
-        UUID playerUuid = getTrustedPlayerUuid(info);
-        if (
-            playerUuid != null &&
-            Mellow.config != null &&
-            Mellow.config.seraph &&
-            Mellow.seraphClientCacheService != null
-        ) {
-            Mellow.seraphClientCacheService.refreshClientAsync(
-                playerName,
-                playerUuid.toString().replace("-", "")
-            );
-        }
-
-        return null;
-    }
-
     private UUID getTrustedPlayerUuid(NetworkPlayerInfo info) {
         if (
             info == null ||
@@ -1463,23 +1433,6 @@ public class ExtendedStatsTabOverlay extends Gui {
         return playerUuid.version() == 4 ? playerUuid : null;
     }
 
-    private void drawClientIcon(
-        NetworkPlayerInfo info,
-        int columnX,
-        int columnWidth,
-        int baselineY
-    ) {
-        SeraphClientType clientType = getCachedClientType(info);
-        if (clientType == null) {
-            return;
-        }
-
-        int iconX = columnX + (columnWidth - CLIENT_ICON_SIZE) / 2;
-        int rowY = baselineY - (ENTRY_HEIGHT - mc.fontRendererObj.FONT_HEIGHT) / 2;
-        int iconY = rowY + (ENTRY_HEIGHT - CLIENT_ICON_SIZE) / 2;
-        SeraphClientIconRenderer.drawIcon(clientType, iconX, iconY, CLIENT_ICON_SIZE);
-    }
-
     private boolean shouldKeepTagsInName(StatScope scope) {
         if (Mellow.config == null) {
             return true;
@@ -1492,8 +1445,7 @@ public class ExtendedStatsTabOverlay extends Gui {
     private boolean isCenterAlignedColumn(StatScope scope, int column) {
         return (
             ExtendedTabStatsColumns.isTagsColumn(scope, column) ||
-            ExtendedTabStatsColumns.isPingColumn(scope, column) ||
-            ExtendedTabStatsColumns.isClientColumn(scope, column)
+            ExtendedTabStatsColumns.isPingColumn(scope, column)
         );
     }
 

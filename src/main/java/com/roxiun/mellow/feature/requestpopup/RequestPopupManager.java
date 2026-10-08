@@ -1,6 +1,10 @@
 package com.roxiun.mellow.feature.requestpopup;
 
+//? if ornithe {
 import org.polyfrost.oneconfig.api.hypixel.v1.HypixelUtils;
+//?} else {
+/*import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
+*///?}
 import com.roxiun.mellow.config.MellowOneConfig;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -235,7 +239,11 @@ public class RequestPopupManager {
         return (
             config != null &&
             config.requestPopupsEnabled &&
+            //? if ornithe {
             HypixelUtils.isHypixel()
+            //?} else {
+            /*HypixelUtils.INSTANCE.isHypixel()
+            *///?}
         );
     }
 

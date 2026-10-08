@@ -1,5 +1,6 @@
 package com.roxiun.mellow.data;
 
+import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.api.coral.CoralTag;
 import com.roxiun.mellow.api.provider.model.StatScope;
 import java.util.Collections;
@@ -21,13 +22,13 @@ public class PlayerProfileTabFormattingTest {
         );
         PlayerProfile profile = PlayerProfile
             .identity("uuid", "Player")
-            .withTags(Collections.singletonList(tag), null);
+            .withTags(TagReport.nativeTags(Collections.singletonList(tag), null, Collections.emptyMap()));
 
         TabStats tabStats = profile.getTabStats(StatScope.BEDWARS);
 
         Assert.assertNotNull(tabStats);
         Assert.assertEquals("Player", tabStats.getFormattedNameWithRank());
-        Assert.assertTrue(tabStats.isCoralTagged());
+        Assert.assertTrue(tabStats.getTags().has("Coral"));
     }
 
     @Test

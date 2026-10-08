@@ -1,5 +1,6 @@
 package com.roxiun.mellow.api.xadia;
 
+import com.roxiun.mellow.api.tags.TagReport;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.roxiun.mellow.support.FakeHttpURLConnection;
@@ -86,7 +87,7 @@ public class XadiaApiTest {
     }
 
     @Test
-    public void errorsAndMalformedResponsesAreNotCached() throws Exception {
+    public void errorsAreRetriedAfterInvalidationInsteadOfReportedAsEmpty() throws Exception {
         for (int status : new int[] {401, 403, 429, 502, 200}) {
             AtomicInteger calls = new AtomicInteger();
             XadiaApi api = api(connection(status, "{\"results\":[]}"), calls);
@@ -98,6 +99,10 @@ public class XadiaApiTest {
                     if (status != 200) Assert.assertTrue(expected.getMessage().contains(Integer.toString(status)));
                 }
             }
+            Assert.assertEquals(1, calls.get());
+            api.clearCache();
+            try { api.fetchXadiaTags(null, "player", "key", false); Assert.fail(); }
+            catch (IOException expected) {}
             Assert.assertEquals(2, calls.get());
         }
     }
@@ -117,10 +122,10 @@ public class XadiaApiTest {
     public void profileAndTabCopiesKeepXadiaTags() {
         XadiaTag tag = new XadiaTag("sniper", "Sniper", null, true);
         PlayerProfile original = PlayerProfile.identity("uuid", "player");
-        PlayerProfile tagged = original.withXadiaTags(Arrays.asList(tag)).withTags(null, null);
-        Assert.assertFalse(original.isXadiaTagged());
-        Assert.assertTrue(tagged.isXadiaTagged());
-        Assert.assertTrue(tagged.getTabStats().isXadiaTagged());
-        Assert.assertSame(tag, tagged.getTabStats().getXadiaTags().get(0));
+        PlayerProfile tagged = original.withTags(TagReport.nativeTags(null, Arrays.asList(tag), java.util.Collections.emptyMap()));
+        Assert.assertFalse(original.getTags().has("Xadia"));
+        Assert.assertTrue(tagged.getTags().has("Xadia"));
+        Assert.assertTrue(tagged.getTabStats().getTags().has("Xadia"));
+        Assert.assertEquals("sniper", tagged.getTabStats().getTags().getTags().get(0).getType());
     }
 }

@@ -25,7 +25,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 - Supports [Coral API](https://api.urchin.gg/) tags (API key required)
 
-- Seraph integration is deprecated. Settings and legacy code remain, but all Seraph requests (tags, reports, ping, client detection, and UUID fallback) are disabled.
+- Identity lookup uses Mowojang with fallback providers. Retired Seraph tag, reporting, ping, and client-detection integrations have been removed.
 
 - Supports [Xadia API](https://xadia.sniped.me/) tags, including verified and unverified reports
 
@@ -54,29 +54,37 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 ## Download
 
-Download the Ornithe jar from [Modrinth](https://modrinth.com/mod/statsify) into your instance's `mods` folder. This branch targets **Minecraft 1.8.9 on Ornithe**, with **Java 25** and **OneConfig v1 1.2.13 or newer**. Use the Ornithe/OneClient editions of the dependencies:
+Choose the release JAR matching your **Minecraft 1.8.9 loader**:
 
-- [OneConfig](https://modrinth.com/mod/oneconfig), including its required dependencies (Compose Multiplatform and Fabric Language Kotlin).
-- Pylon 0.1.7 or newer for the LWJGL 3 runtime.
-- Optional: [PolyHitbox](https://modrinth.com/mod/hitbox) 1.3.1, [PolyNametag](https://modrinth.com/mod/polynametag) 1.2.1, and [VanillaHUD](https://modrinth.com/mod/vanillahud) 3.5.3 or newer. The compatibility smoke tests cover OneClient’s OneConfig 1.2.13 / VanillaHUD 3.5.3 and the newer 1.2.16 / 3.5.4 pair.
+| Target | Client Java | Settings |
+| --- | --- | --- |
+| Forge | Java 8 | OneConfig v0 |
+| Ornithe / OneClient | Java 25 | OneConfig v1 1.2.13+ |
 
-Install the **complete OneConfig release jar**; its nested `oneconfigv1` module is required. The Forge editions of Mellow and these mods cannot be used in the Ornithe instance.
+Ornithe requires the complete OneConfig release and its dependencies (Compose Multiplatform and Fabric Language Kotlin), plus Pylon 0.1.7+. Optional integrations are PolyHitbox 1.3.1+, PolyNametag 1.2.1+ and VanillaHUD 3.5.3+. Use dependency releases matching your loader.
 
-Matching scalar settings import once from the old `mellow.json` into `mellow-v1.json`, leaving the original file untouched. Configure HUD layout and appearance in the new OneConfig HUD editor. Existing blacklists and replay files retain their formats.
+Forge and Ornithe have independent settings and HUD layouts. Ornithe starts with fresh defaults in `mellow-v1.json`; Forge uses `mellow.json`. Blacklist and replay formats are preserved.
 
 ## Building and testing
 
-Install JDK 21 and JDK 25. Gradle runs on 21 and selects the Java 25 compiler/client toolchain:
+Install JDK 8, 21 and 25. Run Gradle on **JDK 21**; the targets select their own compiler toolchains. Forge code and shaded dependencies remain Java 8 compatible.
 
 ```sh
 export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS
-./gradlew build
-./gradlew runClient -PclientTest
-./gradlew runClient -PclientTest -PcompatMods
-./gradlew runClient -PclientTest -PcompatMods -PoneClientBaseline
+./gradlew :1.8.9-forge:build :1.8.9-ornithe:build
+./gradlew :1.8.9-ornithe:runClient -PclientTest
+./gradlew :1.8.9-ornithe:runClient -PclientTest -PcompatMods
+./gradlew :1.8.9-forge:runClient -PclientTest
+./gradlew :1.8.9-forge:runClient -PclientTest -PcompatMods
 ```
 
-The release jar is written to `build/libs/Mellow-1.8.9-ornithe-<version>.jar`. Client smoke tests launch a real client, verify initialization and replay packet round trips, then exit; they require a graphical environment. Their separate configurations live under `build/client-test`. `-PcompatMods` adds the three pinned optional mods. Omit `-PclientTest` for an interactive development client.
+Release JARs are written to `versions/<target>/build/libs/`. Client smoke tests require a graphical environment and use isolated directories under each target's `build/client-test`. Omit `-PclientTest` for an interactive development client. Ornithe additionally supports `-PoneClientBaseline` and `-PoneClientCurrent` with `-PcompatMods` to check its dependency combinations. Forge smoke tests on Apple Silicon can use `-Plwjgl2Dir=/absolute/path/to/lwjgl2` for a compatible local LWJGL 2 distribution.
+
+## Source layout
+
+Stonecutter manages both targets with **Ornithe as the active development target**. Shared feature logic lives in `src/main`; small API differences use `//? if forge` / `//? if ornithe` conditions. Loader-specific settings, HUDs, launch support and resources live in `src/forge` and `src/ornithe`. Both loaders are maintained together on the same branch.
+
+Each target has its own build script. Keep MCP development names on both targets; Loom remaps the release JAR for its loader. The Ornithe mapping overlay is checked in at `mappings/mcp-1.8.9.tiny`. `python3 tools/generate_mappings.py` regenerates it and the canonical replay packet table. Stonecutter selects source branches; it does not replace these mappings.
 
 ## Usage
 
@@ -86,7 +94,7 @@ Match stats fetch automatically. `/who` is optional; use `/refresh` to re-fetch 
 
 Enable Coral or Xadia and add their keys under **API Keys**. Xadia keys come from `/key generate` in its Discord bot; **Verified Tags Only** hides unverified reports. Number denicking requires an Aurora key and its feature toggle.
 
-Under **Tab Stats**, drag entries to reorder them and uncheck entries to hide them. Configure HUDs in the OneConfig HUD editor.
+Under **Tab Stats**, Ornithe uses draggable entries that you can uncheck to hide. Forge uses stat-slot dropdowns. Configure HUDs in the OneConfig HUD editor.
 
 ### Commands
 
@@ -111,11 +119,20 @@ Under **Tab Stats**, drag entries to reorder them and uncheck entries to hide th
 | `/mdebug <all/state/scoreboard/pregame>` | Game-state diagnostics |
 | `/mreplay` | Open the replay browser |
 
-List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. With the Seraph mod installed, use `/mblacklist` or `/bl` instead of `/blacklist`.
+List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. `/bl` and `/mblacklist` are aliases.
 
 Replay subcommands: `list`, `open <id/index>`, `info <id/index>`, `delete <id/index>`, and `tp <player>` (also `spectate`).
 
-Seraph requests are disabled; `/seraph`, `/client`, and legacy Seraph reporting remain deprecated.
+Coral and Xadia use native tag integrations. Stats and tags load independently; failed sources are reported separately.
+
+## Data and game-state flow
+
+- `gamestate/GameStateManager` owns connection, party, location, and game phase. `ScoreboardObservation` extracts sidebar facts; Bedwars chat signals provide explicit match-start evidence. A missing sidebar preserves the established phase. A new world/server starts an unknown session; lobby location and disconnect packets reset the relevant state. Session IDs are separate from ordinary snapshot revisions.
+- `feature/stats/InGameTabStatsSyncService` scans the live roster every 1.5 seconds. `StatsChecker` applies local checks immediately, schedules stats and tags independently, and applies results on the client thread only while their session and refresh generation remain current. Party checks use membership UUIDs independently of the match and never fetch stats.
+- `cache/PlayerCache` owns shared stats requests and parsed responses. Stats adapters handle transport; `HypixelApiUtils` projects the shared response into game-specific stats. Nadeshiko keeps its native response adapter. Raw responses are shared across commands, views, and game scopes.
+- Native Coral and Xadia adapters share request caching through `api/tags/TagRequests`. Their responses become `TagReport` / `PlayerTag` values used by alerts and overlays. A report preserves failures separately from empty successful results. `TagPolicy` centralizes automatic tag suppression and tab visibility; manual lookups show the fetched report. `CubelifyParser` supplies shared envelope decoding with explicit provider mappings for warning tags, metadata, and HTTP-200 error badges.
+- Roster lookups use Coral/Xadia batches and Bordic bulk stats, in groups of at most 100. Single and batch requests share cache entries. Stats and tags normally stay fresh for two minutes; failures have short retry windows and stats rate limits impose a provider cooldown. Upstream provider caches may contain older data.
+- `/refresh` invalidates current players' stats and tags while retaining good displayed rows until replacements arrive. `/clearcache` invalidates cached and pending results without changing local lists. `RequestCache` bounds retained entries and shares pending work; clearing an entry detaches its old completion. Ping refresh runs from ticks, with rendering limited to cache reads.
 
 ## Community
 

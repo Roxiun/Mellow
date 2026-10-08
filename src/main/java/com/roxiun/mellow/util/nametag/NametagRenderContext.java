@@ -1,80 +1,23 @@
 package com.roxiun.mellow.util.nametag;
-
+//? if ornithe {
 import com.roxiun.mellow.util.RgbaColor;
-import com.roxiun.mellow.api.seraph.SeraphClientType;
-
+//?} else {
+/*import cc.polyfrost.oneconfig.config.core.OneColor;
+*///?}
 public final class NametagRenderContext {
-
-    private static final ThreadLocal<State> CURRENT_STATE = new ThreadLocal<>();
-
-    private static final ThreadLocal<String> LABEL = new ThreadLocal<>();
-    public static void beginLabel(String label) { LABEL.set(label); }
-    public static void endLabel() { LABEL.remove(); }
-    public static String getRenderedLabel() { return LABEL.get(); }
-
+    //? if ornithe {
+    private static final ThreadLocal<RgbaColor> COLOR = new ThreadLocal<>();
+    //?} else {
+    /*private static final ThreadLocal<OneColor> COLOR = new ThreadLocal<>();
+    *///?}
     private NametagRenderContext() {}
-
-    public static void setState(
-        RgbaColor color,
-        SeraphClientType clientType,
-        boolean clientIconLeft,
-        String primaryLabelText
-    ) {
-        if (color == null && clientType == null) {
-            clear();
-            return;
-        }
-        CURRENT_STATE.set(
-            new State(color, clientType, clientIconLeft, primaryLabelText)
-        );
-    }
-
-    public static RgbaColor getColor() {
-        State state = CURRENT_STATE.get();
-        return state == null ? null : state.color;
-    }
-
-    public static SeraphClientType getClientType() {
-        State state = CURRENT_STATE.get();
-        return state == null ? null : state.clientType;
-    }
-
-    public static boolean isClientIconLeft() {
-        State state = CURRENT_STATE.get();
-        return state == null || state.clientIconLeft;
-    }
-
-    public static String getPrimaryLabelText() {
-        State state = CURRENT_STATE.get();
-        return state == null ? null : state.primaryLabelText;
-    }
-
-    public static boolean isActive() {
-        return CURRENT_STATE.get() != null;
-    }
-
-    public static void clear() {
-        CURRENT_STATE.remove();
-        LABEL.remove();
-    }
-
-    private static final class State {
-
-        private final RgbaColor color;
-        private final SeraphClientType clientType;
-        private final boolean clientIconLeft;
-        private final String primaryLabelText;
-
-        private State(
-            RgbaColor color,
-            SeraphClientType clientType,
-            boolean clientIconLeft,
-            String primaryLabelText
-        ) {
-            this.color = color;
-            this.clientType = clientType;
-            this.clientIconLeft = clientIconLeft;
-            this.primaryLabelText = primaryLabelText;
-        }
-    }
+    //? if ornithe {
+    public static void setColor(RgbaColor color) { COLOR.set(color); }
+    public static RgbaColor getColor() { return COLOR.get(); }
+    //?} else {
+    /*public static void setColor(OneColor color) { COLOR.set(color); }
+    public static OneColor getColor() { return COLOR.get(); }
+    *///?}
+    public static boolean isActive() { return COLOR.get() != null; }
+    public static void clear() { COLOR.remove(); }
 }

@@ -576,7 +576,11 @@ public class PVGui extends GuiScreen {
     }
 
     @Override
+    //? if ornithe {
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+    //?} else {
+    /*protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    *///?}
         super.mouseClicked(mouseX, mouseY, mouseButton);
 
         if (mouseButton != 0) {
@@ -614,7 +618,11 @@ public class PVGui extends GuiScreen {
     }
 
     @Override
+    //? if ornithe {
     protected void keyTyped(char typedChar, int keyCode) {
+    //?} else {
+    /*protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    *///?}
         if (!searchActive) {
             super.keyTyped(typedChar, keyCode);
             return;

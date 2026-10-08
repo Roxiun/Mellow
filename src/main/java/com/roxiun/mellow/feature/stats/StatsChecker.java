@@ -1,16 +1,13 @@
 package com.roxiun.mellow.feature.stats;
 
+import com.roxiun.mellow.feature.tags.TagPolicy;
+import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.buildbattle.BuildBattlePlayer;
 import com.roxiun.mellow.api.provider.model.FetchFailureReason;
-import com.roxiun.mellow.api.duels.DuelsPlayer;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
 import com.roxiun.mellow.api.provider.model.StatScope;
-import com.roxiun.mellow.api.skywars.SkywarsPlayer;
-import com.roxiun.mellow.api.tnt.TntRunPlayer;
 import com.roxiun.mellow.cache.PlayerCache;
-import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
@@ -24,7 +21,6 @@ import com.roxiun.mellow.gamestate.GameSnapshot;
 import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.UUIDUtils;
 import com.roxiun.mellow.util.annoylist.AnnoylistManager;
-import com.roxiun.mellow.util.annoylist.AnnoylistedPlayer;
 import com.roxiun.mellow.util.blacklist.BlacklistManager;
 import com.roxiun.mellow.util.blacklist.BlacklistedPlayer;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
@@ -37,8 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 
@@ -82,170 +76,108 @@ public class StatsChecker {
         this.tagIgnoreManager = tagIgnoreManager;
     }
 
-    public void checkPlayerStats(List<String> onlinePlayers) {
-        tabStats.clear();
-        if (onlinePlayers == null || onlinePlayers.isEmpty()) {
-            return;
+    private long fetchGeneration;
+    private final Map<String, Long> retryAfter = new ConcurrentHashMap<>();
+    private final Set<String> alertedSources = ConcurrentHashMap.newKeySet();
+
+    public List<String> fetchTabStatsForPlayers(List<String> names, boolean clearBeforeFetch, boolean forceRefresh) {
+        if (clearBeforeFetch || forceRefresh) {
+            fetchGeneration++;
+            tabFetchInFlight.clear();
+            retryAfter.clear();
         }
-
-        final StatScope activeScope = resolveActiveScope();
-        final int MAX_THREADS = 20;
-        int poolSize = Math.min(onlinePlayers.size(), MAX_THREADS);
-        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
-
-        for (String playerName : onlinePlayers) {
-            if (
-                nickUtils.isNicked(playerName) ||
-                PlayerUtils.isNickedOrNpc(playerName)
-            ) continue;
-
-            executor.submit(() -> {
-                // Force a refresh by clearing the player from the cache first
-                playerCache.clearPlayerStats(playerName);
-                PlayerProfile profile = playerCache.getProfile(playerName);
-
-                if (profile == null) {
-                    return;
+        if (clearBeforeFetch) tabStats.clear();
+        List<String> scheduled = new ArrayList<>();
+        List<Runnable> statsRequests = new ArrayList<>();
+        Set<String> statsUuids = new java.util.LinkedHashSet<>();
+        Map<String, PlayerProfile> tagLookups = new java.util.LinkedHashMap<>();
+        if (names == null) return scheduled;
+        final long generation = fetchGeneration;
+        final long session = HypixelFeatures.getInstance().getGameSnapshot().getSessionId();
+        final StatScope scope = resolveActiveScope();
+        for (String name : names) {
+            UUID uuid = PlayerUtils.getTrustedTabUuid(name);
+            if (uuid == null || nickUtils.isNicked(name) || PlayerUtils.isNickedOrNpc(name)) continue;
+            String key = name.toLowerCase(Locale.ROOT);
+            if (!forceRefresh && retryAfter.getOrDefault(key, 0L) > System.currentTimeMillis()) continue;
+            if (!tabFetchInFlight.add(key)) continue;
+            scheduled.add(key);
+            retryAfter.put(key, System.currentTimeMillis() + 120_000L);
+            if (forceRefresh) {
+                playerCache.clearPlayerStats(name);
+                playerCache.clearPlayerTags(uuid.toString(), name);
+            }
+            PlayerProfile identity = PlayerProfile.identity(uuid.toString(), name);
+            if (shouldScanForInGameWarnings()) sendBlacklistAndTagAlerts(identity, name);
+            if (shouldDeferRemoteTagLookup()) tagLookups.put(name, identity);
+            if (!config.tabStats && !config.printStats) {
+                tabFetchInFlight.remove(key);
+                continue;
+            }
+            statsUuids.add(uuid.toString());
+            statsRequests.add(() -> {
+                try {
+                    ProfileFetchResult result = playerCache.getProfileForIdentity(name, uuid.toString(), false);
+                    mc.addScheduledTask(() -> {
+                        if (!isCurrent(session, generation)) return;
+                        PlayerProfile profile = result.getProfile();
+                        boolean hasStats = profile != null && hasStatsForScope(profile, scope);
+                        if (!hasStats) {
+                            retryAfter.put(key, System.currentTimeMillis() + 10_000L);
+                            maybeReportLiveFetchFailure(name, result);
+                            return;
+                        }
+                        if (passesScopeFilters(profile, scope)) {
+                            if (config.tabStats) {
+                                TabStats old = tabStats.get(name);
+                                TabStats row = profile.getTabStats(scope);
+                                tabStats.put(name, old == null ? row : row.withTags(old.getTags()));
+                            }
+                            if (config.printStats && (forceRefresh || alertedSources.add(key + ":stats"))) ChatUtils.sendMessage(formatChatStats(profile, scope));
+                        }
+                        warmHiddenWinstreakCache(profile, scope);
+                    });
+                } finally {
+                    mc.addScheduledTask(() -> { if (isCurrent(session, generation)) tabFetchInFlight.remove(key); });
                 }
-                if (!hasStatsForScope(profile, activeScope)) {
-                    sendBlacklistAndTagAlerts(profile, playerName);
-                    return;
-                }
-
-                boolean passesFilters = passesScopeFilters(profile, activeScope);
-
-                // Populate TabStats for the tab list
-                if (config.tabStats && passesFilters) {
-                    TabStats newTabStats = profile.getTabStats(activeScope);
-                    if (newTabStats != null) {
-                        tabStats.put(playerName, newTabStats);
-                    }
-                }
-
-                // Print stats to chat if enabled
-                if (config.printStats && passesFilters) {
-                    String chatMessage = formatChatStats(profile, activeScope);
-                    if (!chatMessage.isEmpty()) {
-                        mc.addScheduledTask(() ->
-                            ChatUtils.sendMessage(chatMessage)
-                        );
-                    }
-                }
-
-                sendBlacklistAndTagAlerts(profile, playerName);
             });
         }
-
-        executor.shutdown();
-        // The notification for completion can be added back if desired
+        if (playerCache.getSelectedProvider() != null && playerCache.getSelectedProvider().supportsBatch()) {
+            AsyncExecutor.getInstance().profileIo(() -> {
+                playerCache.prefetchStats(statsUuids);
+                for (Runnable request : statsRequests) request.run();
+            });
+        } else for (Runnable request : statsRequests) AsyncExecutor.getInstance().profileIo(request);
+        if (!tagLookups.isEmpty()) AsyncExecutor.getInstance().supplementalIo(() -> {
+            Set<String> uuids = new java.util.LinkedHashSet<>();
+            for (PlayerProfile identity : tagLookups.values()) uuids.add(identity.getUuid());
+            Map<String, TagReport> reports = playerCache.fetchTagReports(uuids);
+            mc.addScheduledTask(() -> {
+                if (!isCurrent(session, generation)) return;
+                for (Map.Entry<String, PlayerProfile> entry : tagLookups.entrySet()) {
+                    String name = entry.getKey();
+                    TagReport report = reports.get(entry.getValue().getUuid().replace("-", ""));
+                    if (report == null) continue;
+                    PlayerProfile tagged = entry.getValue().withTags(report);
+                    if (config.showAutomaticStatsErrors) for (Map.Entry<String, String> failure : report.getFailures().entrySet()) {
+                        if (reportedTabFetchFailuresThisMatch.add("tags:" + failure.getKey()))
+                            ChatUtils.sendMessage("§e" + failure.getKey() + " tags unavailable: " + failure.getValue());
+                    }
+                    if (!report.getFailures().isEmpty()) retryAfter.put(name.toLowerCase(Locale.ROOT), System.currentTimeMillis() + 10_000L);
+                    TabStats row = tabStats.get(name);
+                    if (config.tabStats && shouldShowRemoteTagsInTab())
+                        tabStats.put(name, row == null ? tagged.getTabStats(scope) : row.withTags(report.retainFailedSources(row.getTags())));
+                    if (shouldScanForInGameWarnings()) sendBlacklistAndTagAlerts(tagged, name);
+                }
+            });
+        });
+        return scheduled;
     }
 
-    public List<String> fetchTabStatsForPlayers(
-        List<String> playerNames,
-        boolean clearBeforeFetch,
-        boolean forceRefresh
-    ) {
-        if (clearBeforeFetch) {
-            tabStats.clear();
-        }
-        if (playerNames == null || playerNames.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        final StatScope activeScope = resolveActiveScope();
-        final SupplementalFeatureUsage supplementalUsage =
-            resolveSupplementalFeatureUsage(activeScope);
-        List<String> scheduledPlayers = new ArrayList<>();
-        for (String playerName : playerNames) {
-            if (playerName == null || playerName.isEmpty()) {
-                continue;
-            }
-            if (nickUtils.isNicked(playerName)) {
-                continue;
-            }
-            if (PlayerUtils.isNickedOrNpc(playerName)) {
-                continue;
-            }
-
-            String normalizedName = playerName.toLowerCase(Locale.ROOT);
-            if (!tabFetchInFlight.add(normalizedName)) {
-                continue;
-            }
-            scheduledPlayers.add(normalizedName);
-
-            AsyncExecutor.getInstance().profileIo(() -> {
-                try {
-                    if (forceRefresh) {
-                        playerCache.clearPlayerStats(playerName);
-                    }
-
-                    ProfileFetchResult result = playerCache.getScopedProfileResult(
-                        playerName,
-                        activeScope,
-                        ProfileFetchContext.LIVE_MATCH,
-                        false
-                    );
-                    PlayerProfile profile = result.getProfile();
-                    boolean hasStats =
-                        profile != null && hasStatsForScope(profile, activeScope);
-
-                    if (!hasStats) {
-                        maybeReportLiveFetchFailure(playerName, result);
-                    }
-                    if (profile == null) {
-                        return;
-                    }
-                    boolean passesFilters =
-                        hasStats && passesScopeFilters(profile, activeScope);
-                    boolean shouldPopulateTabStats =
-                        config.tabStats &&
-                        (passesFilters || (!hasStats && shouldShowRemoteTagsInTab()));
-
-                    if (shouldPopulateTabStats && hasStats) {
-                        TabStats newTabStats = profile.getTabStats(activeScope);
-                        if (newTabStats != null) {
-                            tabStats.put(playerName, newTabStats);
-                        }
-                    }
-
-                    warmSupplementalCaches(
-                        playerName,
-                        profile,
-                        activeScope,
-                        supplementalUsage
-                    );
-
-                    if (shouldDeferRemoteTagLookup()) {
-                        PlayerProfile baseProfile = profile;
-                        AsyncExecutor.getInstance().profileIo(() -> {
-                            PlayerProfile enrichedProfile =
-                                playerCache.enrichProfileWithTags(baseProfile);
-
-                            if (shouldPopulateTabStats) {
-                                TabStats enrichedTabStats =
-                                    enrichedProfile.getTabStats(activeScope);
-                                if (enrichedTabStats != null) {
-                                    tabStats.put(playerName, enrichedTabStats);
-                                }
-                            }
-
-                            if (shouldScanForInGameWarnings()) {
-                                sendBlacklistAndTagAlerts(
-                                    enrichedProfile,
-                                    playerName
-                                );
-                            }
-                        });
-                    } else if (shouldScanForInGameWarnings()) {
-                        sendBlacklistAndTagAlerts(profile, playerName);
-                    }
-                } finally {
-                    tabFetchInFlight.remove(normalizedName);
-                }
-            });
-        }
-
-        return scheduledPlayers;
+    private boolean isCurrent(long session, long generation) {
+        GameSnapshot current = HypixelFeatures.getInstance().getGameSnapshot();
+        return generation == fetchGeneration && current.getSessionId() == session
+            && StatScopeResolver.isSupportedLiveMatch(current);
     }
 
     private boolean shouldDeferRemoteTagLookup() {
@@ -254,17 +186,15 @@ public class StatsChecker {
         }
 
         boolean tabNeedsCoralTags = config.shouldShowCoralTagsInTab() && config.isCoralEnabled();
-        boolean tabNeedsSeraphTags = config.showSeraphTagsInTab && config.seraph;
         boolean warningNeedsTags =
-            config.printBlacklistTags && (config.isCoralEnabled() || config.seraph || config.xadia);
-        return tabNeedsCoralTags || tabNeedsSeraphTags || (config.xadia && config.showXadiaTagsInTab) || warningNeedsTags;
+            config.printBlacklistTags && (config.isCoralEnabled() || config.xadia);
+        return tabNeedsCoralTags || (config.xadia && config.showXadiaTagsInTab) || warningNeedsTags;
     }
 
     private boolean shouldShowRemoteTagsInTab() {
         return (
             config != null &&
             ((config.shouldShowCoralTagsInTab() && config.isCoralEnabled()) ||
-                (config.showSeraphTagsInTab && config.seraph) ||
                 (config.xadia && config.showXadiaTagsInTab))
         );
     }
@@ -312,6 +242,10 @@ public class StatsChecker {
     }
 
     public void resetInGameMatchWarningState() {
+        fetchGeneration++;
+        tabFetchInFlight.clear();
+        retryAfter.clear();
+        alertedSources.clear();
         inGameAlertSoundGate.reset();
         reportedTabFetchFailuresThisMatch.clear();
         outboundWarnedOpponentsThisMatch.clear();
@@ -332,95 +266,19 @@ public class StatsChecker {
         ) {
             return true;
         }
-        return config.printBlacklistTags && (config.isCoralEnabled() || config.seraph || config.xadia);
-    }
-
-    private void warmSupplementalCaches(
-        String playerName,
-        PlayerProfile profile,
-        StatScope scope,
-        SupplementalFeatureUsage supplementalUsage
-    ) {
-        if (
-            profile == null ||
-            supplementalUsage == null ||
-            !supplementalUsage.shouldWarmAny()
-        ) {
-            return;
-        }
-
-        warmSeraphClientCache(playerName, profile, supplementalUsage);
-        warmHiddenWinstreakCache(profile, scope, supplementalUsage);
-    }
-
-    private SupplementalFeatureUsage resolveSupplementalFeatureUsage(
-        StatScope scope
-    ) {
-        if (
-            config == null ||
-            !config.tabStats ||
-            !config.extendedTabStatsView
-        ) {
-            return SupplementalFeatureUsage.NONE;
-        }
-
-        List<Integer> configuredColumns = ExtendedTabStatsColumns.getConfiguredColumns(
-            scope,
-            config
-        );
-        if (configuredColumns.isEmpty()) {
-            return SupplementalFeatureUsage.NONE;
-        }
-
-        boolean shouldWarmClient =
-            config.seraph &&
-            configuredColumns.contains(
-                ExtendedTabStatsColumns.getClientColumnIndex(scope)
-            );
-        boolean shouldWarmPing = false;
-        boolean shouldWarmHiddenWinstreak =
-            scope == StatScope.BEDWARS &&
-            config.showHiddenWinstreaks &&
-            configuredColumns.contains(BEDWARS_WINSTREAK_COLUMN);
-
-        return new SupplementalFeatureUsage(
-            shouldWarmClient,
-            shouldWarmPing,
-            shouldWarmHiddenWinstreak
-        );
-    }
-
-    private void warmSeraphClientCache(
-        String playerName,
-        PlayerProfile profile,
-        SupplementalFeatureUsage supplementalUsage
-    ) {
-        if (
-            supplementalUsage == null ||
-            !supplementalUsage.shouldWarmClient ||
-            Mellow.seraphClientCacheService == null ||
-            profile.getUuid() == null ||
-            profile.getUuid().trim().isEmpty()
-        ) {
-            return;
-        }
-
-        Mellow.seraphClientCacheService.refreshClientAsync(
-            playerName,
-            profile.getUuid()
-        );
+        return config.printBlacklistTags && (config.isCoralEnabled() || config.xadia);
     }
 
     private void warmHiddenWinstreakCache(
         PlayerProfile profile,
-        StatScope scope,
-        SupplementalFeatureUsage supplementalUsage
+        StatScope scope
     ) {
         if (
-            supplementalUsage == null ||
-            !supplementalUsage.shouldWarmHiddenWinstreak ||
             config == null ||
             scope != StatScope.BEDWARS ||
+            !config.tabStats ||
+            !config.extendedTabStatsView ||
+            !ExtendedTabStatsColumns.getConfiguredColumns(scope, config).contains(BEDWARS_WINSTREAK_COLUMN) ||
             !config.showHiddenWinstreaks ||
             Mellow.auroraWinstreakService == null
         ) {
@@ -451,12 +309,13 @@ public class StatsChecker {
             return;
         }
 
+        long requestGeneration = Mellow.auroraWinstreakService.getGeneration();
         AsyncExecutor.getInstance().supplementalIo(() -> {
             try {
                 int winstreak = Mellow.auroraWinstreakService.fetchWinstreakBlocking(
                     compactUuid
                 );
-                Mellow.auroraWinstreakService.storeInCache(compactUuid, winstreak);
+                if (Mellow.auroraWinstreakService.getGeneration() == requestGeneration) Mellow.auroraWinstreakService.storeInCache(compactUuid, winstreak);
             } catch (Exception e) {
                 if (config.showAutomaticStatsErrors && !Mellow.auroraWinstreakService.hasShownError()) {
                     Mellow.auroraWinstreakService.markErrorShown();
@@ -468,7 +327,7 @@ public class StatsChecker {
                     );
                 }
             } finally {
-                Mellow.auroraWinstreakService.finishFetch(compactUuid);
+                if (Mellow.auroraWinstreakService.getGeneration() == requestGeneration) Mellow.auroraWinstreakService.finishFetch(compactUuid);
             }
         });
     }
@@ -560,34 +419,6 @@ public class StatsChecker {
             return profile.getTntRunPlayer() != null;
         }
         return profile.getBedwarsPlayer() != null;
-    }
-
-    private static final class SupplementalFeatureUsage {
-
-        private static final SupplementalFeatureUsage NONE =
-            new SupplementalFeatureUsage(false, false, false);
-
-        private final boolean shouldWarmClient;
-        private final boolean shouldWarmPing;
-        private final boolean shouldWarmHiddenWinstreak;
-
-        private SupplementalFeatureUsage(
-            boolean shouldWarmClient,
-            boolean shouldWarmPing,
-            boolean shouldWarmHiddenWinstreak
-        ) {
-            this.shouldWarmClient = shouldWarmClient;
-            this.shouldWarmPing = shouldWarmPing;
-            this.shouldWarmHiddenWinstreak = shouldWarmHiddenWinstreak;
-        }
-
-        private boolean shouldWarmAny() {
-            return (
-                shouldWarmClient ||
-                shouldWarmPing ||
-                shouldWarmHiddenWinstreak
-            );
-        }
     }
 
     private boolean passesScopeFilters(PlayerProfile profile, StatScope scope) {
@@ -683,155 +514,35 @@ public class StatsChecker {
         return tagsValue;
     }
 
-    private void sendBlacklistAndTagAlerts(
-        PlayerProfile profile,
-        String tabPlayerName
-    ) {
-        if (profile == null) {
-            return;
-        }
-
+    private void sendBlacklistAndTagAlerts(PlayerProfile profile, String tabPlayerName) {
+        if (profile == null) return;
         UUID uuid = UUIDUtils.fromString(profile.getUuid());
-        boolean tagsIgnored =
-            tagIgnoreManager != null && tagIgnoreManager.isTagIgnored(uuid);
+        boolean ignored = tagIgnoreManager != null && tagIgnoreManager.isTagIgnored(uuid);
+        Map<String, String> sources = TagPolicy.warnings(profile.getTags(), config.printBlacklistTags, ignored);
+        sources.entrySet().removeIf(entry -> !alertedSources.add(uuid + ":" + entry.getKey()));
+        for (Map.Entry<String, String> source : sources.entrySet())
+            ChatUtils.sendMessage("§c" + profile.getName() + " is tagged on §d" + source.getKey() + "§c for: " + source.getValue());
 
-        boolean coralTagged =
-            config.isCoralEnabled() &&
-            config.printBlacklistTags &&
-            profile.isCoralTagged();
-        boolean shouldPrintCoralTagAlert = coralTagged && !tagsIgnored;
-        if (shouldPrintCoralTagAlert) {
-            String tags = FormattingUtils.formatCoralTags(profile.getCoralTags());
-            String coralMessage =
-                "§c" + profile.getName() + " is tagged on §5Coral§c for: " + tags;
-            mc.addScheduledTask(() -> ChatUtils.sendMessage(coralMessage));
-        }
-
-        boolean xadiaTagged =
-            config.xadia &&
-            config.printBlacklistTags &&
-            profile.isXadiaTagged();
-        boolean shouldPrintXadiaTagAlert = xadiaTagged && !tagsIgnored;
-        if (shouldPrintXadiaTagAlert) {
-            String tags = FormattingUtils.formatXadiaTags(profile.getXadiaTags());
-            String xadiaMessage =
-                "§c" + profile.getName() + " is tagged on §dXadia§c for: " + tags;
-            mc.addScheduledTask(() -> ChatUtils.sendMessage(xadiaMessage));
-        }
-
-        boolean seraphTagged =
-            config.seraph &&
-            config.printBlacklistTags &&
-            profile.isSeraphTagged();
-        boolean shouldPrintSeraphTagAlert = seraphTagged && !tagsIgnored;
-
-        boolean blacklisted = blacklistManager.isBlacklisted(uuid);
-        boolean annoylisted =
-            annoylistManager != null && annoylistManager.isAnnoylisted(uuid);
-        BlacklistedPlayer blacklistedPlayer = blacklisted
-            ? blacklistManager.getBlacklistedPlayer(uuid)
-            : null;
-        AnnoylistedPlayer annoylistedPlayer = annoylisted
-            ? annoylistManager.getAnnoylistedPlayer(uuid)
-            : null;
-
-        if (shouldPrintSeraphTagAlert) {
-            String formattedTags = FormattingUtils.formatSeraphTags(
-                profile.getSeraphTags()
-            );
-            String[] tagMessages = formattedTags.split("\n§c");
-            if (tagMessages.length > 0 && !tagMessages[0].trim().isEmpty()) {
-                String firstMessage =
-                    "§c" +
-                    profile.getName() +
-                    " is tagged on §3Seraph§c for: " +
-                    tagMessages[0];
-                mc.addScheduledTask(() -> ChatUtils.sendMessage(firstMessage));
-                for (int i = 1; i < tagMessages.length; i++) {
-                    if (!tagMessages[i].trim().isEmpty()) {
-                        String additionalMessage = "§c" + tagMessages[i];
-                        mc.addScheduledTask(() ->
-                            ChatUtils.sendMessage(additionalMessage)
-                        );
-                    }
-                }
-            }
-        }
-
-        if (blacklisted || annoylisted) {
-            String blacklistReasonSuffix = formatBlacklistReasonSuffix(
-                blacklistedPlayer == null ? null : blacklistedPlayer.getReason()
-            );
-            String annoyReason = normalizeReason(
-                annoylistedPlayer == null ? null : annoylistedPlayer.getReason()
-            );
-
-            mc.addScheduledTask(() -> {
-                if (blacklisted) {
-                    ChatUtils.sendMessage(
-                        "§6" +
-                        profile.getName() +
-                        " §cis on your blacklist" +
-                        blacklistReasonSuffix
-                    );
-                }
-                if (annoylisted) {
-                    ChatUtils.sendMessage(
-                        "§6" +
-                        profile.getName() +
-                        " §3is on your annoy list: " +
-                        annoyReason
-                    );
-                }
-            });
-        }
-
-        if (
-            shouldSendOutboundOpponentWarning(
-                uuid,
-                tabPlayerName,
-                blacklisted,
-                shouldPrintCoralTagAlert,
-                shouldPrintSeraphTagAlert,
-                shouldPrintXadiaTagAlert
-            )
-        ) {
-            sendOutboundOpponentWarning(
-                profile,
-                tabPlayerName,
-                blacklistedPlayer,
-                blacklisted,
-                shouldPrintCoralTagAlert,
-                shouldPrintSeraphTagAlert,
-                shouldPrintXadiaTagAlert
-            );
-        }
-
-        if (
-            blacklisted ||
-            annoylisted ||
-            shouldPrintXadiaTagAlert ||
-            shouldPrintCoralTagAlert ||
-            shouldPrintSeraphTagAlert
-        ) {
-            mc.addScheduledTask(() ->
-                inGameAlertSoundGate.tryPlayPling(mc, 1.0F, 1.0F)
-            );
-        }
+        BlacklistedPlayer local = blacklistManager.getBlacklistedPlayer(uuid);
+        boolean blacklisted = local != null && alertedSources.add(uuid + ":local");
+        boolean annoylisted = annoylistManager != null && annoylistManager.isAnnoylisted(uuid) && alertedSources.add(uuid + ":annoy");
+        if (blacklisted) ChatUtils.sendMessage("§6" + profile.getName() + " §cis on your blacklist" + formatBlacklistReasonSuffix(local.getReason()));
+        if (annoylisted) ChatUtils.sendMessage("§6" + profile.getName() + " §3is on your annoy list: " + normalizeReason(annoylistManager.getAnnoylistedPlayer(uuid).getReason()));
+        if (shouldSendOutboundOpponentWarning(uuid, tabPlayerName, blacklisted, !sources.isEmpty()))
+            sendOutboundOpponentWarning(profile, tabPlayerName, local, blacklisted, sources);
+        if (blacklisted || annoylisted || !sources.isEmpty()) inGameAlertSoundGate.tryPlayPling(mc, 1.0F, 1.0F);
     }
 
     private boolean shouldSendOutboundOpponentWarning(
         UUID uuid,
         String tabPlayerName,
         boolean blacklisted,
-        boolean coralTagged,
-        boolean seraphTagged,
-        boolean xadiaTagged
+        boolean tagged
     ) {
         if (uuid == null) {
             return false;
         }
-        if (!blacklisted && !coralTagged && !seraphTagged && !xadiaTagged) {
+        if (!blacklisted && !tagged) {
             return false;
         }
         if (!isInBedwarsMatch()) {
@@ -858,9 +569,7 @@ public class StatsChecker {
         String tabPlayerName,
         BlacklistedPlayer blacklistedPlayer,
         boolean blacklisted,
-        boolean coralTagged,
-        boolean seraphTagged,
-        boolean xadiaTagged
+        Map<String, String> sources
     ) {
         InGameBlacklistWarningDestination destination = resolveWarningDestination();
         String commandPrefix = destination.getCommandPrefix();
@@ -874,52 +583,14 @@ public class StatsChecker {
         }
         String opponentTeamName = resolveOpponentTeamName(tabPlayerName, playerName);
 
-        List<String> sourceLabels = new ArrayList<>(3);
+        List<String> sourceLabels = new ArrayList<>(sources.keySet());
+        List<String> detailParts = new ArrayList<>();
         if (blacklisted) {
-            sourceLabels.add("Local");
+            sourceLabels.add(0, "Local");
+            detailParts.add("Local: " + formatOutboundBlacklistReason(blacklistedPlayer));
         }
-        if (coralTagged) {
-            sourceLabels.add("Coral");
-        }
-
-        if (xadiaTagged) {
-            sourceLabels.add("Xadia");
-        }
-        if (seraphTagged) {
-            sourceLabels.add("Seraph");
-        }
-
-        List<String> detailParts = new ArrayList<>(3);
-        if (blacklisted) {
-            detailParts.add(
-                "Local: " + formatOutboundBlacklistReason(blacklistedPlayer)
-            );
-        }
-        if (coralTagged) {
-            detailParts.add(
-                "Coral: " +
-                normalizeOutboundDetail(
-                    FormattingUtils.formatCoralTags(profile.getCoralTags())
-                )
-            );
-        }
-
-        if (xadiaTagged) {
-            detailParts.add(
-                "Xadia: " +
-                normalizeOutboundDetail(
-                    FormattingUtils.formatXadiaTags(profile.getXadiaTags())
-                )
-            );
-        }
-        if (seraphTagged) {
-            detailParts.add(
-                "Seraph: " +
-                normalizeOutboundDetail(
-                    FormattingUtils.formatSeraphTags(profile.getSeraphTags())
-                )
-            );
-        }
+        for (Map.Entry<String, String> source : sources.entrySet())
+            detailParts.add(source.getKey() + ": " + normalizeOutboundDetail(source.getValue()));
 
         String mainMessage = opponentTeamName.isEmpty()
             ? "[Mellow] Flagged opponent: " +

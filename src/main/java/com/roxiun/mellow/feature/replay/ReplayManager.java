@@ -4,7 +4,6 @@ import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.gamestate.GameSnapshot;
-import com.roxiun.mellow.module.bedwars.BedwarsChatSignalParser;
 import com.roxiun.mellow.util.ChatUtils;
 import java.io.File;
 import java.io.IOException;
@@ -77,7 +76,7 @@ public class ReplayManager {
         } else if (
             activeRecording == null &&
             nowInSession &&
-            ReplayRecordingPolicy.hasLiveMatchEvidence(snapshot)
+            ReplayRecordingPolicy.isRecordableMatch(snapshot)
         ) {
             startRecording(snapshot);
         } else if (activeRecording != null && !nowInSession) {
@@ -129,16 +128,6 @@ public class ReplayManager {
     public synchronized void onChatReceived(IChatComponent component, byte type) {
         if (component == null) {
             return;
-        }
-
-        String message = component.getUnformattedText();
-        if (
-            activeRecording == null &&
-            isRecordingEnabled() &&
-            ReplayRecordingPolicy.isBedwarsSession(lastSnapshot) &&
-            ReplayRecordingPolicy.isChatConfirmedMatchStart(message)
-        ) {
-            startRecording(lastSnapshot);
         }
 
         if (activeRecording == null || !recordChatEnabled()) {
@@ -705,8 +694,13 @@ public class ReplayManager {
 
         private void observeStoredFrame(ReplayPacketFrame frame) {
             if (
+                //? if ornithe {
                 !ReplayPacketCodec.typeName(S0CPacketSpawnPlayer.class).equals(frame.getClassName()) &&
                 !ReplayPacketCodec.typeName(S13PacketDestroyEntities.class).equals(frame.getClassName())
+                //?} else {
+                /*!S0CPacketSpawnPlayer.class.getName().equals(frame.getClassName()) &&
+                !S13PacketDestroyEntities.class.getName().equals(frame.getClassName())
+                *///?}
             ) {
                 return;
             }

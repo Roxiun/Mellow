@@ -13,7 +13,7 @@ public class ChatStatsFormatterTest {
         SkywarsPlayer player = new SkywarsPlayer(
             "Player", "Player", "15✯", "[15✯]", 3.5, 20, 10, 35, 10
         );
-        PlayerProfile profile = new PlayerProfile("uuid", "Player", null, player, null);
+        PlayerProfile profile = new PlayerProfile("uuid", "Player", null, player, null, null, null, null);
 
         String message = ChatStatsFormatter.format(profile, StatScope.SKYWARS);
 

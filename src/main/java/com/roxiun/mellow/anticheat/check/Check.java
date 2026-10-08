@@ -2,7 +2,11 @@ package com.roxiun.mellow.anticheat.check;
 
 import com.roxiun.mellow.anticheat.AnticheatManager;
 import com.roxiun.mellow.anticheat.data.ACPlayerData;
+//? if ornithe {
 import com.roxiun.mellow.platform.event.TickEvent;
+//?} else {
+/*import net.minecraftforge.fml.common.gameevent.TickEvent;
+*///?}
 
 public abstract class Check {
 
