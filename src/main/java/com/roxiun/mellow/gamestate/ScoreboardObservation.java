@@ -39,7 +39,7 @@ public final class ScoreboardObservation {
                 int seconds = Integer.parseInt(time.group(1)) * 60 + Integer.parseInt(time.group(2));
                 if (starting) countdown = seconds;
                 int scheduled = stageTime(line.substring(0, time.start()));
-                if (scheduled >= 0) { stage = scheduled; remaining = seconds; live = true; }
+                if (scheduled >= 0 && stage < 0) { stage = scheduled; remaining = seconds; live = true; }
             }
             Matcher start = START.matcher(line);
             if (start.matches()) countdown = Integer.parseInt(start.group(1));
@@ -57,14 +57,23 @@ public final class ScoreboardObservation {
 
     private static int stageTime(String value) {
         String event = value.replaceFirst("^next event:\\s*", "").replaceFirst("\\s+in\\s*$", "").trim();
-        if (event.matches("diamond (?:ii|2)")) return 360;
-        if (event.matches("emerald (?:ii|2)")) return 720;
-        if (event.matches("diamond (?:iii|3)")) return 1080;
-        if (event.matches("emerald (?:iii|3)")) return 1440;
-        if (event.matches("beds? (?:gone|destroyed)")) return 1800;
-        if (event.equals("sudden death")) return 2400;
-        if (event.equals("game end") || event.equals("end game")) return 3000;
+        if (event.contains("diamond")) {
+            if (containsTier(event, "ii", "2")) return 360;
+            if (containsTier(event, "iii", "3")) return 1080;
+        }
+        if (event.contains("emerald")) {
+            if (containsTier(event, "ii", "2")) return 720;
+            if (containsTier(event, "iii", "3")) return 1440;
+        }
+        if (event.contains("sudden death")) return 2400;
+        if (event.contains("game end") || event.contains("end game")) return 3000;
+        if (event.contains("bed gone") || event.contains("beds gone")
+            || event.contains("bed destroyed") || event.contains("beds destroyed")) return 1800;
         return -1;
+    }
+
+    private static boolean containsTier(String event, String roman, String numeric) {
+        return event.matches(".*\\b(?:" + roman + "|" + numeric + ")\\b.*");
     }
 
     private static String normalize(String value) {

@@ -53,7 +53,9 @@ public class InGameTabStatsSyncService {
             + "|" + config.tabStats + "|" + config.printStats + "|" + config.printBlacklistTags;
         if (!settings.equals(nextSettings)) {
             settings = nextSettings;
-            resetTracking();
+            statsChecker.resetLookups();
+            tabStats.clear();
+            lastScanMillis = 0L;
         }
         currentSnapshot = snapshot;
         boolean supportedNow = isSupportedMatch(snapshot);

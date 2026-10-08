@@ -85,15 +85,7 @@ public class StatsChecker {
     private final Set<String> alertedSources = ConcurrentHashMap.newKeySet();
 
     public List<String> fetchTabStatsForPlayers(List<String> names, boolean clearBeforeFetch, boolean forceRefresh) {
-        if (clearBeforeFetch || forceRefresh) {
-            fetchGeneration++;
-            statsLookups.clear();
-            tagRequests.clear();
-            matchTags.clear();
-            matchProfiles.clear();
-            winstreakLookups.clear();
-            if (Mellow.auroraWinstreakService != null) Mellow.auroraWinstreakService.clearMatch();
-        }
+        if (clearBeforeFetch || forceRefresh) resetLookups();
         if (clearBeforeFetch) tabStats.clear();
         List<String> scheduled = new ArrayList<>();
         List<Runnable> statsRequests = new ArrayList<>();
@@ -139,15 +131,13 @@ public class StatsChecker {
                             maybeReportLiveFetchFailure(name, result);
                             return;
                         }
-                        if (passesScopeFilters(profile, scope)) {
-                            if (config.tabStats) {
-                                TabStats old = tabStats.get(name);
-                                TabStats row = profile.getTabStats(scope);
-                                tabStats.put(name, old == null ? row : row.withTags(old.getTags()));
-                            }
+                        matchProfiles.put(key, profile);
+                        TagReport tags = matchTags.getOrDefault(name,
+                            tabStats.containsKey(name) ? tabStats.get(name).getTags() : TagReport.empty());
+                        updateTabRow(name, profile.withTags(tags), scope);
+                        if (passesScopeFilters(profile, scope, config.minFkdr)) {
                             if (config.printStats && (forceRefresh || alertedSources.add(key + ":stats"))) ChatUtils.sendMessage(formatChatStats(profile, scope));
                         }
-                        matchProfiles.put(key, profile);
                         warmHiddenWinstreakCache(profile, scope);
                     });
                 } catch (RuntimeException error) {
@@ -187,13 +177,30 @@ public class StatsChecker {
                             ChatUtils.sendMessage("§e" + failure.getKey() + " tags unavailable: " + failure.getValue());
                     }
                     TabStats row = tabStats.get(name);
-                    if (config.tabStats && shouldShowRemoteTagsInTab())
-                        tabStats.put(name, row == null ? tagged.getTabStats(scope) : row.withTags(report.retainFailedSources(row.getTags())));
+                    TagReport displayTags = row == null ? report : report.retainFailedSources(row.getTags());
+                    PlayerProfile displayProfile = matchProfiles.getOrDefault(name.toLowerCase(Locale.ROOT), entry.getValue());
+                    updateTabRow(name, displayProfile.withTags(displayTags), scope);
                     if (shouldScanForInGameWarnings()) sendBlacklistAndTagAlerts(tagged, name, tagRequests.finished(name.toLowerCase(Locale.ROOT)));
                 }
             });
         });
         return scheduled;
+    }
+
+    private void updateTabRow(String name, PlayerProfile profile, StatScope scope) {
+        if (!config.tabStats) return;
+        TabStats row = mergeTabRow(tabStats.get(name), profile, scope, config.minFkdr, shouldShowRemoteTagsInTab());
+        if (row == null) tabStats.remove(name);
+        else tabStats.put(name, row);
+    }
+
+    /** Apply the same display policy regardless of whether stats or tags arrive first. */
+    static TabStats mergeTabRow(TabStats previous, PlayerProfile profile, StatScope scope,
+                               int minFkdr, boolean showRemoteTags) {
+        if (hasStatsForScope(profile, scope))
+            return passesScopeFilters(profile, scope, minFkdr) ? profile.getTabStats(scope) : null;
+        if (!showRemoteTags) return previous;
+        return previous == null ? profile.getTabStats(scope) : previous.withTags(profile.getTags());
     }
 
     private boolean isCurrent(long session, long generation) {
@@ -263,7 +270,8 @@ public class StatsChecker {
         inGameAlertSoundGate.reset();
     }
 
-    public void resetInGameMatchWarningState() {
+    /** Invalidate requests and retained data without forgetting warnings already shown this match. */
+    public void resetLookups() {
         fetchGeneration++;
         statsLookups.clear();
         tagRequests.clear();
@@ -271,6 +279,10 @@ public class StatsChecker {
         matchProfiles.clear();
         winstreakLookups.clear();
         if (Mellow.auroraWinstreakService != null) Mellow.auroraWinstreakService.clearMatch();
+    }
+
+    public void resetInGameMatchWarningState() {
+        resetLookups();
         alertedSources.clear();
         inGameAlertSoundGate.reset();
         reportedTabFetchFailuresThisMatch.clear();
@@ -442,7 +454,7 @@ public class StatsChecker {
         return StatScopeResolver.resolveInGameScope(snapshot);
     }
 
-    private boolean hasStatsForScope(PlayerProfile profile, StatScope scope) {
+    private static boolean hasStatsForScope(PlayerProfile profile, StatScope scope) {
         if (scope == StatScope.SKYWARS) {
             return profile.getSkywarsPlayer() != null;
         }
@@ -458,7 +470,7 @@ public class StatsChecker {
         return profile.getBedwarsPlayer() != null;
     }
 
-    private boolean passesScopeFilters(PlayerProfile profile, StatScope scope) {
+    private static boolean passesScopeFilters(PlayerProfile profile, StatScope scope, int minFkdr) {
         if (
             scope == StatScope.SKYWARS ||
             scope == StatScope.DUELS ||
@@ -469,7 +481,7 @@ public class StatsChecker {
         }
 
         BedwarsPlayer player = profile.getBedwarsPlayer();
-        return player != null && player.getFkdr() >= config.minFkdr;
+        return player != null && player.getFkdr() >= minFkdr;
     }
 
     private String formatChatStats(PlayerProfile profile, StatScope scope) {
