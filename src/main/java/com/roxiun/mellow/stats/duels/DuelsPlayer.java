@@ -35,7 +35,7 @@ public class DuelsPlayer {
         this.deaths = Math.max(0, deaths);
         this.wins = Math.max(0, wins);
         this.losses = Math.max(0, losses);
-        this.winstreak = Math.max(0, winstreak);
+        this.winstreak = Math.max(-1, winstreak);
     }
 
     public String getName() {
@@ -275,7 +275,7 @@ public class DuelsPlayer {
     }
 
     public String getFormattedWinstreakWithColor() {
-        return getWinstreakColor() + winstreak;
+        return winstreak < 0 ? "§7?" : getWinstreakColor() + winstreak;
     }
 
     private String formatRatio(double value) {

@@ -10,16 +10,14 @@ public enum DuelsMode {
         "Classic",
         new String[] { "CLASSIC", "CLASSIC_DUEL" },
         new String[] { "classic", "classic duel" },
-        new String[] { "classic_duel" },
-        new String[] { "duels_classic_title_prestige" },
+        new String[] { "classic_duel", "classic_doubles" },
         new String[] { "classic" }
     ),
     UHC(
         "UHC",
         new String[] { "UHC", "UHC_DUEL", "UHC_DOUBLES" },
         new String[] { "uhc", "uhc duel" },
-        new String[] { "uhc_duel", "uhc_doubles" },
-        new String[] { "duels_uhc_title_prestige" },
+        new String[] { "uhc_duel", "uhc_doubles", "uhc_four", "uhc_meetup" },
         new String[] { "uhc" }
     ),
     OP(
@@ -27,7 +25,6 @@ public enum DuelsMode {
         new String[] { "OP", "OP_DUEL", "OP_DOUBLES" },
         new String[] { "op duel", "op duels", "op doubles" },
         new String[] { "op_duel", "op_doubles" },
-        new String[] { "duels_op_title_prestige" },
         new String[] { "op" }
     ),
     SKYWARS(
@@ -35,7 +32,6 @@ public enum DuelsMode {
         new String[] { "SW", "SW_DUEL", "SW_DOUBLES", "SKYWARS" },
         new String[] { "skywars duel", "sw duel", "sw doubles" },
         new String[] { "sw_duel", "sw_doubles" },
-        new String[] { "duels_sw_title_prestige" },
         new String[] { "skywars" }
     ),
     BRIDGE(
@@ -48,7 +44,7 @@ public enum DuelsMode {
             "BRIDGE_2V2V2V2",
             "BRIDGE_FOUR",
             "BRIDGE_THREES",
-            "BRIDGE_CVC"
+            "BRIDGE_CVC", "CAPTURE_THREES"
         },
         new String[] { "bridge", "bridge duel" },
         new String[] {
@@ -58,9 +54,8 @@ public enum DuelsMode {
             "bridge_four",
             "bridge_2v2v2v2",
             "bridge_3v3v3v3",
-            "bridge_cvc"
+            "capture_threes"
         },
-        new String[] { "duels_bridge_title_prestige" },
         new String[] { "bridge" }
     ),
     SUMO(
@@ -68,7 +63,6 @@ public enum DuelsMode {
         new String[] { "SUMO", "SUMO_DUEL" },
         new String[] { "sumo", "sumo duel" },
         new String[] { "sumo_duel" },
-        new String[] { "duels_sumo_title_prestige" },
         new String[] { "sumo" }
     ),
     BOXING(
@@ -76,7 +70,6 @@ public enum DuelsMode {
         new String[] { "BOXING", "BOXING_DUEL" },
         new String[] { "boxing", "boxing duel" },
         new String[] { "boxing_duel" },
-        new String[] { "duels_boxing_title_prestige" },
         new String[] { "boxing" }
     ),
     COMBO(
@@ -84,31 +77,27 @@ public enum DuelsMode {
         new String[] { "COMBO", "COMBO_DUEL" },
         new String[] { "combo", "combo duel" },
         new String[] { "combo_duel" },
-        new String[] { "duels_combo_title_prestige" },
         new String[] { "combo" }
     ),
     NODEBUFF(
         "NoDebuff",
         new String[] { "POTION", "POTION_DUEL", "NODEBUFF", "NO_DEBUFF" },
         new String[] { "nodebuff", "no debuff", "potion duel" },
-        new String[] { "potion_duel", "no_debuff_duel" },
-        new String[] { "duels_potion_title_prestige" },
+        new String[] { "potion_duel" },
         new String[] { "no_debuff", "potion" }
     ),
     BOW(
         "Bow",
-        new String[] { "BOW", "BOW_DUEL", "BOWSPLEEF", "BOWSPLEEF_DUEL" },
-        new String[] { "bow duel", "bowspleef", "bow spleef" },
-        new String[] { "bow_duel", "bowspleef_duel" },
-        new String[] { "duels_bow_title_prestige", "duels_bowspleef_title_prestige" },
-        new String[] { "bow", "bowspleef" }
+        new String[] { "BOW", "BOW_DUEL" },
+        new String[] { "bow duel" },
+        new String[] { "bow_duel" },
+        new String[] { "bow" }
     ),
     BLITZ(
         "Blitz",
         new String[] { "BLITZ", "BLITZ_DUEL" },
         new String[] { "blitz", "blitz duel" },
         new String[] { "blitz_duel" },
-        new String[] { "duels_blitz_title_prestige" },
         new String[] { "blitz" }
     ),
     TNT(
@@ -116,31 +105,39 @@ public enum DuelsMode {
         new String[] { "TNT", "TNT_DUEL", "TNT_GAMES_DUEL" },
         new String[] { "tnt", "tnt duel", "tnt games" },
         new String[] { "tnt_games_duel", "tnt_duel" },
-        new String[] { "duels_tnt_games_title_prestige", "duels_tnt_title_prestige" },
         new String[] { "tnt_games", "tnt" }
     ),
     MEGA_WALLS(
         "MegaWalls",
         new String[] { "MW", "MW_DUEL", "MEGA_WALLS", "MEGA_WALLS_DUEL" },
         new String[] { "mega walls", "mw duel", "mega walls duel" },
-        new String[] { "mw_duel", "mega_walls_duel" },
-        new String[] { "duels_mega_walls_title_prestige", "duels_mw_title_prestige" },
+        new String[] { "mw_duel", "mw_doubles" },
         new String[] { "mega_walls", "mw" }
     ),
     PARKOUR(
         "Parkour",
         new String[] { "PARKOUR", "PARKOUR_DUEL", "PARKOUR_EIGHT" },
         new String[] { "parkour", "parkour duel" },
-        new String[] { "parkour_duel", "parkour_eight" },
-        new String[] { "duels_parkour_title_prestige" },
+        new String[] { "parkour_eight" },
         new String[] { "parkour" }
     ),
+    SPLEEF("Spleef", new String[] { "SPLEEF", "SPLEEF_DUEL", "BOWSPLEEF", "BOWSPLEEF_DUEL" },
+        new String[] { "spleef", "bow spleef" }, new String[] { "spleef_duel", "bowspleef_duel" },
+        new String[] { "spleef" }),
+    QUAKE("Quakecraft", new String[] { "QUAKE", "QUAKE_DUEL", "QUAKECRAFT" },
+        new String[] { "quake" }, new String[] { "quake_duel" },
+        new String[] { "quakecraft" }),
+    BEDWARS("Bed Wars", new String[] { "BEDWARS_TWO_ONE_DUELS", "BEDWARS_TWO_ONE_DUELS_RUSH" },
+        new String[] { "bed wars", "bedwars", "bed rush" }, new String[] { "bedwars_two_one_duels", "bedwars_two_one_duels_rush" },
+        new String[] { "bedwars" }),
+    ARENA("Duel Arena", new String[] { "DUEL_ARENA" },
+        new String[] { "duel arena", "duels arena" }, new String[] { "duel_arena" },
+        new String[] { "" }),
     OVERALL(
         "Overall",
         new String[] {},
         new String[] {},
         new String[] {},
-        new String[] { "duels_title_prestige" },
         new String[] { "all_modes" }
     );
 
@@ -148,7 +145,6 @@ public enum DuelsMode {
     private final String[] modeTokens;
     private final String[] scoreboardTokens;
     private final String[] statPrefixes;
-    private final String[] titlePrestigeKeys;
     private final String[] divisionPrefixes;
 
     DuelsMode(
@@ -156,14 +152,12 @@ public enum DuelsMode {
         String[] modeTokens,
         String[] scoreboardTokens,
         String[] statPrefixes,
-        String[] titlePrestigeKeys,
         String[] divisionPrefixes
     ) {
         this.displayName = displayName;
         this.modeTokens = modeTokens;
         this.scoreboardTokens = scoreboardTokens;
         this.statPrefixes = statPrefixes;
-        this.titlePrestigeKeys = titlePrestigeKeys;
         this.divisionPrefixes = divisionPrefixes;
     }
 
@@ -173,10 +167,6 @@ public enum DuelsMode {
 
     public String[] getStatPrefixes() {
         return statPrefixes;
-    }
-
-    public String[] getTitlePrestigeKeys() {
-        return titlePrestigeKeys;
     }
 
     public String[] getDivisionPrefixes() {
@@ -222,44 +212,33 @@ public enum DuelsMode {
             return OVERALL;
         }
 
-        for (DuelsMode value : values()) {
-            if (value == OVERALL) {
-                continue;
-            }
-
-            for (String token : value.modeTokens) {
-                String normalizedToken = normalize(token);
-                if (
-                    !normalizedToken.isEmpty() &&
-                    (modeToken.equals(normalizedToken) || modeToken.contains(normalizedToken))
-                ) {
-                    return value;
-                }
-            }
-        }
-
-        return OVERALL;
+        return longestMatch(modeToken, false);
     }
 
     private static DuelsMode fromScoreboardText(String text) {
-        if (text.isEmpty()) {
-            return OVERALL;
-        }
+        return longestMatch(text, true);
+    }
 
-        for (DuelsMode value : values()) {
-            if (value == OVERALL) {
-                continue;
-            }
-
-            for (String token : value.scoreboardTokens) {
-                String normalizedToken = normalize(token);
-                if (!normalizedToken.isEmpty() && text.contains(normalizedToken)) {
-                    return value;
+    private static DuelsMode longestMatch(String text, boolean scoreboard) {
+        DuelsMode best = OVERALL;
+        int length = 0;
+        for (DuelsMode mode : values()) {
+            for (String token : scoreboard ? mode.scoreboardTokens : mode.modeTokens) {
+                String normalized = normalize(token);
+                boolean matches = scoreboard ? text.contains(normalized)
+                    : text.equals(normalized) || text.startsWith(normalized + "_");
+                if (matches && normalized.length() > length) {
+                    best = mode;
+                    length = normalized.length();
                 }
             }
         }
+        return best;
+    }
 
-        return OVERALL;
+    public boolean hasHalfTitleRequirements() {
+        return this == MEGA_WALLS || this == PARKOUR || this == BOXING
+            || this == NODEBUFF || this == BRIDGE;
     }
 
     private static String normalize(String value) {
