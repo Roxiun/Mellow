@@ -1,0 +1,1 @@
+Fixtures reduced from live Abyss player responses on 2026-10-08. Only the counters used by these games are retained; identities are replaced. new-games uses Roxiun; bow-spleef uses Plancke. Missing zero-valued counters are intentionally left absent. Mode IDs were checked against Hypixel /v2/resources/games.

@@ -11,6 +11,9 @@ public final class StatOrder {
 
     public static final String[] BUILD_BATTLE = com.roxiun.mellow.stats.GameRegistry.BUILD_BATTLE.columnOptions();
     public static final String[] TNT_RUN = com.roxiun.mellow.stats.GameRegistry.TNT_RUN.columnOptions();
+    public static final String[] TNT_TAG = com.roxiun.mellow.stats.GameRegistry.TNT_TAG.columnOptions();
+    public static final String[] BOW_SPLEEF = com.roxiun.mellow.stats.GameRegistry.BOW_SPLEEF.columnOptions();
+    public static final String[] MURDER_MYSTERY = com.roxiun.mellow.stats.GameRegistry.MURDER_MYSTERY.columnOptions();
 
     public static int[] toColumns(String[] options, String[] selected) {
         if (selected == null) return new int[0];

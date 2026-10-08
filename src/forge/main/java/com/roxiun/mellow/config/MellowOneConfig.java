@@ -1167,6 +1167,216 @@ public class MellowOneConfig extends Config {
     )
     public int tntRunCustomStat10 = 4;
 
+    @Dropdown(
+        name = "First Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat1 = 0;
+
+    @Dropdown(
+        name = "Second Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat2 = 2;
+
+    @Dropdown(
+        name = "Third Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat3 = 1;
+
+    @Dropdown(
+        name = "Fourth Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat4 = 3;
+
+    @Dropdown(
+        name = "Fifth Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat5 = 3;
+
+    @Dropdown(
+        name = "Sixth Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat6 = 3;
+
+    @Dropdown(
+        name = "Seventh Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat7 = 3;
+
+    @Dropdown(
+        name = "Eighth Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat8 = 3;
+
+    @Dropdown(
+        name = "Ninth Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat9 = 3;
+
+    @Dropdown(
+        name = "Tenth Stat",
+        options = {"Team", "Wins", "Name", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "TNT Tag Stat Order"
+    )
+    public int tntTagCustomStat10 = 3;
+
+    @Dropdown(
+        name = "First Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat1 = 0;
+
+    @Dropdown(
+        name = "Second Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat2 = 2;
+
+    @Dropdown(
+        name = "Third Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat3 = 1;
+
+    @Dropdown(
+        name = "Fourth Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat4 = 3;
+
+    @Dropdown(
+        name = "Fifth Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat5 = 4;
+
+    @Dropdown(
+        name = "Sixth Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat6 = 5;
+
+    @Dropdown(
+        name = "Seventh Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat7 = 5;
+
+    @Dropdown(
+        name = "Eighth Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat8 = 5;
+
+    @Dropdown(
+        name = "Ninth Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat9 = 5;
+
+    @Dropdown(
+        name = "Tenth Stat",
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Bow Spleef Stat Order"
+    )
+    public int bowSpleefCustomStat10 = 5;
+
+    @Dropdown(
+        name = "First Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat1 = 0;
+
+    @Dropdown(
+        name = "Second Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat2 = 2;
+
+    @Dropdown(
+        name = "Third Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat3 = 1;
+
+    @Dropdown(
+        name = "Fourth Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat4 = 3;
+
+    @Dropdown(
+        name = "Fifth Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat5 = 4;
+
+    @Dropdown(
+        name = "Sixth Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat6 = 5;
+
+    @Dropdown(
+        name = "Seventh Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat7 = 5;
+
+    @Dropdown(
+        name = "Eighth Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat8 = 5;
+
+    @Dropdown(
+        name = "Ninth Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat9 = 5;
+
+    @Dropdown(
+        name = "Tenth Stat",
+        options = {"Team", "Wins", "Name", "Kills", "Games", "None", "HP", "Tags", "Ping"},
+        category = "Tab Stats", subcategory = "Murder Mystery Stat Order"
+    )
+    public int murderMysteryCustomStat10 = 5;
+
     @Checkbox(
         description = "Drag stats to change their order. Uncheck a stat to hide it.",
         name = "Between 1st and 2nd",
@@ -1827,7 +2037,7 @@ public class MellowOneConfig extends Config {
         dependOn("numberDenicker", "numberDenickerFuzzy", "minFinalsForDenick");
         dependOn("coloredHitboxes", "coloredHitboxesAffectVanillaDebug", "coloredHitboxesAffectPolyHitbox");
         dependOn("coloredNametagBackgrounds", "coloredNametagAffectPolyNametag");
-        for (String prefix : new String[]{"customStat", "skywarsCustomStat", "duelsCustomStat", "buildBattleCustomStat", "tntRunCustomStat"}) {
+        for (String prefix : new String[]{"customStat", "skywarsCustomStat", "duelsCustomStat", "buildBattleCustomStat", "tntRunCustomStat", "tntTagCustomStat", "bowSpleefCustomStat", "murderMysteryCustomStat"}) {
             for (int slot = 1; slot <= 10; slot++) addDependency(prefix + slot, "tabStats");
         }
         for (String component : new String[]{"Hue", "Saturation", "Brightness"}) {
@@ -1907,6 +2117,36 @@ public class MellowOneConfig extends Config {
         tntRunCustomStat8 = statIndex(tntRunCustomStat8, 8, 4);
         tntRunCustomStat9 = statIndex(tntRunCustomStat9, 8, 4);
         tntRunCustomStat10 = statIndex(tntRunCustomStat10, 8, 4);
+        tntTagCustomStat1 = statIndex(tntTagCustomStat1, 7, 3);
+        tntTagCustomStat2 = statIndex(tntTagCustomStat2, 7, 3);
+        tntTagCustomStat3 = statIndex(tntTagCustomStat3, 7, 3);
+        tntTagCustomStat4 = statIndex(tntTagCustomStat4, 7, 3);
+        tntTagCustomStat5 = statIndex(tntTagCustomStat5, 7, 3);
+        tntTagCustomStat6 = statIndex(tntTagCustomStat6, 7, 3);
+        tntTagCustomStat7 = statIndex(tntTagCustomStat7, 7, 3);
+        tntTagCustomStat8 = statIndex(tntTagCustomStat8, 7, 3);
+        tntTagCustomStat9 = statIndex(tntTagCustomStat9, 7, 3);
+        tntTagCustomStat10 = statIndex(tntTagCustomStat10, 7, 3);
+        bowSpleefCustomStat1 = statIndex(bowSpleefCustomStat1, 9, 5);
+        bowSpleefCustomStat2 = statIndex(bowSpleefCustomStat2, 9, 5);
+        bowSpleefCustomStat3 = statIndex(bowSpleefCustomStat3, 9, 5);
+        bowSpleefCustomStat4 = statIndex(bowSpleefCustomStat4, 9, 5);
+        bowSpleefCustomStat5 = statIndex(bowSpleefCustomStat5, 9, 5);
+        bowSpleefCustomStat6 = statIndex(bowSpleefCustomStat6, 9, 5);
+        bowSpleefCustomStat7 = statIndex(bowSpleefCustomStat7, 9, 5);
+        bowSpleefCustomStat8 = statIndex(bowSpleefCustomStat8, 9, 5);
+        bowSpleefCustomStat9 = statIndex(bowSpleefCustomStat9, 9, 5);
+        bowSpleefCustomStat10 = statIndex(bowSpleefCustomStat10, 9, 5);
+        murderMysteryCustomStat1 = statIndex(murderMysteryCustomStat1, 9, 5);
+        murderMysteryCustomStat2 = statIndex(murderMysteryCustomStat2, 9, 5);
+        murderMysteryCustomStat3 = statIndex(murderMysteryCustomStat3, 9, 5);
+        murderMysteryCustomStat4 = statIndex(murderMysteryCustomStat4, 9, 5);
+        murderMysteryCustomStat5 = statIndex(murderMysteryCustomStat5, 9, 5);
+        murderMysteryCustomStat6 = statIndex(murderMysteryCustomStat6, 9, 5);
+        murderMysteryCustomStat7 = statIndex(murderMysteryCustomStat7, 9, 5);
+        murderMysteryCustomStat8 = statIndex(murderMysteryCustomStat8, 9, 5);
+        murderMysteryCustomStat9 = statIndex(murderMysteryCustomStat9, 9, 5);
+        murderMysteryCustomStat10 = statIndex(murderMysteryCustomStat10, 9, 5);
 
         // Misc dropdowns
         extendedTabStatsHeaders = clampIndex(extendedTabStatsHeaders, 3);

@@ -18,6 +18,9 @@ final class ConfigSmokeTest {
         String[] originalOrder = config.bedwarsStatOrder;
         String[] originalBuildBattle = config.buildBattleStatOrder;
         String[] originalTntRun = config.tntRunStatOrder;
+        String[] originalTntTag = config.tntTagStatOrder;
+        String[] originalBowSpleef = config.bowSpleefStatOrder;
+        String[] originalMurderMystery = config.murderMysteryStatOrder;
         int originalHueMode = config.hitboxHueMode;
         int originalSaturationMode = config.hitboxSaturationMode;
         int originalBrightnessMode = config.hitboxBrightnessMode;
@@ -27,6 +30,9 @@ final class ConfigSmokeTest {
             config.getProperty("bedwarsStatOrder").setAs(new String[]{"Ping", "Name"});
             config.getProperty("buildBattleStatOrder").setAs(new String[]{"Name", "Title", "Wins"});
             config.getProperty("tntRunStatOrder").setAs(new String[]{"Ratio", "Name", "Ping"});
+            config.getProperty("tntTagStatOrder").setAs(new String[]{"Ping", "Name", "Wins"});
+            config.getProperty("bowSpleefStatOrder").setAs(new String[]{"Ping", "Name", "Wins"});
+            config.getProperty("murderMysteryStatOrder").setAs(new String[]{"Ping", "Name", "Wins"});
             config.save();
             verifyDependencies(config);
             ConfigManager.createProfile(temporary);
@@ -39,6 +45,15 @@ final class ConfigSmokeTest {
             require(Arrays.equals(config.tntRunStatOrder, new String[]{"Ratio", "Name", "Ping"}), "TNT Run order lost after profile switch");
             require(Arrays.equals(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
                 com.roxiun.mellow.stats.StatScope.TNT_RUN, config), new int[]{3, 2, 7}), "TNT Run UI order did not reach renderer");
+            require(Arrays.equals(config.tntTagStatOrder, new String[]{"Ping", "Name", "Wins"}), "TntTag order lost after profile switch");
+            require(Arrays.equals(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.TNT_TAG, config), new int[]{6, 2, 1}), "TntTag order did not reach renderer");
+            require(Arrays.equals(config.bowSpleefStatOrder, new String[]{"Ping", "Name", "Wins"}), "BowSpleef order lost after profile switch");
+            require(Arrays.equals(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.BOW_SPLEEF, config), new int[]{8, 2, 1}), "BowSpleef order did not reach renderer");
+            require(Arrays.equals(config.murderMysteryStatOrder, new String[]{"Ping", "Name", "Wins"}), "MurderMystery order lost after profile switch");
+            require(Arrays.equals(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.MURDER_MYSTERY, config), new int[]{8, 2, 1}), "MurderMystery order did not reach renderer");
             verifyHuds(config);
             ConfigManager.openProfile(temporary);
             ConfigManager.openProfile(profile);
@@ -51,6 +66,9 @@ final class ConfigSmokeTest {
             config.bedwarsStatOrder = originalOrder;
             config.buildBattleStatOrder = originalBuildBattle;
             config.tntRunStatOrder = originalTntRun;
+            config.tntTagStatOrder = originalTntTag;
+            config.bowSpleefStatOrder = originalBowSpleef;
+            config.murderMysteryStatOrder = originalMurderMystery;
             config.hitboxHueMode = originalHueMode;
             config.hitboxSaturationMode = originalSaturationMode;
             config.hitboxBrightnessMode = originalBrightnessMode;

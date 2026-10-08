@@ -7,6 +7,9 @@ import com.roxiun.mellow.stats.buildbattle.BuildBattleGame;
 import com.roxiun.mellow.stats.tntgames.tntrun.TntRunGame;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import java.util.*;
+import com.roxiun.mellow.stats.tntgames.tnttag.TntTagGame;
+import com.roxiun.mellow.stats.tntgames.bowspleef.BowSpleefGame;
+import com.roxiun.mellow.stats.murdermystery.MurderMysteryGame;
 
 public final class GameRegistry {
     public static final BedwarsGame BEDWARS = new BedwarsGame();
@@ -14,8 +17,11 @@ public final class GameRegistry {
     public static final DuelsGame DUELS = new DuelsGame();
     public static final BuildBattleGame BUILD_BATTLE = new BuildBattleGame();
     public static final TntRunGame TNT_RUN = new TntRunGame();
+    public static final TntTagGame TNT_TAG = new TntTagGame();
+    public static final BowSpleefGame BOW_SPLEEF = new BowSpleefGame();
+    public static final MurderMysteryGame MURDER_MYSTERY = new MurderMysteryGame();
     private static final List<GameDefinition<?>> GAMES = Collections.unmodifiableList(
-        Arrays.asList(BEDWARS, SKYWARS, DUELS, BUILD_BATTLE, TNT_RUN));
+        Arrays.asList(BEDWARS, SKYWARS, DUELS, BUILD_BATTLE, TNT_RUN, TNT_TAG, BOW_SPLEEF, MURDER_MYSTERY));
     private GameRegistry() {}
     public static List<GameDefinition<?>> all() { return GAMES; }
     public static GameDefinition<?> find(StatScope scope) {

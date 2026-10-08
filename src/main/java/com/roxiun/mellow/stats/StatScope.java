@@ -7,4 +7,7 @@ public enum StatScope {
     DUELS,
     BUILD_BATTLE,
     TNT_RUN,
+    TNT_TAG,
+    BOW_SPLEEF,
+    MURDER_MYSTERY,
 }

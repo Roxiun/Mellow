@@ -49,6 +49,9 @@ final class PreferenceLayout {
             case "skywarsStatOrder" -> "skywarsLayout";
             case "duelsStatOrder" -> "duelsLayout";
             case "buildBattleStatOrder" -> "buildBattleLayout";
+            case "tntTagStatOrder" -> "tntTagLayout";
+            case "bowSpleefStatOrder" -> "bowSpleefLayout";
+            case "murderMysteryStatOrder" -> "murderMysteryLayout";
             case "tntRunStatOrder" -> "tntRunLayout";
             case "finalsRange", "bedsRange", "maxResults" -> "denickerSearch";
             case "anticheatVerbose", "anticheatVl", "anticheatCooldown" -> "anticheatAlerts";
@@ -65,6 +68,9 @@ final class PreferenceLayout {
             case "skywarsLayout" -> "SkyWars Stat Order";
             case "duelsLayout" -> "Duels Stat Order";
             case "buildBattleLayout" -> "Build Battle Stat Order";
+            case "tntTagLayout" -> "TNT Tag Stat Order";
+            case "bowSpleefLayout" -> "Bow Spleef Stat Order";
+            case "murderMysteryLayout" -> "Murder Mystery Stat Order";
             case "tntRunLayout" -> "TNT Run Stat Order";
             case "denickerSearch" -> "Search Settings";
             case "anticheatAlerts" -> "Alert Settings";

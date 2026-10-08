@@ -70,6 +70,12 @@ public final class ForgeClientSmokeTest {
             require(config.optionNames.containsKey("buildBattleCustomStat1") && config.optionNames.containsKey("tntRunCustomStat1"), "Game column controls absent from OneConfig");
             config.buildBattleCustomStat1 = 3;
             config.tntRunCustomStat1 = 7;
+            require(config.optionNames.containsKey("tntTagCustomStat1"), "TntTag controls absent from OneConfig");
+            config.tntTagCustomStat1 = 6;
+            require(config.optionNames.containsKey("bowSpleefCustomStat1"), "BowSpleef controls absent from OneConfig");
+            config.bowSpleefCustomStat1 = 8;
+            require(config.optionNames.containsKey("murderMysteryCustomStat1"), "MurderMystery controls absent from OneConfig");
+            config.murderMysteryCustomStat1 = 8;
             config.customStat2 = 13; // Existing Ping index must not move.
             config.save();
             config.statsProvider = 0;
@@ -77,6 +83,15 @@ public final class ForgeClientSmokeTest {
             require(config.buildBattleCustomStat1 == 3 && config.tntRunCustomStat1 == 7, "New game layouts were not persisted");
             require(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
                 com.roxiun.mellow.stats.StatScope.TNT_RUN, config)[0] == 7, "TNT Run dropdown did not reach renderer");
+            require(config.tntTagCustomStat1 == 6, "TntTag order did not persist");
+            require(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.TNT_TAG, config)[0] == 6, "TntTag order did not reach renderer");
+            require(config.bowSpleefCustomStat1 == 8, "BowSpleef order did not persist");
+            require(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.BOW_SPLEEF, config)[0] == 8, "BowSpleef order did not reach renderer");
+            require(config.murderMysteryCustomStat1 == 8, "MurderMystery order did not persist");
+            require(com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsColumns.getConfiguredStatsForScope(
+                com.roxiun.mellow.stats.StatScope.MURDER_MYSTERY, config)[0] == 8, "MurderMystery order did not reach renderer");
             require(config.statsProvider == 4, "Bedlify clamped to another provider");
             require(config.pingProvider == 0 && config.customStat1 == 10 && config.skywarsCustomStat1 == 7
                 && config.duelsCustomStat1 == 10 && config.customStat2 == 13, "Retired selections migrated incorrectly");

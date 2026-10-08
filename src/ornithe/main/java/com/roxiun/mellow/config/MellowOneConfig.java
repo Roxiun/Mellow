@@ -292,6 +292,30 @@ public class MellowOneConfig extends Config {
     )
     public String[] tntRunStatOrder = {"Team", "Name", "Wins", "Ratio"};
 
+    @DraggableList(
+        title = "TNT Tag Stat Order",
+        description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "Stat Order", checkable = true,
+        options = {"Team", "Wins", "Name", "HP", "Tags", "Ping"}
+    )
+    public String[] tntTagStatOrder = {"Team", "Name", "Wins"};
+
+    @DraggableList(
+        title = "Bow Spleef Stat Order",
+        description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "Stat Order", checkable = true,
+        options = {"Team", "Wins", "Name", "Deaths", "Ratio", "HP", "Tags", "Ping"}
+    )
+    public String[] bowSpleefStatOrder = {"Team", "Name", "Wins", "Deaths", "Ratio"};
+
+    @DraggableList(
+        title = "Murder Mystery Stat Order",
+        description = "Drag stats to change their order. Uncheck a stat to hide it.",
+        category = "Tab Stats", subcategory = "Stat Order", checkable = true,
+        options = {"Team", "Wins", "Name", "Kills", "Games", "HP", "Tags", "Ping"}
+    )
+    public String[] murderMysteryStatOrder = {"Team", "Name", "Wins", "Kills", "Games"};
+
     @Checkbox(
         description = "Toggle separator between stats",
         title = "Between 1st and 2nd",
@@ -702,7 +726,7 @@ public class MellowOneConfig extends Config {
         dependOn("tabStats", "showStarsWithBrackets", "showNickWithBrackets", "showRanksInGameTabStats",
             "extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
             "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding", "highlightTaggedPlayers",
-            "bedwarsStatOrder", "skywarsStatOrder", "duelsStatOrder", "buildBattleStatOrder", "tntRunStatOrder", "showDot12", "showDot23", "showDot34",
+            "bedwarsStatOrder", "skywarsStatOrder", "duelsStatOrder", "buildBattleStatOrder", "tntRunStatOrder", "tntTagStatOrder", "bowSpleefStatOrder", "murderMysteryStatOrder", "showDot12", "showDot23", "showDot34",
             "showDot45", "showDot56", "showDot67", "showDot78", "showDot89", "showDot910",
             "showUrchinTagsInTab", "showXadiaTagsInTab");
         dependOn("extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",

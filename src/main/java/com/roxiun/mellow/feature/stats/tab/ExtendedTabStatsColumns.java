@@ -41,6 +41,7 @@ public final class ExtendedTabStatsColumns {
         GameDefinition<?> game = GameRegistry.find(scope);
         if (game == null) return new int[0];
         if (config == null) return scope == StatScope.BUILD_BATTLE || scope == StatScope.TNT_RUN
+            || scope == StatScope.TNT_TAG || scope == StatScope.BOW_SPLEEF || scope == StatScope.MURDER_MYSTERY
             ? game.defaultColumns() : new int[0];
 
         if (scope == StatScope.BUILD_BATTLE) {
@@ -49,6 +50,36 @@ public final class ExtendedTabStatsColumns {
             //?} else {
             /*return new int[] {
                 config.buildBattleCustomStat1, config.buildBattleCustomStat2, config.buildBattleCustomStat3, config.buildBattleCustomStat4, config.buildBattleCustomStat5, config.buildBattleCustomStat6, config.buildBattleCustomStat7, config.buildBattleCustomStat8, config.buildBattleCustomStat9, config.buildBattleCustomStat10
+            };
+            *///?}
+        }
+
+        if (scope == StatScope.TNT_TAG) {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.TNT_TAG, config.tntTagStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.tntTagCustomStat1, config.tntTagCustomStat2, config.tntTagCustomStat3, config.tntTagCustomStat4, config.tntTagCustomStat5, config.tntTagCustomStat6, config.tntTagCustomStat7, config.tntTagCustomStat8, config.tntTagCustomStat9, config.tntTagCustomStat10
+            };
+            *///?}
+        }
+
+        if (scope == StatScope.BOW_SPLEEF) {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.BOW_SPLEEF, config.bowSpleefStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.bowSpleefCustomStat1, config.bowSpleefCustomStat2, config.bowSpleefCustomStat3, config.bowSpleefCustomStat4, config.bowSpleefCustomStat5, config.bowSpleefCustomStat6, config.bowSpleefCustomStat7, config.bowSpleefCustomStat8, config.bowSpleefCustomStat9, config.bowSpleefCustomStat10
+            };
+            *///?}
+        }
+
+        if (scope == StatScope.MURDER_MYSTERY) {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.MURDER_MYSTERY, config.murderMysteryStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.murderMysteryCustomStat1, config.murderMysteryCustomStat2, config.murderMysteryCustomStat3, config.murderMysteryCustomStat4, config.murderMysteryCustomStat5, config.murderMysteryCustomStat6, config.murderMysteryCustomStat7, config.murderMysteryCustomStat8, config.murderMysteryCustomStat9, config.murderMysteryCustomStat10
             };
             *///?}
         }
