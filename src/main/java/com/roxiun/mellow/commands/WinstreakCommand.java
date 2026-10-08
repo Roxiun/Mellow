@@ -127,7 +127,7 @@ public class WinstreakCommand extends CommandBase {
         }
 
         String compactUuid = uuid.toString().replace("-", "");
-        long requestGeneration = Mellow.auroraWinstreakService.getGeneration();
+        Object requestGeneration = Mellow.auroraWinstreakService.getGeneration(compactUuid);
         int auroraWs = Mellow.auroraWinstreakService.getCachedWinstreak(compactUuid);
         boolean hasCachedAuroraWs = Mellow.auroraWinstreakService.hasCachedWinstreak(
             compactUuid
@@ -140,7 +140,7 @@ public class WinstreakCommand extends CommandBase {
                 auroraWs = Mellow.auroraWinstreakService.fetchWinstreakBlocking(
                     compactUuid
                 );
-                if (Mellow.auroraWinstreakService.getGeneration() == requestGeneration) Mellow.auroraWinstreakService.storeInCache(compactUuid, auroraWs);
+                Mellow.auroraWinstreakService.storeIfCurrent(compactUuid, requestGeneration, auroraWs);
             } catch (Exception e) {
                 final String detail = e.getMessage() == null ? "unknown" : e.getMessage();
                 MainThreadDispatcher.run(() ->
@@ -150,7 +150,7 @@ public class WinstreakCommand extends CommandBase {
                     )
                 );
             } finally {
-                if (Mellow.auroraWinstreakService.getGeneration() == requestGeneration) Mellow.auroraWinstreakService.finishFetch(compactUuid);
+                Mellow.auroraWinstreakService.finishIfCurrent(compactUuid, requestGeneration);
             }
         }
 

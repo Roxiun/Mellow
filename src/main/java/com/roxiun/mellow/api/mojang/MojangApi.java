@@ -20,7 +20,6 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 
 public class MojangApi {
 
-    private static final long UUID_CACHE_TTL_MS = 300_000L;
     private static final long FAILURE_CACHE_TTL_MS = 30_000L;
     private static final String MINECRAFT_PROFILE_URL =
         "https://api.minecraftservices.com/minecraft/profile/lookup/name/";
@@ -32,9 +31,9 @@ public class MojangApi {
         "https://api.minetools.eu/uuid/";
 
     private final RequestCache<String, String> uuidCache =
-        new RequestCache<>(4096, UUID_CACHE_TTL_MS, FAILURE_CACHE_TTL_MS, value -> value != null && !"ERROR".equals(value));
+        new RequestCache<>(4096, RequestCache.NO_EXPIRY, FAILURE_CACHE_TTL_MS, value -> value != null && !"ERROR".equals(value));
     private final RequestCache<String, MojangProfile> mowojangCache =
-        new RequestCache<>(4096, UUID_CACHE_TTL_MS, FAILURE_CACHE_TTL_MS, value -> value != null);
+        new RequestCache<>(4096, RequestCache.NO_EXPIRY, FAILURE_CACHE_TTL_MS, value -> value != null);
     private final MowojangRequestLimiter requestLimiter = MowojangRequestLimiter.getInstance();
 
     public String fetchUUID(String username) {

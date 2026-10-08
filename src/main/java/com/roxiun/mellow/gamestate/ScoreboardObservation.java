@@ -40,13 +40,9 @@ public final class ScoreboardObservation {
                 if (starting) countdown = seconds;
                 int scheduled = stageTime(line.substring(0, time.start()));
                 if (scheduled >= 0) { stage = scheduled; remaining = seconds; live = true; }
-                if (type == GameType.DUELS && line.startsWith("time left:")) live = true;
-                if (type == GameType.BUILD_BATTLE && (line.startsWith("time left:") || line.startsWith("voting"))) live = true;
             }
-            if (type == GameType.TNTGAMES && (line.startsWith("alive:") || line.startsWith("players alive:"))) live = true;
             Matcher start = START.matcher(line);
             if (start.matches()) countdown = Integer.parseInt(start.group(1));
-            if ((type == GameType.SKYWARS || type == GameType.TNTGAMES) && line.startsWith("players left:")) live = true;
         }
         return new ScoreboardObservation(type, waiting, live, countdown, stage, remaining);
     }

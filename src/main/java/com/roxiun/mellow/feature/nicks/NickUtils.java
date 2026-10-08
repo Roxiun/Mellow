@@ -144,7 +144,7 @@ public class NickUtils {
         java.util.Map<String, String> warnings = TagPolicy.warnings(
             profile.getTags(), !automatic || config.printBlacklistTags, ignored);
         for (java.util.Map.Entry<String, String> source : warnings.entrySet())
-            ChatUtils.sendMessage("§c" + realName + " is tagged on §d" + source.getKey() + "§c for: " + source.getValue());
+            ChatUtils.sendMessage("§c" + realName + " is tagged on " + FormattingUtils.formatTagSource(source.getKey(), false) + "§c for: " + source.getValue());
     }
 
     private static String normalize(String name) {

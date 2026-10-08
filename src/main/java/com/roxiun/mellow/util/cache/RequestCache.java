@@ -8,6 +8,8 @@ import java.util.function.Supplier;
 
 /** Bounded cache with shared requests. Invalidation also detaches pending writes. */
 public final class RequestCache<K, V> {
+    /** Retain entries until explicit invalidation or capacity eviction. */
+    public static final long NO_EXPIRY = Long.MAX_VALUE;
     private final Map<K, Entry<V>> entries = new LinkedHashMap<>();
     private final int capacity;
     private final long successTtl;
@@ -51,7 +53,8 @@ public final class RequestCache<K, V> {
                     V value = values.get(item.getKey());
                     if (!values.containsKey(item.getKey())) throw new IllegalStateException("Batch omitted a requested result");
                     Entry<V> entry = item.getValue();
-                    entry.expiresAt = System.currentTimeMillis() + (successful.test(value) ? successTtl : failureTtl);
+                    long ttl = successful.test(value) ? successTtl : failureTtl;
+                    entry.expiresAt = ttl == NO_EXPIRY ? Long.MAX_VALUE : System.currentTimeMillis() + ttl;
                     entry.future.complete(value);
                 }
             } catch (Throwable error) {

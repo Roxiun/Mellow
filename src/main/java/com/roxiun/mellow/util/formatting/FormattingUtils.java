@@ -7,6 +7,13 @@ import java.util.stream.Collectors;
 
 public class FormattingUtils {
 
+    /** Shared source styling for manual headings and automatic alerts. */
+    public static String formatTagSource(String source, boolean bold) {
+        String color = "Coral".equals(source) ? "§5" : "Xadia".equals(source) ? "§d"
+            : "Local".equals(source) ? "§c" : "§7";
+        return color + (bold ? "§l" : "") + source + "§r" + color;
+    }
+
     public static String formatBedwarsWinstreakWithColor(int winstreak) {
         if (winstreak < 5) {
             return "§7" + winstreak;

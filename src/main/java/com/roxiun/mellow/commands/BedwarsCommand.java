@@ -73,26 +73,6 @@ public class BedwarsCommand extends CommandBase {
                 true
             );
             PlayerProfile profile = result.getProfile();
-            if (profile != null) MainThreadDispatcher.run(() -> {
-                for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
-            });
-
-            if (profile != null) {
-            BlacklistedPlayer blacklistedPlayer = blacklistManager.getBlacklistedPlayer(
-                UUIDUtils.fromString(profile.getUuid())
-            );
-            if (blacklistedPlayer != null) {
-                String localBlacklistMessage = formatLocalBlacklistMessage(
-                    blacklistedPlayer
-                );
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendMultilineCommandMessage(
-                        sender,
-                        localBlacklistMessage
-                    )
-                );
-            }
-            }
 
             if (profile == null || profile.getBedwarsPlayer() == null) {
                 MainThreadDispatcher.run(() ->
@@ -105,6 +85,7 @@ public class BedwarsCommand extends CommandBase {
                             ")"
                     )
                 );
+                sendTagsAndLocal(sender, profile);
                 return;
             }
 
@@ -123,6 +104,17 @@ public class BedwarsCommand extends CommandBase {
                 ChatUtils.sendMultilineCommandMessage(sender, statsLines)
             );
 
+            sendTagsAndLocal(sender, profile);
+
+        });
+    }
+
+    private void sendTagsAndLocal(ICommandSender sender, PlayerProfile profile) {
+        if (profile == null) return;
+        BlacklistedPlayer local = blacklistManager.getBlacklistedPlayer(UUIDUtils.fromString(profile.getUuid()));
+        MainThreadDispatcher.run(() -> {
+            if (local != null) ChatUtils.sendMultilineCommandMessage(sender, formatLocalBlacklistMessage(local));
+            for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
         });
     }
 

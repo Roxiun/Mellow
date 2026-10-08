@@ -1391,7 +1391,7 @@ public class ExtendedStatsTabOverlay extends Gui {
             return visible;
         }
 
-        int auroraWinstreak = Mellow.auroraWinstreakService.getCachedWinstreak(
+        int auroraWinstreak = Mellow.auroraWinstreakService.getMatchWinstreak(
             info.getGameProfile().getId().toString().replace("-", "")
         );
         if (auroraWinstreak < 0) {

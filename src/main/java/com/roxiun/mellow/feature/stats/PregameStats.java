@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.stats;
 
+import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
@@ -278,7 +279,7 @@ public class PregameStats {
         }
 
         for (java.util.Map.Entry<String, String> source : tagWarnings.entrySet()) {
-            inSession(session, () -> ChatUtils.sendMessage("§c" + username + " is tagged on §d" + source.getKey() + "§c for: " + source.getValue()));
+            inSession(session, () -> ChatUtils.sendMessage("§c" + username + " is tagged on " + FormattingUtils.formatTagSource(source.getKey(), false) + "§c for: " + source.getValue()));
         }
         if (blacklisted || annoylisted || !tagWarnings.isEmpty())
             inSession(session, () -> pregameAlertSoundGate.tryPlayPling(mc, 1.0F, 1.0F));

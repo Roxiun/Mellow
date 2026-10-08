@@ -5,6 +5,9 @@ public class BedwarsSignalsTest {
     @Test public void playerChatCannotPurchaseUpgrades() {
         assertTrue(BedwarsChatSignalParser.isPurchaseMessage("You purchased Reinforced Armor IV"));
         assertTrue(BedwarsChatSignalParser.isPurchaseMessage("Teammate purchased Sharpened Swords"));
+        assertTrue(BedwarsChatSignalParser.isPurchaseMessage("[MVP+] Teammate purchased Sharpened Swords"));
+        assertTrue(BedwarsChatSignalParser.isTrapSignalMessage("System alert: Your trap was set off!"));
+        assertFalse(BedwarsChatSignalParser.isTrapSignalMessage("Player: trap was set off!"));
         assertFalse(BedwarsChatSignalParser.isPurchaseMessage("[MVP+] Example: I purchased Reinforced Armor IV"));
         assertFalse(BedwarsChatSignalParser.isPurchaseMessage("Example: You purchased Sharpened Swords"));
     }

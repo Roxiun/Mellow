@@ -34,6 +34,8 @@ public class ClearCacheCommand extends CommandBase {
     public void processCommand(ICommandSender sender, String[] args) {
         playerCache.clearCache();
         tabStats.clear();
+        if (com.roxiun.mellow.Mellow.partyBlacklistWarningService != null)
+            com.roxiun.mellow.Mellow.partyBlacklistWarningService.reset();
         if (com.roxiun.mellow.Mellow.inGameTabStatsSyncService != null)
             com.roxiun.mellow.Mellow.inGameTabStatsSyncService.clear();
         ChatUtils.sendCommandMessage(sender, "§aAll caches have been cleared.");

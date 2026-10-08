@@ -18,6 +18,11 @@ public class ScoreboardObservationTest {
         assertEquals(360, live.stageSeconds);
         assertEquals(GamePhase.LIVE, ScoreboardObservation.resolve(GamePhase.PREGAME, false, live));
     }
+    @Test public void staleWaitingSidebarDoesNotUndoStartAndUnrelatedTimersAreNotGuessed() {
+        ScoreboardObservation waiting = ScoreboardObservation.parse("BED WARS", Arrays.asList("Starting in 5s"));
+        assertEquals(GamePhase.LIVE, ScoreboardObservation.resolve(GamePhase.LIVE, false, waiting));
+        assertFalse(ScoreboardObservation.parse("DUELS", Arrays.asList("Time Left: 05:00")).live);
+    }
     @Test public void phaseAndPartyUpdatesPreserveSessionAndDefensivelyCopyInputs() {
         java.util.Map<java.util.UUID, PartyState.PartyRole> members = new java.util.HashMap<>();
         java.util.UUID id = java.util.UUID.randomUUID();

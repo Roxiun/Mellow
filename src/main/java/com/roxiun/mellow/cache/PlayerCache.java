@@ -40,11 +40,12 @@ import net.minecraft.client.Minecraft;
 
 public class PlayerCache {
 
-    private static final long CACHE_TTL_MS = 120_000L;
+    private static final long CACHE_TTL_MS = 300_000L;
 
     private final RequestCache<String, ProviderResult<JsonObject>> rawDataCache =
         new RequestCache<>(2048, CACHE_TTL_MS, 5_000L, ProviderResult::isSuccess);
-    private final TimedValueCache<String, String> resolvedNames = new TimedValueCache<>(300_000L);
+    // No timed expiry: cleared with the connection identity cache; still capacity-bounded.
+    private final TimedValueCache<String, String> resolvedNames = new TimedValueCache<>(0L);
     private final Map<String, Long> providerCooldown = new ConcurrentHashMap<>();
     private final MojangApi mojangApi;
     private final ProviderManager providerManager;
@@ -364,13 +365,16 @@ public class PlayerCache {
         );
     }
 
-    public void clearCache() {
-        xadiaApi.clearCache();
+    public void clearIdentityCache() {
         resolvedNames.clear();
+        if (mojangApi != null) mojangApi.clearCache();
+    }
+
+    public void clearCache() {
+        providerCooldown.clear();
+        xadiaApi.clearCache();
+        clearIdentityCache();
         rawDataCache.clear();
-        if (mojangApi != null) {
-            mojangApi.clearCache();
-        }
         if (Mellow.coralApi != null) {
             Mellow.coralApi.clearCache();
         }

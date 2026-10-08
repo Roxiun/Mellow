@@ -1,15 +1,13 @@
 package com.roxiun.mellow.api.luna;
 
-import com.roxiun.mellow.util.cache.TimedValueCache;
+import com.roxiun.mellow.util.cache.LookupTracker;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.util.ChatUtils;
-import com.roxiun.mellow.util.ping.PingRetryGate;
 import java.io.IOException;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import okhttp3.OkHttpClient;
@@ -21,12 +19,9 @@ public class LunaPingService {
 
     private static final String PING_URL = "https://lunaaaa.net/ping/";
 
-    private volatile long generation;
+    private final LookupTracker<String> requests = new LookupTracker<>();
     private final OkHttpClient client = new OkHttpClient();
-    private final TimedValueCache<String, Integer> pingCache = new TimedValueCache<>(120_000L);
-    private final PingRetryGate sessionFetchGate =
-        new PingRetryGate();
-    private final Set<String> fetchInProgress = ConcurrentHashMap.newKeySet();
+    private final java.util.Map<String, Integer> pingCache = new ConcurrentHashMap<>();
     private final AtomicBoolean errorShownThisSession = new AtomicBoolean(false);
 
     public int getCachedPing(String uuid) {
@@ -34,35 +29,23 @@ public class LunaPingService {
         return ping == null ? -1 : ping;
     }
 
-    public boolean tryStartFetch(String uuid) {
-        return fetchInProgress.add(uuid);
-    }
-
-    public void finishFetch(String uuid) {
-        fetchInProgress.remove(uuid);
-    }
-
     public void storeInCache(String uuid, int ping) {
         pingCache.put(uuid, ping);
     }
 
-    public void clearPlayer(String uuid) {
+    public synchronized void clearPlayer(String uuid) {
         if (uuid == null || uuid.isEmpty()) {
             return;
         }
 
-        generation++;
-        fetchInProgress.clear();
+        requests.remove(uuid);
         pingCache.remove(uuid);
-        sessionFetchGate.clearPlayer(uuid);
-        fetchInProgress.remove(uuid);
     }
 
-    public void clearCache() {
-        generation++;
+    public synchronized void clearCache() {
+        requests.clear();
         pingCache.clear();
-        sessionFetchGate.clear();
-        fetchInProgress.clear();
+        errorShownThisSession.set(false);
     }
 
     public boolean hasShownError() {
@@ -77,24 +60,20 @@ public class LunaPingService {
         if (uuid == null || uuid.isEmpty() || apiKey == null || apiKey.trim().isEmpty()) {
             return;
         }
-        if (!sessionFetchGate.tryMarkRequested(uuid)) {
-            return;
-        }
-        if (!tryStartFetch(uuid)) {
-            return;
-        }
-
-        long requestGeneration = generation;
+        LookupTracker.Attempt attempt = requests.begin(uuid);
+        if (attempt == null) return;
         AsyncExecutor.getInstance().supplementalIo(() -> {
             try {
                 int ping = fetchPingBlocking(uuid, apiKey);
-                if (ping >= 0 && generation == requestGeneration) {
-                    storeInCache(uuid, ping);
+                synchronized (LunaPingService.this) {
+                    if (requests.isCurrent(uuid, attempt)) {
+                        if (ping >= 0) storeInCache(uuid, ping);
+                        requests.finish(uuid, attempt, ping >= 0);
+                    }
                 }
             } catch (Exception e) {
                 showErrorOnce("Luna Ping API error", e);
-            } finally {
-                if (generation == requestGeneration) finishFetch(uuid);
+                requests.finish(uuid, attempt, false);
             }
         });
     }

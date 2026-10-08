@@ -4,6 +4,12 @@ public final class BedwarsChatSignalParser {
 
     private BedwarsChatSignalParser() {}
 
+    // Same sender syntax used by pregame chat handling; do not assume a purchase sender format.
+    private static final java.util.regex.Pattern PLAYER_CHAT = java.util.regex.Pattern.compile(
+        "^(?:\\[.*?\\]\\s*)*(\\w{3,16})(?::| ») .*$");
+
+    private static boolean isPlayerChat(String message) { return PLAYER_CHAT.matcher(message).matches(); }
+
     public static boolean isBedwarsStartMessage(String message) {
         return
             message.contains("Protect your bed and destroy the enemy beds.") &&
@@ -25,11 +31,11 @@ public final class BedwarsChatSignalParser {
     }
 
     public static boolean isPurchaseMessage(String message) {
-        return message != null && message.matches("^(?:You|[A-Za-z0-9_]{1,16}) purchased .+[.!]?$");
+        return message != null && !isPlayerChat(message) && message.toLowerCase(java.util.Locale.ROOT).contains("purchased");
     }
 
     public static boolean isTrapSignalMessage(String message) {
-        if (message == null || message.contains(":")) return false;
+        if (message == null || isPlayerChat(message)) return false;
         String lower = message.toLowerCase(java.util.Locale.ROOT);
         return (
             lower.contains("trap was set off!") ||

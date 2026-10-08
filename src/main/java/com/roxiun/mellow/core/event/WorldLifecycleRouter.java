@@ -56,6 +56,11 @@ public class WorldLifecycleRouter {
             pregameStats.onWorldChange();
             nickUtils.clearNicks();
             HypixelFeatures.getInstance().onDisconnect();
+            if (com.roxiun.mellow.Mellow.playerCache != null)
+                com.roxiun.mellow.Mellow.playerCache.clearIdentityCache();
+            com.roxiun.mellow.util.ping.PingProviderUtils.reset();
+            if (com.roxiun.mellow.Mellow.partyBlacklistWarningService != null)
+                com.roxiun.mellow.Mellow.partyBlacklistWarningService.reset();
             ReplayManager.getInstance().onWorldChange();
         });
     }

@@ -28,7 +28,7 @@ public class GameStateManager {
 
     private long sessionId;
     private boolean awaitingLocation;
-    private long locationBeforeWorldAt;
+    private boolean locationPendingWorld;
     private GameType locationGameType;
     private boolean locationLobby;
     private boolean initialized;
@@ -86,21 +86,21 @@ public class GameStateManager {
     }
 
     public void onWorldChange() {
-        if (locationBeforeWorldAt > 0 && System.currentTimeMillis() - locationBeforeWorldAt < 2000) {
-            locationBeforeWorldAt = 0;
-            return;
-        }
+        // A location notification may precede world load. Consume it once, never skip the world reset.
+        boolean keepLocation = locationPendingWorld;
+        locationPendingWorld = false;
         sessionId++;
-        awaitingLocation = true;
-        locationGameType = null;
-        locationLobby = false;
+        awaitingLocation = !keepLocation;
         GameSnapshot current = snapshot.get();
-        publish(new GameSnapshot(current.isOnHypixel(), "", null, "", "", GamePhase.UNKNOWN,
-            "", java.util.Collections.emptyList(), current.getPartyState(), current.getStateVersion() + 1, sessionId));
+        if (!keepLocation) { locationGameType = null; locationLobby = false; }
+        publish(new GameSnapshot(current.isOnHypixel(), keepLocation ? current.getServerName() : "",
+            locationGameType, keepLocation ? current.getMode() : "", keepLocation ? current.getMap() : "",
+            locationLobby ? GamePhase.LOBBY : GamePhase.UNKNOWN, "", java.util.Collections.emptyList(),
+            current.getPartyState(), current.getStateVersion() + 1, sessionId));
     }
 
     public void onDisconnect() {
-        locationBeforeWorldAt = 0;
+        locationPendingWorld = false;
         sessionId++;
         locationGameType = null;
         locationLobby = false;
@@ -117,6 +117,13 @@ public class GameStateManager {
             && (com.roxiun.mellow.feature.bedwars.BedwarsChatSignalParser.isBedwarsStartMessage(message)
                 || com.roxiun.mellow.feature.bedwars.BedwarsChatSignalParser.isBedwarsRespawnMessage(message))) {
             publish(current.withPhase(GamePhase.LIVE));
+        } else if (current.isOnHypixel() && current.getGameType() == GameType.BEDWARS
+            && current.getPhase() != GamePhase.LOBBY
+            && com.roxiun.mellow.feature.bedwars.BedwarsChatSignalParser.isPregameCountdownMessage(message)) {
+            if (current.getPhase() == GamePhase.LIVE) sessionId++;
+            publish(new GameSnapshot(true, current.getServerName(), current.getGameType(), current.getMode(), current.getMap(),
+                GamePhase.PREGAME, current.getScoreboardTitle(), current.getScoreboardLines(), current.getPartyState(),
+                current.getStateVersion() + 1, sessionId));
         }
     }
 
@@ -126,6 +133,7 @@ public class GameStateManager {
         ScoreboardObservation observation = ScoreboardObservation.parse(board.title, board.lines);
         GameType type = locationGameType != null ? locationGameType : observation.gameType != null ? observation.gameType : current.getGameType();
         GamePhase phase = ScoreboardObservation.resolve(current.getPhase(), locationLobby, observation);
+        if (locationGameType != null && locationGameType != GameType.BEDWARS && !locationLobby) phase = GamePhase.LIVE;
         publish(new GameSnapshot(true, current.getServerName(), type, current.getMode(), current.getMap(), phase,
             board.title, board.lines, current.getPartyState(), current.getStateVersion() + 1, sessionId));
     }
@@ -134,10 +142,8 @@ public class GameStateManager {
         GameSnapshot current = snapshot.get();
         boolean changed = !packet.getServerName().equals(current.getServerName());
         if (changed && !awaitingLocation) {
+            locationPendingWorld = true;
             sessionId++;
-            locationBeforeWorldAt = System.currentTimeMillis();
-        } else {
-            locationBeforeWorldAt = 0;
         }
         awaitingLocation = false;
         locationGameType = packet.getServerType().isPresent() && packet.getServerType().get() instanceof GameType

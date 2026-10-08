@@ -1,6 +1,6 @@
 package com.roxiun.mellow.api.aurora;
 
-import com.roxiun.mellow.util.cache.TimedValueCache;
+import com.roxiun.mellow.util.cache.LookupTracker;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -9,9 +9,7 @@ import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.util.ChatUtils;
-import com.roxiun.mellow.util.ping.PingRetryGate;
 import java.io.IOException;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import okhttp3.OkHttpClient;
@@ -24,12 +22,9 @@ public class AuroraPingService {
     private static final String PING_URL =
         "https://bordic.xyz/api/v2/resources/ping";
 
-    private volatile long generation;
+    private final LookupTracker<String> requests = new LookupTracker<>();
     private final OkHttpClient client;
-    private final TimedValueCache<String, Integer> pingCache = new TimedValueCache<>(120_000L);
-    private final PingRetryGate sessionFetchGate =
-        new PingRetryGate();
-    private final Set<String> fetchInProgress = ConcurrentHashMap.newKeySet();
+    private final java.util.Map<String, Integer> pingCache = new ConcurrentHashMap<>();
     private final AtomicBoolean errorShownThisSession = new AtomicBoolean(false);
 
     public AuroraPingService() {
@@ -45,35 +40,23 @@ public class AuroraPingService {
         return ping == null ? -1 : ping;
     }
 
-    public boolean tryStartFetch(String compactUuid) {
-        return fetchInProgress.add(compactUuid);
-    }
-
-    public void finishFetch(String compactUuid) {
-        fetchInProgress.remove(compactUuid);
-    }
-
     public void storeInCache(String compactUuid, int ping) {
         pingCache.put(compactUuid, ping);
     }
 
-    public void clearPlayer(String compactUuid) {
+    public synchronized void clearPlayer(String compactUuid) {
         if (compactUuid == null || compactUuid.isEmpty()) {
             return;
         }
 
-        generation++;
-        fetchInProgress.clear();
+        requests.remove(compactUuid);
         pingCache.remove(compactUuid);
-        sessionFetchGate.clearPlayer(compactUuid);
-        fetchInProgress.remove(compactUuid);
     }
 
-    public void clearCache() {
-        generation++;
+    public synchronized void clearCache() {
+        requests.clear();
         pingCache.clear();
-        sessionFetchGate.clear();
-        fetchInProgress.clear();
+        errorShownThisSession.set(false);
     }
 
     public boolean hasShownError() {
@@ -88,24 +71,20 @@ public class AuroraPingService {
         if (compactUuid == null || compactUuid.isEmpty()) {
             return;
         }
-        if (!sessionFetchGate.tryMarkRequested(compactUuid)) {
-            return;
-        }
-        if (!tryStartFetch(compactUuid)) {
-            return;
-        }
-
-        long requestGeneration = generation;
+        LookupTracker.Attempt attempt = requests.begin(compactUuid);
+        if (attempt == null) return;
         AsyncExecutor.getInstance().supplementalIo(() -> {
             try {
                 int ping = fetchPingBlocking(compactUuid);
-                if (ping >= 0 && generation == requestGeneration) {
-                    storeInCache(compactUuid, ping);
+                synchronized (AuroraPingService.this) {
+                    if (requests.isCurrent(compactUuid, attempt)) {
+                        if (ping >= 0) storeInCache(compactUuid, ping);
+                        requests.finish(compactUuid, attempt, ping >= 0);
+                    }
                 }
             } catch (Exception e) {
                 showErrorOnce("Aurora Ping API error", e);
-            } finally {
-                if (generation == requestGeneration) finishFetch(compactUuid);
+                requests.finish(compactUuid, attempt, false);
             }
         });
     }

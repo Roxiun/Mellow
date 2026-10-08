@@ -9,7 +9,7 @@ import java.util.function.Predicate;
 /** Shared freshness and failure handling for native and Cubelify tag adapters. */
 public final class TagRequests<T> {
     private final RequestCache<String, ProviderResult<List<T>>> cache =
-        new RequestCache<>(2048, 120_000L, 10_000L, ProviderResult::isSuccess);
+        new RequestCache<>(2048, 300_000L, 10_000L, ProviderResult::isSuccess);
     public interface Fetch<T> { List<T> get() throws IOException; }
     public List<T> get(String key, Fetch<T> fetch) throws IOException {
         ProviderResult<List<T>> result = cache.get(key, () -> {

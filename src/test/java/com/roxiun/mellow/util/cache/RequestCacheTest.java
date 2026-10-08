@@ -5,6 +5,16 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RequestCacheTest {
+    @Test public void sessionSuccessesDoNotOverflowExpiryAndFailuresCanStillExpire() {
+        RequestCache<String, String> cache = new RequestCache<>(2, RequestCache.NO_EXPIRY, 0, value -> !value.equals("failed"));
+        assertEquals("known", cache.get("name", () -> "known"));
+        assertEquals("known", cache.get("name", () -> { throw new AssertionError("session entry expired"); }));
+        assertEquals("failed", cache.get("missing", () -> "failed"));
+        assertEquals("recovered", cache.get("missing", () -> "recovered"));
+        cache.clear();
+        assertEquals("new-session", cache.get("name", () -> "new-session"));
+    }
+
     @Test public void invalidationDetachesPendingWrite() throws Exception {
         RequestCache<String, String> cache = new RequestCache<>(10, 120000, 1000, v -> true);
         CountDownLatch started = new CountDownLatch(1), finish = new CountDownLatch(1);

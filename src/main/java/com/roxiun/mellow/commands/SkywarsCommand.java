@@ -64,9 +64,6 @@ public class SkywarsCommand extends CommandBase {
                 true
             );
             PlayerProfile profile = result.getProfile();
-            if (profile != null) MainThreadDispatcher.run(() -> {
-                for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
-            });
 
             if (profile == null || profile.getSkywarsPlayer() == null) {
                 MainThreadDispatcher.run(() ->
@@ -79,6 +76,9 @@ public class SkywarsCommand extends CommandBase {
                         ")"
                     )
                 );
+                if (profile != null) MainThreadDispatcher.run(() -> {
+                    for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
+                });
                 return;
             }
 
@@ -96,6 +96,11 @@ public class SkywarsCommand extends CommandBase {
             MainThreadDispatcher.run(() ->
                 ChatUtils.sendMultilineCommandMessage(sender, statsLines)
             );
+
+            if (profile != null) MainThreadDispatcher.run(() -> {
+                for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
+            });
+
 
         });
     }

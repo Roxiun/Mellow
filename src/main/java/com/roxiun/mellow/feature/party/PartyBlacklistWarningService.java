@@ -1,5 +1,7 @@
 package com.roxiun.mellow.feature.party;
 
+import com.roxiun.mellow.util.cache.LookupTracker;
+import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.config.MellowOneConfig;
@@ -23,11 +25,12 @@ public final class PartyBlacklistWarningService {
     private final MellowOneConfig config;
     private final PlayerCache players;
     private final TagIgnoreManager ignored;
+    private final Map<UUID, TagReport> reportsByMember = new HashMap<>();
     private final Map<UUID, Set<String>> warned = new HashMap<>();
     private final AlertSoundGate sound = new AlertSoundGate();
     private Set<UUID> members = Collections.emptySet();
-    private long generation, nextCheck, lastLocalCheck;
-    private boolean fetching;
+    private long lastLocalCheck;
+    private final LookupTracker<UUID> lookups = new LookupTracker<>();
     private String settings = "";
 
     public PartyBlacklistWarningService(BlacklistManager blacklist, MellowOneConfig config,
@@ -43,15 +46,13 @@ public final class PartyBlacklistWarningService {
             current.remove(mc.getSession().getProfile().getId());
         String nextSettings = config.isCoralEnabled() + "|" + config.getCoralApiKey() + "|" + config.xadia
             + "|" + config.xadiaKey + "|" + config.xadiaVerifiedOnly;
-        if (!members.equals(current) || !settings.equals(nextSettings)) {
-            members = current;
+        if (snapshot == null || !snapshot.isOnHypixel()) reset();
+        if (!settings.equals(nextSettings)) {
             settings = nextSettings;
-            warned.keySet().retainAll(current);
-            generation++;
-            fetching = false;
-            nextCheck = lastLocalCheck = 0;
-            if (current.isEmpty()) sound.reset();
+            lookups.clear();
+            reportsByMember.clear();
         }
+        members = current;
         if (current.isEmpty()) return;
         long now = System.currentTimeMillis();
         if (now - lastLocalCheck >= 1000) {
@@ -61,32 +62,40 @@ public final class PartyBlacklistWarningService {
                 if (local != null) warn(uuid, Collections.singletonMap("Local", local.getReason()));
             }
         }
-        if (fetching || now < nextCheck || (!config.isCoralEnabled() && !config.xadia)) return;
+        if (!config.isCoralEnabled() && !config.xadia) return;
+        Map<UUID, LookupTracker.Attempt> attempts = new LinkedHashMap<>();
         Set<String> uuids = new LinkedHashSet<>();
-        for (UUID uuid : current) if (ignored == null || !ignored.isTagIgnored(uuid)) uuids.add(uuid.toString());
-        nextCheck = now + 120_000L;
+        for (UUID uuid : current) {
+            if (ignored != null && ignored.isTagIgnored(uuid)) continue;
+            TagReport saved = reportsByMember.get(uuid);
+            if (saved != null) warn(uuid, TagPolicy.warnings(saved, true, false));
+            LookupTracker.Attempt attempt = lookups.begin(uuid);
+            if (attempt != null) { attempts.put(uuid, attempt); uuids.add(uuid.toString()); }
+        }
         if (uuids.isEmpty()) return;
-        fetching = true;
-        long requestGeneration = generation;
         AsyncExecutor.getInstance().supplementalIo(() -> {
             try {
                 Map<String, TagReport> reports = players.fetchTagReports(uuids);
                 MainThreadDispatcher.run(() -> {
-                    if (generation != requestGeneration || !config.partyBlacklistWarning) return;
-                    for (UUID uuid : current) {
+                    for (Map.Entry<UUID, LookupTracker.Attempt> entry : attempts.entrySet()) {
+                        UUID uuid = entry.getKey();
                         TagReport report = reports.get(uuid.toString().replace("-", ""));
-                        if (report == null) continue;
-                        if (!report.getFailures().isEmpty()) nextCheck = System.currentTimeMillis() + 10_000L;
-                        warn(uuid, TagPolicy.warnings(report, true, ignored != null && ignored.isTagIgnored(uuid)));
+                        if (!lookups.finish(uuid, entry.getValue(), report != null && report.getFailures().isEmpty())) continue;
+                        if (report != null) reportsByMember.put(uuid, report);
+                        if (report != null && members.contains(uuid) && config.partyBlacklistWarning)
+                            warn(uuid, TagPolicy.warnings(report, true, ignored != null && ignored.isTagIgnored(uuid)));
                     }
                 });
             } catch (RuntimeException error) {
-                MainThreadDispatcher.run(() -> { if (generation == requestGeneration) nextCheck = System.currentTimeMillis() + 10_000L; });
-                throw error;
-            } finally {
-                MainThreadDispatcher.run(() -> { if (generation == requestGeneration) fetching = false; });
+                MainThreadDispatcher.run(() -> attempts.forEach((uuid, attempt) -> lookups.finish(uuid, attempt, false)));
             }
         });
+    }
+
+    /** Only disconnect/manual refresh starts a new connection lookup lifetime. */
+    public void reset() {
+        lookups.clear(); warned.clear(); reportsByMember.clear(); members = Collections.emptySet();
+        lastLocalCheck = 0; sound.reset();
     }
 
     private void warn(UUID uuid, Map<String, String> sources) {
@@ -96,10 +105,11 @@ public final class PartyBlacklistWarningService {
             if (seen.add(source.getKey())) fresh.put(source.getKey(), source.getValue());
         if (fresh.isEmpty()) return;
         String name = displayName(uuid);
-        ChatUtils.sendMessage("§cWarning: flagged party member detected: " + name + " §7[§d"
-            + String.join("§7, §d", fresh.keySet()) + "§7]. Consider leaving to avoid risk.");
+        ChatUtils.sendMessage("§cWarning: flagged party member detected: " + name + " §7["
+            + fresh.keySet().stream().map(source -> FormattingUtils.formatTagSource(source, false))
+                .collect(java.util.stream.Collectors.joining("§7, ")) + "§7]. Consider leaving to avoid risk.");
         if (config.partyBlacklistWarningShowTagDetails) for (Map.Entry<String, String> source : fresh.entrySet())
-            ChatUtils.sendMessage("§7- " + name + " §d" + source.getKey() + "§7: "
+            ChatUtils.sendMessage("§7- " + name + " " + FormattingUtils.formatTagSource(source.getKey(), false) + "§7: "
                 + (source.getValue() == null ? "(none)" : source.getValue()));
         sound.tryPlayPling(mc, 1.0F, 0.8F);
     }

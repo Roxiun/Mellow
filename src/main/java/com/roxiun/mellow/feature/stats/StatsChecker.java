@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.stats;
 
+import com.roxiun.mellow.util.cache.LookupTracker;
 import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.Mellow;
@@ -49,7 +50,6 @@ public class StatsChecker {
     private final AnnoylistManager annoylistManager;
     private final TagIgnoreManager tagIgnoreManager;
     private final Minecraft mc = Minecraft.getMinecraft();
-    private final Set<String> tabFetchInFlight = ConcurrentHashMap.newKeySet();
     private final Set<String> reportedTabFetchFailuresThisMatch =
         ConcurrentHashMap.newKeySet();
     private final Set<UUID> outboundWarnedOpponentsThisMatch =
@@ -76,21 +76,30 @@ public class StatsChecker {
         this.tagIgnoreManager = tagIgnoreManager;
     }
 
+    private final Map<String, TagReport> matchTags = new java.util.HashMap<>();
+    private final Map<String, PlayerProfile> matchProfiles = new java.util.HashMap<>();
+    private final LookupTracker<String> winstreakLookups = new LookupTracker<>();
     private long fetchGeneration;
-    private final Map<String, Long> retryAfter = new ConcurrentHashMap<>();
+    private final LookupTracker<String> statsLookups = new LookupTracker<>();
+    private final LookupTracker<String> tagRequests = new LookupTracker<>();
     private final Set<String> alertedSources = ConcurrentHashMap.newKeySet();
 
     public List<String> fetchTabStatsForPlayers(List<String> names, boolean clearBeforeFetch, boolean forceRefresh) {
         if (clearBeforeFetch || forceRefresh) {
             fetchGeneration++;
-            tabFetchInFlight.clear();
-            retryAfter.clear();
+            statsLookups.clear();
+            tagRequests.clear();
+            matchTags.clear();
+            matchProfiles.clear();
+            winstreakLookups.clear();
+            if (Mellow.auroraWinstreakService != null) Mellow.auroraWinstreakService.clearMatch();
         }
         if (clearBeforeFetch) tabStats.clear();
         List<String> scheduled = new ArrayList<>();
         List<Runnable> statsRequests = new ArrayList<>();
         Set<String> statsUuids = new java.util.LinkedHashSet<>();
         Map<String, PlayerProfile> tagLookups = new java.util.LinkedHashMap<>();
+        Map<String, LookupTracker.Attempt> tagAttempts = new java.util.LinkedHashMap<>();
         if (names == null) return scheduled;
         final long generation = fetchGeneration;
         final long session = HypixelFeatures.getInstance().getGameSnapshot().getSessionId();
@@ -99,21 +108,24 @@ public class StatsChecker {
             UUID uuid = PlayerUtils.getTrustedTabUuid(name);
             if (uuid == null || nickUtils.isNicked(name) || PlayerUtils.isNickedOrNpc(name)) continue;
             String key = name.toLowerCase(Locale.ROOT);
-            if (!forceRefresh && retryAfter.getOrDefault(key, 0L) > System.currentTimeMillis()) continue;
-            if (!tabFetchInFlight.add(key)) continue;
             scheduled.add(key);
-            retryAfter.put(key, System.currentTimeMillis() + 120_000L);
             if (forceRefresh) {
                 playerCache.clearPlayerStats(name);
                 playerCache.clearPlayerTags(uuid.toString(), name);
+                if (Mellow.auroraWinstreakService != null) Mellow.auroraWinstreakService.clearPlayer(uuid.toString().replace("-", ""));
             }
+            if (matchProfiles.containsKey(key)) warmHiddenWinstreakCache(matchProfiles.get(key), scope);
             PlayerProfile identity = PlayerProfile.identity(uuid.toString(), name);
-            if (shouldScanForInGameWarnings()) sendBlacklistAndTagAlerts(identity, name);
-            if (shouldDeferRemoteTagLookup()) tagLookups.put(name, identity);
+            if (shouldScanForInGameWarnings()) sendBlacklistAndTagAlerts(identity.withTags(matchTags.getOrDefault(name, TagReport.empty())), name, tagRequests.finished(key));
+            if (shouldDeferRemoteTagLookup()) {
+                LookupTracker.Attempt attempt = tagRequests.begin(key);
+                if (attempt != null) { tagLookups.put(name, identity); tagAttempts.put(name, attempt); }
+            }
             if (!config.tabStats && !config.printStats) {
-                tabFetchInFlight.remove(key);
                 continue;
             }
+            LookupTracker.Attempt statsAttempt = statsLookups.begin(key);
+            if (statsAttempt == null) continue;
             statsUuids.add(uuid.toString());
             statsRequests.add(() -> {
                 try {
@@ -122,8 +134,8 @@ public class StatsChecker {
                         if (!isCurrent(session, generation)) return;
                         PlayerProfile profile = result.getProfile();
                         boolean hasStats = profile != null && hasStatsForScope(profile, scope);
+                        statsLookups.finish(key, statsAttempt, hasStats || result.getFailureReason() == FetchFailureReason.MISSING_API_KEY);
                         if (!hasStats) {
-                            retryAfter.put(key, System.currentTimeMillis() + 10_000L);
                             maybeReportLiveFetchFailure(name, result);
                             return;
                         }
@@ -135,39 +147,49 @@ public class StatsChecker {
                             }
                             if (config.printStats && (forceRefresh || alertedSources.add(key + ":stats"))) ChatUtils.sendMessage(formatChatStats(profile, scope));
                         }
+                        matchProfiles.put(key, profile);
                         warmHiddenWinstreakCache(profile, scope);
                     });
-                } finally {
-                    mc.addScheduledTask(() -> { if (isCurrent(session, generation)) tabFetchInFlight.remove(key); });
+                } catch (RuntimeException error) {
+                    mc.addScheduledTask(() -> { if (isCurrent(session, generation)) statsLookups.finish(key, statsAttempt, false); });
                 }
             });
         }
         if (playerCache.getSelectedProvider() != null && playerCache.getSelectedProvider().supportsBatch()) {
             AsyncExecutor.getInstance().profileIo(() -> {
-                playerCache.prefetchStats(statsUuids);
-                for (Runnable request : statsRequests) request.run();
+                try { playerCache.prefetchStats(statsUuids); }
+                finally { for (Runnable request : statsRequests) request.run(); }
             });
         } else for (Runnable request : statsRequests) AsyncExecutor.getInstance().profileIo(request);
         if (!tagLookups.isEmpty()) AsyncExecutor.getInstance().supplementalIo(() -> {
             Set<String> uuids = new java.util.LinkedHashSet<>();
             for (PlayerProfile identity : tagLookups.values()) uuids.add(identity.getUuid());
-            Map<String, TagReport> reports = playerCache.fetchTagReports(uuids);
+            Map<String, TagReport> reports;
+            try { reports = playerCache.fetchTagReports(uuids); }
+            catch (RuntimeException error) {
+                reports = new java.util.LinkedHashMap<>();
+                for (String uuid : uuids) reports.put(uuid.replace("-", ""), new TagReport(
+                    java.util.Collections.emptyList(), java.util.Collections.singletonMap("Tags", "Request failed")));
+            }
+            final Map<String, TagReport> fetchedReports = reports;
             mc.addScheduledTask(() -> {
                 if (!isCurrent(session, generation)) return;
                 for (Map.Entry<String, PlayerProfile> entry : tagLookups.entrySet()) {
                     String name = entry.getKey();
-                    TagReport report = reports.get(entry.getValue().getUuid().replace("-", ""));
-                    if (report == null) continue;
+                    TagReport report = fetchedReports.get(entry.getValue().getUuid().replace("-", ""));
+                    if (report == null) report = new TagReport(java.util.Collections.emptyList(), java.util.Collections.singletonMap("Tags", "Missing result"));
+                    tagRequests.finish(name.toLowerCase(Locale.ROOT), tagAttempts.get(name), report.getFailures().isEmpty());
+                    report = report.retainFailedSources(matchTags.getOrDefault(name, TagReport.empty()));
+                    matchTags.put(name, report);
                     PlayerProfile tagged = entry.getValue().withTags(report);
                     if (config.showAutomaticStatsErrors) for (Map.Entry<String, String> failure : report.getFailures().entrySet()) {
                         if (reportedTabFetchFailuresThisMatch.add("tags:" + failure.getKey()))
                             ChatUtils.sendMessage("§e" + failure.getKey() + " tags unavailable: " + failure.getValue());
                     }
-                    if (!report.getFailures().isEmpty()) retryAfter.put(name.toLowerCase(Locale.ROOT), System.currentTimeMillis() + 10_000L);
                     TabStats row = tabStats.get(name);
                     if (config.tabStats && shouldShowRemoteTagsInTab())
                         tabStats.put(name, row == null ? tagged.getTabStats(scope) : row.withTags(report.retainFailedSources(row.getTags())));
-                    if (shouldScanForInGameWarnings()) sendBlacklistAndTagAlerts(tagged, name);
+                    if (shouldScanForInGameWarnings()) sendBlacklistAndTagAlerts(tagged, name, tagRequests.finished(name.toLowerCase(Locale.ROOT)));
                 }
             });
         });
@@ -243,8 +265,12 @@ public class StatsChecker {
 
     public void resetInGameMatchWarningState() {
         fetchGeneration++;
-        tabFetchInFlight.clear();
-        retryAfter.clear();
+        statsLookups.clear();
+        tagRequests.clear();
+        matchTags.clear();
+        matchProfiles.clear();
+        winstreakLookups.clear();
+        if (Mellow.auroraWinstreakService != null) Mellow.auroraWinstreakService.clearMatch();
         alertedSources.clear();
         inGameAlertSoundGate.reset();
         reportedTabFetchFailuresThisMatch.clear();
@@ -302,21 +328,32 @@ public class StatsChecker {
         }
 
         String compactUuid = playerUuid.toString().replace("-", "");
+        if (Mellow.auroraWinstreakService.hasMatchWinstreak(compactUuid)) return;
         if (Mellow.auroraWinstreakService.hasCachedWinstreak(compactUuid)) {
+            Mellow.auroraWinstreakService.pinForMatch(compactUuid, Mellow.auroraWinstreakService.getCachedWinstreak(compactUuid));
             return;
         }
+        LookupTracker.Attempt attempt = winstreakLookups.begin(compactUuid);
+        if (attempt == null) return;
         if (!Mellow.auroraWinstreakService.tryStartFetch(compactUuid)) {
+            winstreakLookups.finish(compactUuid, attempt, false);
             return;
         }
 
-        long requestGeneration = Mellow.auroraWinstreakService.getGeneration();
+        Object requestGeneration = Mellow.auroraWinstreakService.getGeneration(compactUuid);
         AsyncExecutor.getInstance().supplementalIo(() -> {
             try {
                 int winstreak = Mellow.auroraWinstreakService.fetchWinstreakBlocking(
                     compactUuid
                 );
-                if (Mellow.auroraWinstreakService.getGeneration() == requestGeneration) Mellow.auroraWinstreakService.storeInCache(compactUuid, winstreak);
+                mc.addScheduledTask(() -> {
+                    if (!winstreakLookups.finish(compactUuid, attempt, winstreak >= 0)) return;
+                    if (Mellow.auroraWinstreakService.storeIfCurrent(compactUuid, requestGeneration, winstreak)) {
+                        Mellow.auroraWinstreakService.pinForMatch(compactUuid, winstreak);
+                    }
+                });
             } catch (Exception e) {
+                winstreakLookups.finish(compactUuid, attempt, false);
                 if (config.showAutomaticStatsErrors && !Mellow.auroraWinstreakService.hasShownError()) {
                     Mellow.auroraWinstreakService.markErrorShown();
                     String detail = e.getMessage() == null ? "unknown" : e.getMessage();
@@ -327,7 +364,7 @@ public class StatsChecker {
                     );
                 }
             } finally {
-                if (Mellow.auroraWinstreakService.getGeneration() == requestGeneration) Mellow.auroraWinstreakService.finishFetch(compactUuid);
+                Mellow.auroraWinstreakService.finishIfCurrent(compactUuid, requestGeneration);
             }
         });
     }
@@ -514,22 +551,25 @@ public class StatsChecker {
         return tagsValue;
     }
 
-    private void sendBlacklistAndTagAlerts(PlayerProfile profile, String tabPlayerName) {
+    private void sendBlacklistAndTagAlerts(PlayerProfile profile, String tabPlayerName, boolean remoteComplete) {
         if (profile == null) return;
         UUID uuid = UUIDUtils.fromString(profile.getUuid());
         boolean ignored = tagIgnoreManager != null && tagIgnoreManager.isTagIgnored(uuid);
-        Map<String, String> sources = TagPolicy.warnings(profile.getTags(), config.printBlacklistTags, ignored);
+        Map<String, String> allSources = TagPolicy.warnings(profile.getTags(), config.printBlacklistTags, ignored);
+        Map<String, String> sources = new java.util.LinkedHashMap<>(allSources);
         sources.entrySet().removeIf(entry -> !alertedSources.add(uuid + ":" + entry.getKey()));
         for (Map.Entry<String, String> source : sources.entrySet())
-            ChatUtils.sendMessage("§c" + profile.getName() + " is tagged on §d" + source.getKey() + "§c for: " + source.getValue());
+            ChatUtils.sendMessage("§c" + profile.getName() + " is tagged on " + FormattingUtils.formatTagSource(source.getKey(), false) + "§c for: " + source.getValue());
 
         BlacklistedPlayer local = blacklistManager.getBlacklistedPlayer(uuid);
         boolean blacklisted = local != null && alertedSources.add(uuid + ":local");
         boolean annoylisted = annoylistManager != null && annoylistManager.isAnnoylisted(uuid) && alertedSources.add(uuid + ":annoy");
         if (blacklisted) ChatUtils.sendMessage("§6" + profile.getName() + " §cis on your blacklist" + formatBlacklistReasonSuffix(local.getReason()));
         if (annoylisted) ChatUtils.sendMessage("§6" + profile.getName() + " §3is on your annoy list: " + normalizeReason(annoylistManager.getAnnoylistedPlayer(uuid).getReason()));
-        if (shouldSendOutboundOpponentWarning(uuid, tabPlayerName, blacklisted, !sources.isEmpty()))
-            sendOutboundOpponentWarning(profile, tabPlayerName, local, blacklisted, sources);
+        if ((remoteComplete || !shouldDeferRemoteTagLookup())
+            && shouldSendOutboundOpponentWarning(uuid, tabPlayerName, local != null, !allSources.isEmpty()))
+            sendOutboundOpponentWarning(profile, tabPlayerName, local, local != null,
+                allSources);
         if (blacklisted || annoylisted || !sources.isEmpty()) inGameAlertSoundGate.tryPlayPling(mc, 1.0F, 1.0F);
     }
 

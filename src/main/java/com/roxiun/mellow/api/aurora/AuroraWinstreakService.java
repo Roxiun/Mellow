@@ -19,8 +19,28 @@ public class AuroraWinstreakService {
     private static final String WINSTREAK_URL =
         "https://bordic.xyz/api/v2/resources/winstreak";
 
-    private volatile long generation;
-    public long getGeneration() { return generation; }
+    private final java.util.Map<String, Object> generations = new ConcurrentHashMap<>();
+    public synchronized Object getGeneration(String uuid) { return generations.computeIfAbsent(uuid, id -> new Object()); }
+    public synchronized boolean storeIfCurrent(String uuid, Object token, int value) {
+        if (generations.get(uuid) != token) return false;
+        storeInCache(uuid, value);
+        return true;
+    }
+    public synchronized void finishIfCurrent(String uuid, Object token) {
+        if (generations.get(uuid) == token) finishFetch(uuid);
+    }
+    private final java.util.Map<String, Integer> matchValues = new ConcurrentHashMap<>();
+    public synchronized void clearMatch() {
+        matchValues.clear();
+        generations.clear();
+        fetchInProgress.clear();
+    }
+    public boolean hasMatchWinstreak(String uuid) { return matchValues.containsKey(uuid); }
+    public int getMatchWinstreak(String uuid) {
+        Integer pinned = matchValues.get(uuid);
+        return pinned == null ? getCachedWinstreak(uuid) : pinned;
+    }
+    public void pinForMatch(String uuid, int value) { if (value >= 0) matchValues.put(uuid, value); }
     private final OkHttpClient client;
     private final TimedValueCache<String, Integer> winstreakCache =
         new TimedValueCache<>(WINSTREAK_CACHE_TTL_MS);
@@ -56,20 +76,21 @@ public class AuroraWinstreakService {
         winstreakCache.put(compactUuid, winstreak);
     }
 
-    public void clearPlayer(String compactUuid) {
+    public synchronized void clearPlayer(String compactUuid) {
         if (compactUuid == null || compactUuid.isEmpty()) {
             return;
         }
 
-        generation++;
-        fetchInProgress.clear();
+        generations.remove(compactUuid);
         winstreakCache.remove(compactUuid);
+        matchValues.remove(compactUuid);
         fetchInProgress.remove(compactUuid);
     }
 
-    public void clearCache() {
-        generation++;
+    public synchronized void clearCache() {
+        generations.clear();
         winstreakCache.clear();
+        matchValues.clear();
         fetchInProgress.clear();
     }
 

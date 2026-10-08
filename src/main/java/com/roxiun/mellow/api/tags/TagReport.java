@@ -28,12 +28,20 @@ public final class TagReport {
     /** Keep the last known badges only for sources that failed this refresh. */
     public TagReport retainFailedSources(TagReport previous) {
         List<PlayerTag> combined = new ArrayList<>(tags);
-        for (PlayerTag tag : previous.tags) if (failures.containsKey(tag.getSource())) combined.add(tag);
+        for (PlayerTag tag : previous.tags) if (failures.containsKey(tag.getSource()) || failures.containsKey("Tags")) combined.add(tag);
         return new TagReport(combined, failures);
     }
     public List<String> messages() {
         List<String> lines = new ArrayList<>();
-        for (PlayerTag tag : tags) lines.add("§d" + tag.getSource() + "§r: " + tag.getText());
+        Set<String> sources = new LinkedHashSet<>();
+        for (PlayerTag tag : tags) sources.add(tag.getSource());
+        for (String source : sources) {
+            boolean first = true;
+            for (PlayerTag tag : from(source)) {
+                lines.add((first ? FormattingUtils.formatTagSource(source, true) + ": " : "") + tag.getText());
+                first = false;
+            }
+        }
         for (Map.Entry<String, String> failure : failures.entrySet())
             lines.add("§e" + failure.getKey() + " unavailable: " + failure.getValue());
         return lines;
