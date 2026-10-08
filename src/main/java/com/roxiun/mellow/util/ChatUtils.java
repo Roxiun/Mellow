@@ -10,7 +10,8 @@ public class ChatUtils {
 
     private static final String PREFIX = "§r§8[§5Mellow§8]§r ";
     private static final String MULTILINE_PREFIX = "§r§5▐§r ";
-    private static final int MAX_OUTBOUND_CHAT_LENGTH = 240;
+    // Minecraft 1.8.9 limits the entire chat packet, including the command, to 100 characters.
+    private static final int MAX_OUTBOUND_CHAT_LENGTH = 100;
 
     public static void sendMessage(String message) {
         if (Minecraft.getMinecraft().thePlayer == null) return;
@@ -95,27 +96,26 @@ public class ChatUtils {
         String commandPrefix,
         String message
     ) {
-        if (Minecraft.getMinecraft().thePlayer == null) return;
-        if (commandPrefix == null || commandPrefix.trim().isEmpty()) return;
-        if (message == null || message.trim().isEmpty()) return;
+        String command = formatChatCommandMessage(commandPrefix, message);
+        if (command != null && Minecraft.getMinecraft().thePlayer != null)
+            Minecraft.getMinecraft().thePlayer.sendChatMessage(command);
+    }
 
-        String normalizedPrefix = commandPrefix.trim();
-        if (!normalizedPrefix.startsWith("/")) {
-            normalizedPrefix = "/" + normalizedPrefix;
+    static String formatChatCommandMessage(String commandPrefix, String message) {
+        if (commandPrefix == null || commandPrefix.trim().isEmpty()) return null;
+        if (message == null) return null;
+        String prefix = commandPrefix.trim();
+        if (!prefix.startsWith("/")) prefix = "/" + prefix;
+        String text = stripFormatting(message).replace('\r', ' ').replace('\n', ' ').trim();
+        int available = MAX_OUTBOUND_CHAT_LENGTH - prefix.length() - 1;
+        if (text.isEmpty() || available < 4) return null;
+        if (text.length() > available) {
+            int end = available - 3;
+            // Do not cut a supplementary Unicode character in half.
+            if (Character.isHighSurrogate(text.charAt(end - 1))) end--;
+            text = text.substring(0, end) + "...";
         }
-
-        String sanitized = stripFormatting(message).replace("\n", " ").trim();
-        if (sanitized.isEmpty()) {
-            return;
-        }
-
-        if (sanitized.length() > MAX_OUTBOUND_CHAT_LENGTH) {
-            sanitized = sanitized.substring(0, MAX_OUTBOUND_CHAT_LENGTH - 3) + "...";
-        }
-
-        Minecraft.getMinecraft().thePlayer.sendChatMessage(
-            normalizedPrefix + " " + sanitized
-        );
+        return prefix + " " + text;
     }
 
     public static String stripFormatting(String value) {

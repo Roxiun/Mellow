@@ -108,10 +108,25 @@ public final class PartyBlacklistWarningService {
         ChatUtils.sendMessage("§cWarning: flagged party member detected: " + name + " §7["
             + fresh.keySet().stream().map(source -> FormattingUtils.formatTagSource(source, false))
                 .collect(java.util.stream.Collectors.joining("§7, ")) + "§7]. Consider leaving to avoid risk.");
-        if (config.partyBlacklistWarningShowTagDetails) for (Map.Entry<String, String> source : fresh.entrySet())
-            ChatUtils.sendMessage("§7- " + name + " " + FormattingUtils.formatTagSource(source.getKey(), false) + "§7: "
-                + (source.getValue() == null ? "(none)" : source.getValue()));
+        if (config.partyBlacklistWarningShowTagDetails)
+            ChatUtils.sendMessage("§7- " + name + " §7tagged for: " + formatDetails(fresh));
         sound.tryPlayPling(mc, 1.0F, 0.8F);
+    }
+
+    static String formatDetails(Map<String, String> sources) {
+        List<String> details = new ArrayList<>();
+        for (Map.Entry<String, String> source : sources.entrySet()) {
+            String label = FormattingUtils.formatTagSource(source.getKey(), false);
+            String reason = source.getValue();
+            if ("Local".equals(source.getKey()) && BlacklistManager.isExternalFileImportReason(reason)) {
+                details.add(label);
+                continue;
+            }
+            reason = reason == null ? "" : reason.replace("\r", "").replace("\n", "§7, ")
+                .replace("(null)", "(Unknown reason)").trim();
+            details.add(label + "§7: " + (reason.isEmpty() ? "§7Unknown reason" : reason));
+        }
+        return String.join(" §7| ", details);
     }
 
     private String displayName(UUID uuid) {

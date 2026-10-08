@@ -31,11 +31,18 @@ public final class TagReport {
         for (PlayerTag tag : previous.tags) if (failures.containsKey(tag.getSource()) || failures.containsKey("Tags")) combined.add(tag);
         return new TagReport(combined, failures);
     }
-    public List<String> messages() {
+    public List<String> messages() { return messages(false); }
+
+    /** Commands may display one line per provider or one line per tag. */
+    public List<String> messages(boolean groupBySource) {
         List<String> lines = new ArrayList<>();
         Set<String> sources = new LinkedHashSet<>();
         for (PlayerTag tag : tags) sources.add(tag.getSource());
         for (String source : sources) {
+            if (groupBySource) {
+                lines.add(FormattingUtils.formatTagSource(source, true) + ": " + text(source));
+                continue;
+            }
             boolean first = true;
             for (PlayerTag tag : from(source)) {
                 lines.add((first ? FormattingUtils.formatTagSource(source, true) + ": " : "") + tag.getText());

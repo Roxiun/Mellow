@@ -8,6 +8,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class TagReportTest {
+    @Test public void commandsCanPreserveTheirOriginalTagLayouts() {
+        TagReport report = new TagReport(Arrays.asList(
+            new PlayerTag("Coral", "sniper", "Sniper", "S", true),
+            new PlayerTag("Coral", "cheater", "Cheater", "C", true)), Collections.emptyMap());
+        assertEquals(Arrays.asList("§5§lCoral§r§5: Sniper", "Cheater"), report.messages());
+        assertEquals(Collections.singletonList("§5§lCoral§r§5: Sniper, Cheater"), report.messages(true));
+    }
+
     @Test public void partialFailureRetainsSuccessfulTagsAndWarningPolicy() {
         TagReport report = new TagReport(Arrays.asList(new PlayerTag("Coral", "cheater", "Cheater", "C", true)),
             Collections.singletonMap("Xadia", "HTTP 429"));

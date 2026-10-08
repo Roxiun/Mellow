@@ -77,7 +77,7 @@ public class SkywarsCommand extends CommandBase {
                     )
                 );
                 if (profile != null) MainThreadDispatcher.run(() -> {
-                    for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
+                    ChatUtils.sendMultilineCommandMessage(sender, profile.getTags().messages(true));
                 });
                 return;
             }
@@ -98,7 +98,7 @@ public class SkywarsCommand extends CommandBase {
             );
 
             if (profile != null) MainThreadDispatcher.run(() -> {
-                for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
+                ChatUtils.sendMultilineCommandMessage(sender, profile.getTags().messages(true));
             });
 
 

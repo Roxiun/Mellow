@@ -114,7 +114,7 @@ public class BedwarsCommand extends CommandBase {
         BlacklistedPlayer local = blacklistManager.getBlacklistedPlayer(UUIDUtils.fromString(profile.getUuid()));
         MainThreadDispatcher.run(() -> {
             if (local != null) ChatUtils.sendMultilineCommandMessage(sender, formatLocalBlacklistMessage(local));
-            for (String line : profile.getTags().messages()) ChatUtils.sendCommandMessage(sender, line);
+            ChatUtils.sendMultilineCommandMessage(sender, profile.getTags().messages());
         });
     }
 
