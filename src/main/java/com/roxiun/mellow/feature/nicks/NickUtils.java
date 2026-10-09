@@ -17,6 +17,7 @@ import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.skins.SkinUtils;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -126,7 +127,7 @@ public class NickUtils {
                     }
                     return;
                 }
-                resolved.profile = profile;
+                resolved.setProfile(profile);
                 announceProfile(realName, profile, scope, automatic);
             });
         });
@@ -164,7 +165,7 @@ public class NickUtils {
             return null;
         }
 
-        return resolved.profile.getTabStats(scope);
+        return resolved.getTabStats(scope);
     }
 
     public String getResolvedRealNameForNick(String nickName) {
@@ -181,13 +182,23 @@ public class NickUtils {
         resolvedNickProfiles.clear();
     }
 
-    private static class ResolvedNickProfile {
+    static final class ResolvedNickProfile {
 
         private final String realName;
         private final ResolutionSource source;
         private PlayerProfile profile;
+        private final Map<StatScope, TabStats> tabRows = new EnumMap<>(StatScope.class);
 
-        private ResolvedNickProfile(String realName, ResolutionSource source) {
+        void setProfile(PlayerProfile profile) {
+            this.profile = profile;
+            tabRows.clear();
+        }
+
+        TabStats getTabStats(StatScope scope) {
+            return profile == null ? null : tabRows.computeIfAbsent(scope, profile::getTabStats);
+        }
+
+        ResolvedNickProfile(String realName, ResolutionSource source) {
             this.realName = realName;
             this.source = source;
         }
