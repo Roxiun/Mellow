@@ -1,12 +1,18 @@
 package com.roxiun.mellow.util.formatting;
 
 import com.roxiun.mellow.api.xadia.XadiaTag;
-import com.roxiun.mellow.api.seraph.SeraphTag;
 import com.roxiun.mellow.api.coral.CoralTag;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class FormattingUtils {
+
+    /** Shared source styling for manual headings and automatic alerts. */
+    public static String formatTagSource(String source, boolean bold) {
+        String color = "Coral".equals(source) ? "§5" : "Xadia".equals(source) ? "§d"
+            : "Local".equals(source) ? "§c" : "§7";
+        return color + (bold ? "§l" : "") + source + "§r" + color;
+    }
 
     public static String formatBedwarsWinstreakWithColor(int winstreak) {
         if (winstreak < 5) {
@@ -186,141 +192,6 @@ public class FormattingUtils {
                 return "";
         }
     }
-
-    public static String formatSeraphTags(List<SeraphTag> tags) {
-    boolean hasVerifiedTag = tags.stream()
-        .anyMatch(tag -> "seraph.verified".equalsIgnoreCase(tag.getTagName()));
-
-    String verificationStatus = hasVerifiedTag ? "§a(Verified)" : "§c(Not Verified)";
-
-    String formattedTags = tags.stream()
-        .map(tag -> {
-            // Don't skip unmapped tags - show them using tag name and tooltip
-            if (
-                tag.getTagName() != null &&
-                !tag.getTagName().isEmpty() &&
-                !"seraph.verified".equals(tag.getTagName()) &&
-                !"seraph.advertisement".equals(tag.getTagName())
-            ) {
-                // Format mapped tags nicely, or show unmapped ones with nice formatting
-                String formattedTag = formatSeraphTag(tag.getTagName());
-                if (formattedTag != null && !formattedTag.isEmpty()) {
-                    return (
-                        formattedTag + " §7(" + tag.getTooltip() + ")"
-                    );
-                } else {
-                    // For unmapped tags, create a nicely formatted display name
-                    String baseName = tag
-                        .getTagName()
-                        .replace("seraph.", "");
-                    String displayName = capitalizeWords(baseName);
-                    return (
-                        "§7" +
-                        displayName +
-                        " §7(" +
-                        tag.getTooltip() +
-                        ")"
-                    );
-                }
-            } else if (
-                tag.getTagName() == null || tag.getTagName().isEmpty()
-            ) {
-                // If tag has no tag_name but has tooltip, show it with generic label
-                if (
-                    tag.getTooltip() != null &&
-                    !tag.getTooltip().isEmpty()
-                ) {
-                    return "§7Other §7(" + tag.getTooltip() + ")";
-                } else {
-                    return null;
-                }
-            } else {
-                // This is seraph.verified or seraph.advertisement - skip it in the list
-                return null;
-            }
-        })
-        .filter(tag -> tag != null && !tag.trim().isEmpty())
-        .collect(Collectors.joining(" §7| "));
-
-    if (formattedTags.isEmpty()) {
-        return verificationStatus;
-    }
-    return formattedTags + " " + verificationStatus;
-}
-
-public static String formatSeraphTag(String tagName) {
-    if (tagName == null) return "";
-
-    switch (tagName.toLowerCase()) {
-        case "seraph.sniping":
-        case "seraph.blatant_cheating":
-            return "§4§lSniping/Cheating"; // darkred as specified
-        case "seraph.legit_sniping":
-            return "§c§lLegit Sniper"; // lightred as specified
-        case "seraph.potential_sniper":
-            return "§e§lPotential Sniper"; // yellow as specified
-        case "seraph.bot":
-            return "§8§lBot"; // grey as specified
-        case "seraph.alt":
-            return "§d§lAlt"; // pink as specified
-        case "seraph.safelist.personal":
-        case "seraph.safelist.group":
-        case "seraph.safelist.global":
-            return "§a§lSafelist"; // green as specified
-        case "seraph.annoylist":
-            return "§e§lAnnoying"; // yellow as specified
-        case "seraph.encounters":
-            return "§c§lEncounters"; // lightred as specified
-        case "seraph.cookie":
-            return "§c§lEncounters"; // lightred as specified
-        case "seraph.caution":
-            return "§6§lCaution"; // 0xffc107 = §6 as specified
-        case "seraph.closet_cheating":
-            return "§e§lCloset Cheater"; // yellow/lightred-like
-        case "seraph.verified":
-            return "§a§lVerified";
-        default:
-            // Skip unmapped tags
-            return "";
-    }
-}
-
-public static String formatSeraphTagIcon(SeraphTag tag) {
-    String tagName = tag.getTagName().toLowerCase();
-    switch (tagName) {
-        case "seraph.sniping":
-            return "§8[§4S§8]";
-        case "seraph.blatant_cheating":
-            return "§8[§4BC§8]";
-        case "seraph.legit_sniping":
-            return "§8[§cLS§8]";
-        case "seraph.potential_sniper":
-            return "§8[§ePS§8]";
-        case "seraph.bot":
-            return "§8[§8BOT§8]";
-        case "seraph.alt":
-            return "§8[§dALT§8]";
-        case "seraph.safelist.personal":
-        case "seraph.safelist.group":
-        case "seraph.safelist.global":
-            return "§8[§2§l✓§8]";
-        case "seraph.annoylist":
-            return "§8[§eAN§8]";
-        case "seraph.encounters":
-            return "§8[§eSEEN§8]";
-        case "seraph.cookie":
-            return "§8[§cCOOKIE§8]";
-        case "seraph.caution":
-            return "§8[§6C§8]";
-        case "seraph.closet_cheating":
-            return "§8[§eCC§8]";
-        case "seraph.verified":
-            return "§8[§2§l✓§8]";
-        default:
-            // Skip unmapped tags
-            return "";
-    }
-}
 
     public static String formatStars(String text) {
         try {

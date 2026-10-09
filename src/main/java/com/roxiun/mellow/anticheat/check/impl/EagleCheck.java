@@ -9,7 +9,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.util.MathHelper;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+//? if ornithe {
+import com.roxiun.mellow.platform.event.TickEvent;
+//?} else {
+/*import net.minecraftforge.fml.common.gameevent.TickEvent;
+*///?}
 
 public class EagleCheck extends Check {
 

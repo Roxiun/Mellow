@@ -4,9 +4,15 @@ import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.util.ChatUtils;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.common.MinecraftForge;
+//? if ornithe {
+import org.polyfrost.oneconfig.api.event.v1.EventManager;
+import com.roxiun.mellow.platform.event.EntityJoinWorldEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
+//?} else {
+/*import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+*///?}
 
 public final class ProviderHealthWarningService {
 
@@ -24,10 +30,18 @@ public final class ProviderHealthWarningService {
         if (!INITIALIZED.compareAndSet(false, true)) {
             return;
         }
-        MinecraftForge.EVENT_BUS.register(INSTANCE);
+        //? if ornithe {
+        EventManager.INSTANCE.register(INSTANCE);
+        //?} else {
+        /*MinecraftForge.EVENT_BUS.register(INSTANCE);
+        *///?}
     }
 
-    @SubscribeEvent
+    //? if ornithe {
+    @Subscribe
+    //?} else {
+    /*@SubscribeEvent
+    *///?}
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
         if (hasWarnedThisLaunch) {
             return;

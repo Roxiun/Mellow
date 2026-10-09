@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "player": {
+    "displayname": "Player",
+    "stats": {
+      "TNTGames": {
+        "deaths_bowspleef": 110,
+        "wins_bowspleef": 7,
+        "wins_tntag": 5
+      },
+      "MurderMystery": {
+        "wins": 4,
+        "games": 24,
+        "games_MURDER_CLASSIC": 21,
+        "wins_MURDER_CLASSIC": 3,
+        "games_MURDER_ASSASSINS": 3,
+        "kills": 6,
+        "kills_MURDER_ASSASSINS": 4,
+        "wins_MURDER_ASSASSINS": 1,
+        "kills_MURDER_CLASSIC": 2
+      }
+    }
+  }
+}

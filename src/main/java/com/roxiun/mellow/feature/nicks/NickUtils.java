@@ -1,9 +1,9 @@
 package com.roxiun.mellow.feature.nicks;
 
+import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.feature.stats.StatScopeResolver;
 import com.roxiun.mellow.feature.stats.ChatStatsFormatter;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
@@ -17,6 +17,7 @@ import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
 import com.roxiun.mellow.util.skins.SkinUtils;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -107,12 +108,12 @@ public class NickUtils {
         ResolvedNickProfile resolved = new ResolvedNickProfile(realName, source);
         nickedPlayers.add(key);
         resolvedNickProfiles.put(key, resolved);
-        final StatScope scope = StatScopeResolver.resolveInGameScope(
-            HypixelFeatures.getInstance().getGameSnapshot()
-        );
+        final com.roxiun.mellow.stats.StatsSelection selection = com.roxiun.mellow.stats.GameRegistry.detect(
+            HypixelFeatures.getInstance().getGameSnapshot());
+        final StatScope scope = selection == null ? null : selection.game().scope();
         AsyncExecutor.getInstance().profileIo(() -> {
-            ProfileFetchResult result = playerCache.getScopedProfileResult(
-                realName, scope, ProfileFetchContext.GENERAL, automatic
+            ProfileFetchResult result = playerCache.getSelectedProfileResult(
+                realName, selection, ProfileFetchContext.GENERAL, automatic
             );
             MainThreadDispatcher.run(() -> {
                 // Clearing the map or replacing this identity invalidates its pending fetch.
@@ -126,36 +127,24 @@ public class NickUtils {
                     }
                     return;
                 }
-                resolved.profile = profile;
-                announceProfile(realName, profile, scope);
+                resolved.setProfile(profile);
+                announceProfile(realName, profile, scope, automatic);
             });
         });
         return true;
     }
 
-    private void announceProfile(String realName, PlayerProfile profile, StatScope scope) {
+    private void announceProfile(String realName, PlayerProfile profile, StatScope scope, boolean automatic) {
         String stats = ChatStatsFormatter.format(profile, scope);
         if (!stats.isEmpty()) {
             ChatUtils.sendMessage(stats);
         }
-        if (config.isCoralEnabled() && profile.isCoralTagged()) {
-            ChatUtils.sendMessage("§c" + realName + " is tagged on §5Coral§c for: "
-                + FormattingUtils.formatCoralTags(profile.getCoralTags()));
-        }
-        if (config.xadia && profile.isXadiaTagged()) {
-            ChatUtils.sendMessage("§c" + realName + " is tagged on §dXadia§c for: "
-                + FormattingUtils.formatXadiaTags(profile.getXadiaTags()));
-        }
-        if (config.seraph && profile.isSeraphTagged()) {
-            String[] tags = FormattingUtils.formatSeraphTags(profile.getSeraphTags()).split("\n§c");
-            for (int i = 0; i < tags.length; i++) {
-                if (!tags[i].trim().isEmpty()) {
-                    ChatUtils.sendMessage(i == 0
-                        ? "§c" + realName + " is tagged on §3Seraph§c for: " + tags[i]
-                        : "§c" + tags[i]);
-                }
-            }
-        }
+        boolean ignored = automatic && com.roxiun.mellow.Mellow.tagIgnoreManager != null
+            && com.roxiun.mellow.Mellow.tagIgnoreManager.isTagIgnored(com.roxiun.mellow.util.UUIDUtils.fromString(profile.getUuid()));
+        java.util.Map<String, String> warnings = TagPolicy.warnings(
+            profile.getTags(), !automatic || config.printBlacklistTags, ignored);
+        for (java.util.Map.Entry<String, String> source : warnings.entrySet())
+            ChatUtils.sendMessage("§c" + realName + " is tagged on " + FormattingUtils.formatTagSource(source.getKey(), false) + "§c for: " + source.getValue());
     }
 
     private static String normalize(String name) {
@@ -176,7 +165,7 @@ public class NickUtils {
             return null;
         }
 
-        return resolved.profile.getTabStats(scope);
+        return resolved.getTabStats(scope);
     }
 
     public String getResolvedRealNameForNick(String nickName) {
@@ -193,13 +182,23 @@ public class NickUtils {
         resolvedNickProfiles.clear();
     }
 
-    private static class ResolvedNickProfile {
+    static final class ResolvedNickProfile {
 
         private final String realName;
         private final ResolutionSource source;
         private PlayerProfile profile;
+        private final Map<StatScope, TabStats> tabRows = new EnumMap<>(StatScope.class);
 
-        private ResolvedNickProfile(String realName, ResolutionSource source) {
+        void setProfile(PlayerProfile profile) {
+            this.profile = profile;
+            tabRows.clear();
+        }
+
+        TabStats getTabStats(StatScope scope) {
+            return profile == null ? null : tabRows.computeIfAbsent(scope, profile::getTabStats);
+        }
+
+        ResolvedNickProfile(String realName, ResolutionSource source) {
             this.realName = realName;
             this.source = source;
         }

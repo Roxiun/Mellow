@@ -3,7 +3,7 @@ package com.roxiun.mellow.feature.profileviewer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.roxiun.mellow.api.provider.model.ProviderId;
+import com.roxiun.mellow.api.hypixel.provider.model.ProviderId;
 import com.roxiun.mellow.feature.profileviewer.model.PvSourceData;
 import java.util.HashMap;
 import java.util.Locale;
@@ -88,6 +88,7 @@ public final class PvDataParser {
             return PvSourceData.empty();
         }
     }
+
 
     private static JsonObject getPlayerObject(JsonObject root, ProviderId providerId) {
         if (root == null) {

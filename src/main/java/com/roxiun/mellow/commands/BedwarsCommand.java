@@ -1,8 +1,9 @@
 package com.roxiun.mellow.commands;
 
+import com.roxiun.mellow.stats.GameRegistry;
 import com.mojang.authlib.GameProfile;
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
@@ -15,8 +16,6 @@ import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.UUIDUtils;
 import com.roxiun.mellow.util.blacklist.BlacklistManager;
 import com.roxiun.mellow.util.blacklist.BlacklistedPlayer;
-import com.roxiun.mellow.util.formatting.FormattingUtils;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -76,7 +75,7 @@ public class BedwarsCommand extends CommandBase {
             );
             PlayerProfile profile = result.getProfile();
 
-            if (profile == null || profile.getBedwarsPlayer() == null) {
+            if (profile == null || profile.getStats(GameRegistry.BEDWARS) == null) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
                         sender,
@@ -87,10 +86,11 @@ public class BedwarsCommand extends CommandBase {
                             ")"
                     )
                 );
+                sendTagsAndLocal(sender, profile);
                 return;
             }
 
-            BedwarsPlayer player = profile.getBedwarsPlayer();
+            BedwarsPlayer player = profile.getStats(GameRegistry.BEDWARS);
             List<String> statsLines = Arrays.asList(
                 player.getStars() + " §r" + player.getFormattedNameWithRank(),
                 "§rFKDR: " + player.getFkdrColor() + player.getFormattedFkdr(),
@@ -105,104 +105,17 @@ public class BedwarsCommand extends CommandBase {
                 ChatUtils.sendMultilineCommandMessage(sender, statsLines)
             );
 
-            BlacklistedPlayer blacklistedPlayer = blacklistManager.getBlacklistedPlayer(
-                UUIDUtils.fromString(profile.getUuid())
-            );
-            if (blacklistedPlayer != null) {
-                String localBlacklistMessage = formatLocalBlacklistMessage(
-                    blacklistedPlayer
-                );
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendMultilineCommandMessage(
-                        sender,
-                        localBlacklistMessage
-                    )
-                );
-            }
+            sendTagsAndLocal(sender, profile);
 
-            if (config.isCoralEnabled() && profile.isCoralTagged()) {
-                List<String> coralMessages = new ArrayList<>();
-                profile.getCoralTags().forEach(tag -> {
-                    String formattedTag = FormattingUtils.formatCoralTag(tag);
-                    if (formattedTag == null || formattedTag.trim().isEmpty()) {
-                        return;
-                    }
+        });
+    }
 
-                    if (coralMessages.isEmpty()) {
-                        coralMessages.add("§5§lCoral§r§5: " + formattedTag);
-                        return;
-                    }
-
-                    coralMessages.add(formattedTag);
-                });
-
-                if (!coralMessages.isEmpty()) {
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendMultilineCommandMessage(
-                            sender,
-                            coralMessages
-                        )
-                    );
-                }
-            }
-
-            if (config.xadia && profile.isXadiaTagged()) {
-                List<String> xadiaMessages = new ArrayList<>();
-                profile.getXadiaTags().forEach(tag -> {
-                    String formattedTag = FormattingUtils.formatXadiaTag(tag);
-                    if (formattedTag == null || formattedTag.trim().isEmpty()) {
-                        return;
-                    }
-
-                    if (xadiaMessages.isEmpty()) {
-                        xadiaMessages.add("§d§lXadia§r§d: " + formattedTag);
-                        return;
-                    }
-
-                    xadiaMessages.add(formattedTag);
-                });
-
-                if (!xadiaMessages.isEmpty()) {
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendMultilineCommandMessage(
-                            sender,
-                            xadiaMessages
-                        )
-                    );
-                }
-            }
-
-            if (config.seraph && profile.isSeraphTagged()) {
-                String formattedTags = FormattingUtils.formatSeraphTags(
-                    profile.getSeraphTags()
-                );
-                // Split the formatted tags by the newline separator and send as separate messages
-                String[] tagMessages = formattedTags.split("\n§c");
-                if (
-                    tagMessages.length > 0 && !tagMessages[0].trim().isEmpty()
-                ) {
-                    // Send the first tag with the main message
-                    String firstMessage = "§3§lSeraph§r§3: " + tagMessages[0];
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendMultilineCommandMessage(
-                            sender,
-                            firstMessage
-                        )
-                    );
-                    // Send additional tags as separate messages
-                    for (int i = 1; i < tagMessages.length; i++) {
-                        if (!tagMessages[i].trim().isEmpty()) {
-                            String additionalMessage = "§c" + tagMessages[i];
-                            MainThreadDispatcher.run(() ->
-                                ChatUtils.sendMultilineCommandMessage(
-                                    sender,
-                                    additionalMessage
-                                )
-                            );
-                        }
-                    }
-                }
-            }
+    private void sendTagsAndLocal(ICommandSender sender, PlayerProfile profile) {
+        if (profile == null) return;
+        BlacklistedPlayer local = blacklistManager.getBlacklistedPlayer(UUIDUtils.fromString(profile.getUuid()));
+        MainThreadDispatcher.run(() -> {
+            if (local != null) ChatUtils.sendMultilineCommandMessage(sender, formatLocalBlacklistMessage(local));
+            ChatUtils.sendMultilineCommandMessage(sender, profile.getTags().messages());
         });
     }
 

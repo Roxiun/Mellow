@@ -1,489 +1,140 @@
 package com.roxiun.mellow.feature.party;
 
+import com.roxiun.mellow.util.cache.LookupTracker;
+import com.roxiun.mellow.util.formatting.FormattingUtils;
+import com.roxiun.mellow.api.tags.TagReport;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
-import com.roxiun.mellow.data.PlayerProfile;
 import com.roxiun.mellow.feature.alerts.AlertSoundGate;
+import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.gamestate.GameSnapshot;
-import com.roxiun.mellow.gamestate.PartyState;
 import com.roxiun.mellow.util.ChatUtils;
 import com.roxiun.mellow.util.blacklist.BlacklistManager;
 import com.roxiun.mellow.util.blacklist.BlacklistedPlayer;
-import com.roxiun.mellow.util.formatting.FormattingUtils;
-import com.roxiun.mellow.util.player.PlayerUtils;
 import com.roxiun.mellow.util.tagignore.TagIgnoreManager;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
-public class PartyBlacklistWarningService {
-
-    private enum FlagSource {
-        LOCAL("§cLocal"),
-        CORAL("§5Coral"),
-        XADIA("§dXadia"),
-        SERAPH("§3Seraph");
-
-        private final String coloredLabel;
-
-        FlagSource(String coloredLabel) {
-            this.coloredLabel = coloredLabel;
-        }
-    }
-
-    private static final class MemberFlagDetection {
-
-        private final EnumSet<FlagSource> sources = EnumSet.noneOf(
-            FlagSource.class
-        );
-        private final Map<FlagSource, String> detailsBySource = new HashMap<>();
-
-        private void addSource(FlagSource source) {
-            sources.add(source);
-        }
-
-        private void setDetail(FlagSource source, String detail) {
-            if (detail == null || detail.trim().isEmpty()) {
-                detailsBySource.remove(source);
-                return;
-            }
-            detailsBySource.put(source, detail);
-        }
-
-        private String getDetail(FlagSource source) {
-            return detailsBySource.get(source);
-        }
-
-        private MemberFlagDetection copy() {
-            MemberFlagDetection copy = new MemberFlagDetection();
-            copy.sources.addAll(sources);
-            copy.detailsBySource.putAll(detailsBySource);
-            return copy;
-        }
-    }
-
+/** Party membership has connection lifetime, independent of the current match. Client-thread owner. */
+public final class PartyBlacklistWarningService {
     private final Minecraft mc = Minecraft.getMinecraft();
-    private final BlacklistManager blacklistManager;
+    private final BlacklistManager blacklist;
     private final MellowOneConfig config;
-    private final PlayerCache playerCache;
-    private final TagIgnoreManager tagIgnoreManager;
-    private final Map<UUID, EnumSet<FlagSource>> warnedSourcesByMember =
-        new HashMap<>();
-    private final AlertSoundGate partyWarningSoundGate = new AlertSoundGate();
-    private long evaluationVersion;
+    private final PlayerCache players;
+    private final TagIgnoreManager ignored;
+    private final Map<UUID, TagReport> reportsByMember = new HashMap<>();
+    private final Map<UUID, Set<String>> warned = new HashMap<>();
+    private final AlertSoundGate sound = new AlertSoundGate();
+    private Set<UUID> members = Collections.emptySet();
+    private long lastLocalCheck;
+    private final LookupTracker<UUID> lookups = new LookupTracker<>();
+    private String settings = "";
 
-    public PartyBlacklistWarningService(
-        BlacklistManager blacklistManager,
-        MellowOneConfig config,
-        PlayerCache playerCache,
-        TagIgnoreManager tagIgnoreManager
-    ) {
-        this.blacklistManager = blacklistManager;
-        this.config = config;
-        this.playerCache = playerCache;
-        this.tagIgnoreManager = tagIgnoreManager;
+    public PartyBlacklistWarningService(BlacklistManager blacklist, MellowOneConfig config,
+        PlayerCache players, TagIgnoreManager ignored) {
+        this.blacklist = blacklist; this.config = config; this.players = players; this.ignored = ignored;
     }
 
-    public synchronized void onSnapshotUpdate(GameSnapshot snapshot) {
-        if (config == null || !config.partyBlacklistWarning) {
-            resetState();
-            return;
+    public void onSnapshotUpdate(GameSnapshot snapshot) {
+        Set<UUID> current = new LinkedHashSet<>();
+        if (config.partyBlacklistWarning && snapshot != null && snapshot.isOnHypixel())
+            current.addAll(snapshot.getPartyState().getMembers().keySet());
+        if (mc.getSession() != null && mc.getSession().getProfile() != null)
+            current.remove(mc.getSession().getProfile().getId());
+        String nextSettings = config.isCoralEnabled() + "|" + config.getCoralApiKey() + "|" + config.xadia
+            + "|" + config.xadiaKey + "|" + config.xadiaVerifiedOnly;
+        if (snapshot == null || !snapshot.isOnHypixel()) reset();
+        if (!settings.equals(nextSettings)) {
+            settings = nextSettings;
+            lookups.clear();
+            reportsByMember.clear();
         }
-
-        if (snapshot == null || !snapshot.isOnHypixel()) {
-            resetState();
-            return;
-        }
-
-        PartyState partyState = snapshot.getPartyState();
-        if (
-            partyState == null ||
-            !partyState.isInParty() ||
-            partyState.getMembers().isEmpty()
-        ) {
-            resetState();
-            return;
-        }
-
-        UUID selfUuid = getSelfUuid();
-        Set<UUID> partyMemberUuids = new LinkedHashSet<>();
-        Map<UUID, String> tabNamesByUuid = new LinkedHashMap<>();
-        Map<UUID, MemberFlagDetection> localFlags = new LinkedHashMap<>();
-
-        for (UUID memberUuid : partyState.getMembers().keySet()) {
-            if (memberUuid == null) {
-                continue;
-            }
-            if (selfUuid != null && selfUuid.equals(memberUuid)) {
-                continue;
-            }
-
-            partyMemberUuids.add(memberUuid);
-            String tabName = findTabName(memberUuid);
-            if (tabName != null && !tabName.isEmpty()) {
-                tabNamesByUuid.put(memberUuid, tabName);
-            }
-
-            if (blacklistManager.isBlacklisted(memberUuid)) {
-                MemberFlagDetection localSource = new MemberFlagDetection();
-                localSource.addSource(FlagSource.LOCAL);
-                localSource.setDetail(
-                    FlagSource.LOCAL,
-                    resolveLocalBlacklistReason(memberUuid)
-                );
-                localFlags.put(memberUuid, localSource);
+        members = current;
+        if (current.isEmpty()) return;
+        long now = System.currentTimeMillis();
+        if (now - lastLocalCheck >= 1000) {
+            lastLocalCheck = now;
+            for (UUID uuid : current) {
+                BlacklistedPlayer local = blacklist.getBlacklistedPlayer(uuid);
+                if (local != null) warn(uuid, Collections.singletonMap("Local", local.getReason()));
             }
         }
-
-        if (partyMemberUuids.isEmpty()) {
-            resetState();
-            return;
+        if (!config.isCoralEnabled() && !config.xadia) return;
+        Map<UUID, LookupTracker.Attempt> attempts = new LinkedHashMap<>();
+        Set<String> uuids = new LinkedHashSet<>();
+        for (UUID uuid : current) {
+            if (ignored != null && ignored.isTagIgnored(uuid)) continue;
+            TagReport saved = reportsByMember.get(uuid);
+            if (saved != null) warn(uuid, TagPolicy.warnings(saved, true, false));
+            LookupTracker.Attempt attempt = lookups.begin(uuid);
+            if (attempt != null) { attempts.put(uuid, attempt); uuids.add(uuid.toString()); }
         }
-
-        boolean shouldCheckXadia = config.xadia;
-        boolean shouldCheckCoral = config.isCoralEnabled();
-        boolean shouldCheckSeraph = config.seraph;
-        long evaluationId = ++evaluationVersion;
-
-        if ((!shouldCheckCoral && !shouldCheckSeraph && !shouldCheckXadia) || playerCache == null) {
-            applyDetectionResult(evaluationId, localFlags);
-            return;
-        }
-
-        AsyncExecutor.getInstance().profileIo(() -> {
-            Map<UUID, MemberFlagDetection> combined = cloneDetectionMap(
-                localFlags
-            );
-
-            for (UUID memberUuid : partyMemberUuids) {
-                boolean tagsIgnored =
-                    tagIgnoreManager != null &&
-                    tagIgnoreManager.isTagIgnored(memberUuid);
-                if (tagsIgnored) {
-                    continue;
-                }
-
-                String tabName = tabNamesByUuid.get(memberUuid);
-                if (tabName == null || tabName.isEmpty()) {
-                    continue;
-                }
-
-                PlayerProfile profile = playerCache.getProfile(tabName);
-                if (profile == null) {
-                    continue;
-                }
-
-                MemberFlagDetection detection = combined.get(memberUuid);
-                if (detection == null) {
-                    detection = new MemberFlagDetection();
-                }
-
-                if (shouldCheckCoral && profile.isCoralTagged()) {
-                    detection.addSource(FlagSource.CORAL);
-                    detection.setDetail(
-                        FlagSource.CORAL,
-                        formatCoralTagDetails(profile)
-                    );
-                }
-
-                if (shouldCheckXadia && profile.isXadiaTagged()) {
-                    detection.addSource(FlagSource.XADIA);
-                    detection.setDetail(
-                        FlagSource.XADIA,
-                        formatXadiaTagDetails(profile)
-                    );
-                }
-                if (shouldCheckSeraph && profile.isSeraphTagged()) {
-                    detection.addSource(FlagSource.SERAPH);
-                    detection.setDetail(
-                        FlagSource.SERAPH,
-                        formatSeraphTagDetails(profile)
-                    );
-                }
-
-                if (detection.sources.isEmpty()) {
-                    combined.remove(memberUuid);
-                } else {
-                    combined.put(memberUuid, detection);
-                }
+        if (uuids.isEmpty()) return;
+        AsyncExecutor.getInstance().supplementalIo(() -> {
+            try {
+                Map<String, TagReport> reports = players.fetchTagReports(uuids);
+                MainThreadDispatcher.run(() -> {
+                    for (Map.Entry<UUID, LookupTracker.Attempt> entry : attempts.entrySet()) {
+                        UUID uuid = entry.getKey();
+                        TagReport report = reports.get(uuid.toString().replace("-", ""));
+                        if (!lookups.finish(uuid, entry.getValue(), report != null && report.getFailures().isEmpty())) continue;
+                        if (report != null) reportsByMember.put(uuid, report);
+                        if (report != null && members.contains(uuid) && config.partyBlacklistWarning)
+                            warn(uuid, TagPolicy.warnings(report, true, ignored != null && ignored.isTagIgnored(uuid)));
+                    }
+                });
+            } catch (RuntimeException error) {
+                MainThreadDispatcher.run(() -> attempts.forEach((uuid, attempt) -> lookups.finish(uuid, attempt, false)));
             }
-
-            MainThreadDispatcher.run(() ->
-                applyDetectionResult(evaluationId, combined)
-            );
         });
     }
 
-    private synchronized void resetState() {
-        evaluationVersion++;
-        warnedSourcesByMember.clear();
-        partyWarningSoundGate.reset();
+    /** Only disconnect/manual refresh starts a new connection lookup lifetime. */
+    public void reset() {
+        lookups.clear(); warned.clear(); reportsByMember.clear(); members = Collections.emptySet();
+        lastLocalCheck = 0; sound.reset();
     }
 
-    private synchronized void applyDetectionResult(
-        long evaluationId,
-        Map<UUID, MemberFlagDetection> detectedByMember
-    ) {
-        if (evaluationId != evaluationVersion) {
-            return;
-        }
+    private void warn(UUID uuid, Map<String, String> sources) {
+        Set<String> seen = warned.computeIfAbsent(uuid, id -> new HashSet<>());
+        Map<String, String> fresh = new LinkedHashMap<>();
+        for (Map.Entry<String, String> source : sources.entrySet())
+            if (seen.add(source.getKey())) fresh.put(source.getKey(), source.getValue());
+        if (fresh.isEmpty()) return;
+        String name = displayName(uuid);
+        ChatUtils.sendMessage("§cWarning: flagged party member detected: " + name + " §7["
+            + fresh.keySet().stream().map(source -> FormattingUtils.formatTagSource(source, false))
+                .collect(java.util.stream.Collectors.joining("§7, ")) + "§7]. Consider leaving to avoid risk.");
+        if (config.partyBlacklistWarningShowTagDetails)
+            ChatUtils.sendMessage("§7- " + name + " §7tagged for: " + formatDetails(fresh));
+        sound.tryPlayPling(mc, 1.0F, 0.8F);
+    }
 
-        warnedSourcesByMember.keySet().retainAll(detectedByMember.keySet());
-        Map<UUID, MemberFlagDetection> changed = new LinkedHashMap<>();
-
-        for (Map.Entry<UUID, MemberFlagDetection> entry : detectedByMember.entrySet()) {
-            UUID memberUuid = entry.getKey();
-            EnumSet<FlagSource> current = EnumSet.copyOf(entry.getValue().sources);
-            EnumSet<FlagSource> previous = warnedSourcesByMember.get(memberUuid);
-
-            if (previous == null || !previous.equals(current)) {
-                changed.put(memberUuid, entry.getValue().copy());
+    static String formatDetails(Map<String, String> sources) {
+        List<String> details = new ArrayList<>();
+        for (Map.Entry<String, String> source : sources.entrySet()) {
+            String label = FormattingUtils.formatTagSource(source.getKey(), false);
+            String reason = source.getValue();
+            if ("Local".equals(source.getKey()) && BlacklistManager.isExternalFileImportReason(reason)) {
+                details.add(label);
+                continue;
             }
-
-            warnedSourcesByMember.put(memberUuid, current);
+            reason = reason == null ? "" : reason.replace("\r", "").replace("\n", "§7, ")
+                .replace("(null)", "(Unknown reason)").trim();
+            details.add(label + "§7: " + (reason.isEmpty() ? "§7Unknown reason" : reason));
         }
-
-        if (changed.isEmpty()) {
-            return;
-        }
-
-        sendWarning(changed);
+        return String.join(" §7| ", details);
     }
 
-    private Map<UUID, MemberFlagDetection> cloneDetectionMap(
-        Map<UUID, MemberFlagDetection> source
-    ) {
-        Map<UUID, MemberFlagDetection> copy = new LinkedHashMap<>();
-        for (Map.Entry<UUID, MemberFlagDetection> entry : source.entrySet()) {
-            copy.put(entry.getKey(), entry.getValue().copy());
+    private String displayName(UUID uuid) {
+        if (mc.getNetHandler() != null) {
+            NetworkPlayerInfo info = mc.getNetHandler().getPlayerInfo(uuid);
+            if (info != null && info.getGameProfile() != null) return info.getGameProfile().getName();
         }
-        return copy;
-    }
-
-    private void sendWarning(Map<UUID, MemberFlagDetection> flaggedMembers) {
-        MainThreadDispatcher.run(() -> {
-            List<String> parts = new ArrayList<>(flaggedMembers.size());
-            for (Map.Entry<UUID, MemberFlagDetection> entry : flaggedMembers.entrySet()) {
-                String displayName = resolveDisplayName(entry.getKey());
-                String labels = formatSourceLabels(entry.getValue().sources);
-                parts.add(displayName + " §7[" + labels + "§7]");
-            }
-
-            String names = String.join("§7, ", parts);
-            String noun = flaggedMembers.size() == 1 ? "member" : "members";
-
-            ChatUtils.sendMessage(
-                "§cWarning: flagged party " +
-                noun +
-                " detected: §c" +
-                names +
-                "§7. Consider leaving to avoid risk."
-            );
-
-            if (config.partyBlacklistWarningShowTagDetails) {
-                sendDetailLines(flaggedMembers);
-            }
-
-            partyWarningSoundGate.tryPlayPling(mc, 1.0F, 0.8F);
-        });
-    }
-
-    private void sendDetailLines(Map<UUID, MemberFlagDetection> flaggedMembers) {
-        for (Map.Entry<UUID, MemberFlagDetection> entry : flaggedMembers.entrySet()) {
-            String displayName = resolveDisplayName(entry.getKey());
-            String details = formatTaggedForDetails(entry.getValue());
-            ChatUtils.sendMessage(
-                "§7- " + displayName + " §7tagged for: " + details
-            );
-        }
-    }
-
-    private String formatTaggedForDetails(MemberFlagDetection detection) {
-        List<String> sourceDetails = new ArrayList<>(3);
-        if (detection.sources.contains(FlagSource.LOCAL)) {
-            String localDetail = detection.getDetail(FlagSource.LOCAL);
-            if (BlacklistManager.isExternalFileImportReason(localDetail)) {
-                sourceDetails.add(FlagSource.LOCAL.coloredLabel);
-            } else {
-                sourceDetails.add(
-                    FlagSource.LOCAL.coloredLabel +
-                    "§7: " +
-                    formatDetailWithFallback(localDetail)
-                );
-            }
-        }
-        if (detection.sources.contains(FlagSource.CORAL)) {
-            sourceDetails.add(
-                FlagSource.CORAL.coloredLabel +
-                "§7: " +
-                formatDetailWithFallback(detection.getDetail(FlagSource.CORAL))
-            );
-        }
-
-        if (detection.sources.contains(FlagSource.XADIA)) {
-            sourceDetails.add(
-                FlagSource.XADIA.coloredLabel +
-                "§7: " +
-                formatDetailWithFallback(detection.getDetail(FlagSource.XADIA))
-            );
-        }
-        if (detection.sources.contains(FlagSource.SERAPH)) {
-            sourceDetails.add(
-                FlagSource.SERAPH.coloredLabel +
-                "§7: " +
-                formatDetailWithFallback(detection.getDetail(FlagSource.SERAPH))
-            );
-        }
-        return String.join(" §7| ", sourceDetails);
-    }
-
-    private String formatDetailWithFallback(String detail) {
-        String normalized = normalizeDetailText(detail);
-        if (normalized.isEmpty()) {
-            return "§7Unknown reason";
-        }
-        return normalized;
-    }
-
-    private String resolveLocalBlacklistReason(UUID memberUuid) {
-        BlacklistedPlayer blacklistedPlayer = blacklistManager.getBlacklistedPlayer(
-            memberUuid
-        );
-        if (blacklistedPlayer == null) {
-            return null;
-        }
-        return normalizeDetailText(blacklistedPlayer.getReason());
-    }
-
-    private String formatCoralTagDetails(PlayerProfile profile) {
-        return normalizeDetailText(
-            FormattingUtils.formatCoralTags(profile.getCoralTags())
-        );
-    }
-
-    private String formatXadiaTagDetails(PlayerProfile profile) {
-        return normalizeDetailText(
-            FormattingUtils.formatXadiaTags(profile.getXadiaTags())
-        );
-    }
-
-    private String formatSeraphTagDetails(PlayerProfile profile) {
-        String formatted = FormattingUtils.formatSeraphTags(profile.getSeraphTags());
-        if (formatted == null || formatted.trim().isEmpty()) {
-            return "";
-        }
-
-        String[] lines = formatted.split("\n§c");
-        List<String> lineParts = new ArrayList<>(lines.length);
-        for (String line : lines) {
-            String normalized = normalizeDetailText(line);
-            if (!normalized.isEmpty()) {
-                lineParts.add(normalized);
-            }
-        }
-
-        return String.join("§7, ", lineParts);
-    }
-
-    private String normalizeDetailText(String detail) {
-        if (detail == null) {
-            return "";
-        }
-
-        return detail
-            .replace("\r", "")
-            .replace("\n", "§7, ")
-            .replace("(null)", "(Unknown reason)")
-            .trim();
-    }
-
-    private String formatSourceLabels(EnumSet<FlagSource> sources) {
-        List<String> labels = new ArrayList<>(3);
-        if (sources.contains(FlagSource.LOCAL)) {
-            labels.add(FlagSource.LOCAL.coloredLabel);
-        }
-        if (sources.contains(FlagSource.CORAL)) {
-            labels.add(FlagSource.CORAL.coloredLabel);
-        }
-
-        if (sources.contains(FlagSource.XADIA)) {
-            labels.add(FlagSource.XADIA.coloredLabel);
-        }
-        if (sources.contains(FlagSource.SERAPH)) {
-            labels.add(FlagSource.SERAPH.coloredLabel);
-        }
-        return String.join("§7, ", labels);
-    }
-
-    private String resolveDisplayName(UUID uuid) {
-        String tabName = findTabName(uuid);
-        if (tabName != null && !tabName.isEmpty()) {
-            if (mc.theWorld != null) {
-                return PlayerUtils.getTabDisplayName(tabName);
-            }
-            return tabName;
-        }
-
-        BlacklistedPlayer blacklistedPlayer = blacklistManager.getBlacklistedPlayer(
-            uuid
-        );
-        if (blacklistedPlayer != null) {
-            String storedName = blacklistedPlayer.getName();
-            if (
-                storedName != null &&
-                !storedName.trim().isEmpty() &&
-                !isUuidLike(storedName)
-            ) {
-                return storedName;
-            }
-        }
-
-        return uuid.toString();
-    }
-
-    private String findTabName(UUID uuid) {
-        if (
-            mc.getNetHandler() == null || mc.getNetHandler().getPlayerInfoMap() == null
-        ) {
-            return null;
-        }
-
-        for (NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
-            if (
-                info != null &&
-                info.getGameProfile() != null &&
-                uuid.equals(info.getGameProfile().getId())
-            ) {
-                return info.getGameProfile().getName();
-            }
-        }
-
-        return null;
-    }
-
-    private UUID getSelfUuid() {
-        if (
-            mc.getSession() == null ||
-            mc.getSession().getProfile() == null ||
-            mc.getSession().getProfile().getId() == null
-        ) {
-            return null;
-        }
-        return mc.getSession().getProfile().getId();
-    }
-
-    private boolean isUuidLike(String value) {
-        String normalized = value.replace("-", "");
-        return normalized.matches("(?i)[0-9a-f]{32}");
+        BlacklistedPlayer local = blacklist.getBlacklistedPlayer(uuid);
+        return local != null && local.getName() != null ? local.getName() : uuid.toString();
     }
 }

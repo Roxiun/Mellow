@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "mellow",
+  "version": "${version}",
+  "name": "Mellow",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.roxiun.mellow.Mellow"
+    ]
+  },
+  "mixins": [
+    "mixins.mellow.json"
+  ],
+  "depends": {
+    "minecraft": "1.8.9",
+    "fabricloader": ">=0.19.3",
+    "java": ">=25",
+    "oneconfig": ">=1.2.13",
+    "pylon": ">=0.1.7"
+  },
+  "description": "Hypixel stats, Bed Wars HUDs, player tags and replays for Ornithe.",
+  "breaks": {
+    "polyhitbox": "<1.3.1",
+    "polynametag": "<1.2.1",
+    "vanillahud": "<3.5.3"
+  }
+}

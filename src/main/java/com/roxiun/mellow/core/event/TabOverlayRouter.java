@@ -1,7 +1,7 @@
 package com.roxiun.mellow.core.event;
 
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.feature.stats.tab.ExtendedStatsTabOverlay;
 import com.roxiun.mellow.feature.stats.tab.ExtendedTabStatsMode;
@@ -9,8 +9,13 @@ import com.roxiun.mellow.gamestate.GameSnapshot;
 import net.minecraft.client.Minecraft;
 import com.roxiun.mellow.feature.stats.tab.VanillaHudTabIntegration;
 
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+//? if ornithe {
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
+import org.polyfrost.oneconfig.api.event.v1.events.TickEvent;
+//?} else {
+/*import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+*///?}
 
 public class TabOverlayRouter {
 
@@ -24,7 +29,7 @@ public class TabOverlayRouter {
 
     private boolean wasActiveLastFrame;
     private StatScope lastScope;
-    private long lastStateVersion = Long.MIN_VALUE;
+    private long lastSessionId = Long.MIN_VALUE;
     private int lastDimensionId = Integer.MIN_VALUE;
     private boolean tabWasDown;
     private long tabPressStartedAtMs = NO_TIME;
@@ -45,12 +50,17 @@ public class TabOverlayRouter {
     }
 
     public boolean isPinned() {
-        return isExtendedModeActive() && pinnedByDoubleTap;
+        return pinnedByDoubleTap && isExtendedModeActive();
     }
 
-    @SubscribeEvent
+    //? if ornithe {
+    @Subscribe
+    public void onClientTick(TickEvent.End event) {
+    //?} else {
+    /*@SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+    *///?}
 
         boolean tabDown = isTabKeyDown();
         StatScope scope = ExtendedTabStatsMode.resolveScope();
@@ -111,18 +121,18 @@ public class TabOverlayRouter {
     }
 
     private boolean shouldResetScroll(StatScope scope) {
-        long stateVersion = getStateVersion();
+        long sessionId = getSessionId();
         int dimensionId = getDimensionId();
 
         boolean shouldReset =
             !wasActiveLastFrame ||
             scope != lastScope ||
-            stateVersion != lastStateVersion ||
+            sessionId != lastSessionId ||
             dimensionId != lastDimensionId;
 
         wasActiveLastFrame = true;
         lastScope = scope;
-        lastStateVersion = stateVersion;
+        lastSessionId = sessionId;
         lastDimensionId = dimensionId;
         return shouldReset;
     }
@@ -139,7 +149,7 @@ public class TabOverlayRouter {
 
         wasActiveLastFrame = false;
         lastScope = null;
-        lastStateVersion = Long.MIN_VALUE;
+        lastSessionId = Long.MIN_VALUE;
         lastDimensionId = Integer.MIN_VALUE;
     }
 
@@ -194,9 +204,9 @@ public class TabOverlayRouter {
         clearTapSequence();
     }
 
-    private long getStateVersion() {
+    private long getSessionId() {
         GameSnapshot snapshot = HypixelFeatures.getInstance().getGameSnapshot();
-        return snapshot == null ? Long.MIN_VALUE : snapshot.getStateVersion();
+        return snapshot == null ? Long.MIN_VALUE : snapshot.getSessionId();
     }
 
     private int getDimensionId() {
@@ -206,18 +216,24 @@ public class TabOverlayRouter {
         return mc.theWorld.provider.getDimensionId();
     }
 
-    private boolean physicalTabDown() {
+    //? if forge {
+    /*private boolean physicalTabDown() {
         int code = mc.gameSettings.keyBindPlayerList.getKeyCode();
         return code < 0 ? org.lwjgl.input.Mouse.isButtonDown(code + 100)
             : code > 0 && org.lwjgl.input.Keyboard.isKeyDown(code);
     }
 
+    *///?}
     private boolean isTabKeyDown() {
         return (
             mc != null &&
             mc.gameSettings != null &&
             mc.gameSettings.keyBindPlayerList != null &&
-            physicalTabDown()
+            //? if ornithe {
+            mc.gameSettings.keyBindPlayerList.isKeyDown()
+            //?} else {
+            /*physicalTabDown()
+            *///?}
         );
     }
 }

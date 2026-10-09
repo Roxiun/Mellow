@@ -1,297 +1,89 @@
 package com.roxiun.mellow.data;
 
-import com.roxiun.mellow.api.xadia.XadiaTag;
-import com.roxiun.mellow.api.seraph.SeraphTag;
-import com.roxiun.mellow.api.coral.CoralTag;
-import java.util.List;
+import com.roxiun.mellow.api.tags.TagReport;
+import java.util.*;
 
+/** Render-ready values keyed by stat ID. Legacy getters serve the vanilla tab integration. */
 public class TabStats {
-
-    private List<XadiaTag> xadiaTags = java.util.Collections.emptyList();
-
-    public TabStats withXadiaTags(List<XadiaTag> tags) {
-        TabStats copy = new TabStats(coralTags, seraphTags, formattedNameWithRank, stars, fkdr,
-            winstreak, wlr, bblr, wins, losses, kills, deaths, beds, finals);
-        copy.xadiaTags = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(tags));
-        return copy;
-    }
-
-    public List<XadiaTag> getXadiaTags() { return xadiaTags; }
-    public boolean isXadiaTagged() { return !xadiaTags.isEmpty(); }
-
-    private final List<CoralTag> coralTags;
-    private final List<SeraphTag> seraphTags;
+    private final TagReport tags;
     private final String formattedNameWithRank;
-    private final String stars;
-    private final String fkdr;
-    private final String winstreak;
-    private final String wlr;
-    private final String bblr;
-    private final String wins;
-    private final String losses;
-    private final String kills;
-    private final String deaths;
-    private final String beds;
-    private final String finals;
-
-    public static TabStats tagsOnly(
-        List<CoralTag> coralTags,
-        List<SeraphTag> seraphTags,
-        String playerName
-    ) {
-        return new TabStats(
-            coralTags,
-            seraphTags,
-            playerName,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-    }
-
-    public TabStats(
-        List<CoralTag> coralTags,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String kills,
-        String beds,
-        String finals
-    ) {
-        this(
-            coralTags,
-            null,
-            null,
-            stars,
-            fkdr,
-            winstreak,
-            wlr,
-            bblr,
-            wins,
-            null,
-            kills,
-            null,
-            beds,
-            finals
-        );
-    }
-
-    public TabStats(
-        List<CoralTag> coralTags,
-        List<SeraphTag> seraphTags,
-        String formattedNameWithRank,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String kills,
-        String beds,
-        String finals
-    ) {
-        this(
-            coralTags,
-            seraphTags,
-            formattedNameWithRank,
-            stars,
-            fkdr,
-            winstreak,
-            wlr,
-            bblr,
-            wins,
-            null,
-            kills,
-            null,
-            beds,
-            finals
-        );
-    }
-
-    public TabStats(
-        List<CoralTag> coralTags,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String beds,
-        String finals
-    ) {
-        this(
-            coralTags,
-            null,
-            null,
-            stars,
-            fkdr,
-            winstreak,
-            wlr,
-            bblr,
-            wins,
-            null,
-            null,
-            null,
-            beds,
-            finals
-        );
-    }
-
-    public TabStats(
-        List<CoralTag> coralTags,
-        List<SeraphTag> seraphTags,
-        String formattedNameWithRank,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String beds,
-        String finals
-    ) {
-        this(
-            coralTags,
-            seraphTags,
-            formattedNameWithRank,
-            stars,
-            fkdr,
-            winstreak,
-            wlr,
-            bblr,
-            wins,
-            null,
-            null,
-            null,
-            beds,
-            finals
-        );
-    }
-
-    public TabStats(
-        List<CoralTag> coralTags,
-        List<SeraphTag> seraphTags,
-        String formattedNameWithRank,
-        String stars,
-        String fkdr,
-        String winstreak,
-        String wlr,
-        String bblr,
-        String wins,
-        String losses,
-        String kills,
-        String deaths,
-        String beds,
-        String finals
-    ) {
-        this.coralTags = coralTags;
-        this.seraphTags = seraphTags;
+    private final Map<String, String> values = new LinkedHashMap<>();
+    public TabStats(TagReport tags, String formattedNameWithRank, Map<String, String> values) {
+        this.tags = tags == null ? TagReport.empty() : tags;
         this.formattedNameWithRank = formattedNameWithRank;
-        this.stars = stars;
-        this.fkdr = fkdr;
-        this.winstreak = winstreak;
-        this.wlr = wlr;
-        this.bblr = bblr;
-        this.wins = wins;
-        this.losses = losses;
-        this.kills = kills;
-        this.deaths = deaths;
-        this.beds = beds;
-        this.finals = finals;
+        this.values.putAll(values);
     }
-
-    public boolean isCoralTagged() {
-        return coralTags != null && !coralTags.isEmpty();
+    public String value(String id) { return values.get(id); }
+    public TagReport getTags() { return tags; }
+    public TabStats withTags(TagReport tags) { return new TabStats(tags, formattedNameWithRank, values); }
+    public static TabStats tagsOnly(TagReport tags, String playerName) {
+        return new TabStats(tags, playerName, Collections.emptyMap());
     }
-
-    public boolean isSeraphTagged() {
-        return seraphTags != null && !seraphTags.isEmpty();
-    }
-
-    public List<CoralTag> getCoralTags() {
-        return coralTags;
-    }
-
-    public List<SeraphTag> getSeraphTags() {
-        return seraphTags;
-    }
-
     public String getFormattedNameWithRank() {
         return formattedNameWithRank;
     }
 
     public String getStars() {
-        return stars;
+        return value("stars");
     }
 
     public String getFkdr() {
-        return fkdr;
+        return value("fkdr");
     }
 
     public String getWinstreak() {
-        return winstreak;
+        return value("winstreak");
     }
 
     public String getWlr() {
-        return wlr;
+        return value("wlr");
     }
 
     public String getBblr() {
-        return bblr;
+        return value("bblr");
     }
 
     public String getWins() {
-        return wins;
+        return value("wins");
     }
 
     public String getLosses() {
-        return losses;
+        return value("losses");
     }
 
     public String getKills() {
-        return kills;
+        return value("kills");
     }
 
     public String getDeaths() {
-        return deaths;
+        return value("deaths");
     }
 
     public String getBeds() {
-        return beds;
+        return value("beds");
     }
 
     public String getFinals() {
-        return finals;
+        return value("finals");
     }
 
     public String getColoredWlr() {
-        return wlr;
+        return value("wlr");
     }
 
     public String getColoredBblr() {
-        return bblr;
+        return value("bblr");
     }
 
     public String getColoredWins() {
-        return wins;
+        return value("wins");
     }
 
     public String getColoredBeds() {
-        return beds;
+        return value("beds");
     }
 
     public String getColoredFinals() {
-        return finals;
+        return value("finals");
     }
 }

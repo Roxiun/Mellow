@@ -1249,7 +1249,11 @@ public class ReplayPlaybackSession {
 
     private boolean hasRecordedPlayerSpawns(ReplayLoadedData replayData) {
         for (ReplayPacketFrame frame : replayData.getPackets()) {
-            if (S0CPacketSpawnPlayer.class.getName().equals(frame.getClassName())) {
+            //? if ornithe {
+            if (ReplayPacketCodec.typeName(S0CPacketSpawnPlayer.class).equals(frame.getClassName())) {
+            //?} else {
+            /*if (S0CPacketSpawnPlayer.class.getName().equals(frame.getClassName())) {
+            *///?}
                 return true;
             }
         }

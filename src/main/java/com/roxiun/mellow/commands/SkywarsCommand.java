@@ -1,8 +1,9 @@
 package com.roxiun.mellow.commands;
 
+import com.roxiun.mellow.stats.GameRegistry;
 import com.mojang.authlib.GameProfile;
-import com.roxiun.mellow.api.provider.model.StatScope;
-import com.roxiun.mellow.api.skywars.SkywarsPlayer;
+import com.roxiun.mellow.stats.StatScope;
+import com.roxiun.mellow.stats.skywars.SkywarsPlayer;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchContext;
 import com.roxiun.mellow.cache.ProfileFetchResult;
@@ -12,7 +13,6 @@ import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.data.PlayerProfile;
 import com.roxiun.mellow.feature.stats.StatsFetchFailureFormatter;
 import com.roxiun.mellow.util.ChatUtils;
-import com.roxiun.mellow.util.formatting.FormattingUtils;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -66,7 +66,7 @@ public class SkywarsCommand extends CommandBase {
             );
             PlayerProfile profile = result.getProfile();
 
-            if (profile == null || profile.getSkywarsPlayer() == null) {
+            if (profile == null || profile.getStats(GameRegistry.SKYWARS) == null) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
                         sender,
@@ -77,10 +77,13 @@ public class SkywarsCommand extends CommandBase {
                         ")"
                     )
                 );
+                if (profile != null) MainThreadDispatcher.run(() -> {
+                    ChatUtils.sendMultilineCommandMessage(sender, profile.getTags().messages(true));
+                });
                 return;
             }
 
-            SkywarsPlayer player = profile.getSkywarsPlayer();
+            SkywarsPlayer player = profile.getStats(GameRegistry.SKYWARS);
             List<String> statsLines = Arrays.asList(
                 player.getLevelFormatted() +
                 " §r" +
@@ -95,54 +98,11 @@ public class SkywarsCommand extends CommandBase {
                 ChatUtils.sendMultilineCommandMessage(sender, statsLines)
             );
 
-            if (config.isCoralEnabled() && profile.isCoralTagged()) {
-                String tags = FormattingUtils.formatCoralTags(
-                    profile.getCoralTags()
-                );
-                String coralMessage = "§5§lCoral§r§5: " + tags;
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendMultilineCommandMessage(sender, coralMessage)
-                );
-            }
+            if (profile != null) MainThreadDispatcher.run(() -> {
+                ChatUtils.sendMultilineCommandMessage(sender, profile.getTags().messages(true));
+            });
 
-            if (config.xadia && profile.isXadiaTagged()) {
-                String tags = FormattingUtils.formatXadiaTags(
-                    profile.getXadiaTags()
-                );
-                String xadiaMessage = "§d§lXadia§r§d: " + tags;
-                MainThreadDispatcher.run(() ->
-                    ChatUtils.sendMultilineCommandMessage(sender, xadiaMessage)
-                );
-            }
 
-            if (config.seraph && profile.isSeraphTagged()) {
-                String formattedTags = FormattingUtils.formatSeraphTags(
-                    profile.getSeraphTags()
-                );
-                String[] tagMessages = formattedTags.split("\n§c");
-                if (
-                    tagMessages.length > 0 && !tagMessages[0].trim().isEmpty()
-                ) {
-                    String firstMessage = "§3§lSeraph§r§3: " + tagMessages[0];
-                    MainThreadDispatcher.run(() ->
-                        ChatUtils.sendMultilineCommandMessage(
-                            sender,
-                            firstMessage
-                        )
-                    );
-                    for (int i = 1; i < tagMessages.length; i++) {
-                        if (!tagMessages[i].trim().isEmpty()) {
-                            String additionalMessage = "§c" + tagMessages[i];
-                            MainThreadDispatcher.run(() ->
-                                ChatUtils.sendMultilineCommandMessage(
-                                    sender,
-                                    additionalMessage
-                                )
-                            );
-                        }
-                    }
-                }
-            }
         });
     }
 

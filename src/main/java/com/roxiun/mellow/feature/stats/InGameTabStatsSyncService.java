@@ -2,6 +2,7 @@ package com.roxiun.mellow.feature.stats;
 
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
+import com.roxiun.mellow.stats.GameDefinition;
 import com.roxiun.mellow.feature.nicks.NickUtils;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import com.roxiun.mellow.util.player.PlayerUtils;
@@ -11,13 +12,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
 public class InGameTabStatsSyncService {
 
-    private static final long DELTA_WINDOW_MS = 30_000L;
+    private long sessionId = -1;
+    private String settings = "";
     private static final long SCAN_INTERVAL_MS = 1_500L;
 
     private final Minecraft mc = Minecraft.getMinecraft();
@@ -25,13 +26,12 @@ public class InGameTabStatsSyncService {
     private final NickUtils nickUtils;
     private final MellowOneConfig config;
     private final Map<String, TabStats> tabStats;
-    private final Set<String> fetchedOrScheduledThisMatch =
-        ConcurrentHashMap.newKeySet();
 
     private boolean inSupportedMatch;
-    private long matchStartMillis;
     private long lastScanMillis;
     private GameSnapshot currentSnapshot;
+    private GameDefinition<?> statsGame;
+    private String statsMode;
 
     public InGameTabStatsSyncService(
         StatsChecker statsChecker,
@@ -46,31 +46,49 @@ public class InGameTabStatsSyncService {
     }
 
     public synchronized void onSnapshotUpdate(GameSnapshot snapshot) {
+        if (snapshot != null && sessionId != snapshot.getSessionId()) {
+            sessionId = snapshot.getSessionId();
+            tabStats.clear();
+            resetTracking();
+        }
+        String nextSettings = config.statsProvider + "|" + config.hypixelApiKey + "|" + config.getCoralApiKey()
+            + "|" + config.isCoralEnabled() + "|" + config.xadia + "|" + config.xadiaKey + "|" + config.xadiaVerifiedOnly
+            + "|" + config.tabStats + "|" + config.printStats + "|" + config.printBlacklistTags;
+        if (!settings.equals(nextSettings)) {
+            settings = nextSettings;
+            statsChecker.resetLookups();
+            tabStats.clear();
+            lastScanMillis = 0L;
+        }
+        // A late API packet may replace a provisional scoreboard selection in the same world.
+        if (snapshot != null && (statsGame != snapshot.getStatsGame()
+            || !java.util.Objects.equals(statsMode, snapshot.getStatsMode()))) {
+            statsGame = snapshot.getStatsGame();
+            statsMode = snapshot.getStatsMode();
+            statsChecker.resetLookups();
+            tabStats.clear();
+            lastScanMillis = 0L;
+        }
         currentSnapshot = snapshot;
         boolean supportedNow = isSupportedMatch(snapshot);
         if (!supportedNow) {
             if (inSupportedMatch) {
                 tabStats.clear();
+                resetTracking();
             }
-            resetTracking();
             return;
         }
 
         long now = System.currentTimeMillis();
         if (!inSupportedMatch) {
             inSupportedMatch = true;
-            matchStartMillis = now;
             lastScanMillis = 0L;
-            fetchedOrScheduledThisMatch.clear();
             statsChecker.resetInGameMatchWarningState();
 
             runScan(true, false);
             return;
         }
 
-        if (now - matchStartMillis > DELTA_WINDOW_MS) {
-            return;
-        }
         if (now - lastScanMillis < SCAN_INTERVAL_MS) {
             return;
         }
@@ -79,7 +97,7 @@ public class InGameTabStatsSyncService {
     }
 
     public boolean isSupportedMatch(GameSnapshot snapshot) {
-        return StatScopeResolver.isSupportedLiveMatch(snapshot);
+        return StatScopeResolver.isSupportedStatsSession(snapshot);
     }
 
     public synchronized GameSnapshot getCurrentSnapshot() {
@@ -90,7 +108,7 @@ public class InGameTabStatsSyncService {
         lastScanMillis = System.currentTimeMillis();
         boolean shouldScanForWarnings =
             config != null && statsChecker.shouldScanForInGameWarnings();
-        if (config == null || (!config.tabStats && !shouldScanForWarnings)) {
+        if (config == null || (!config.tabStats && !config.printStats && !shouldScanForWarnings)) {
             if (clearBeforeFetch) {
                 tabStats.clear();
             }
@@ -109,19 +127,15 @@ public class InGameTabStatsSyncService {
             }
 
             String normalized = playerName.toLowerCase(Locale.ROOT);
-            if (!forceRefresh && fetchedOrScheduledThisMatch.contains(normalized)) {
-                continue;
-            }
 
             pendingPlayers.add(playerName);
         }
 
-        List<String> scheduledPlayers = statsChecker.fetchTabStatsForPlayers(
+        statsChecker.fetchTabStatsForPlayers(
             pendingPlayers,
             clearBeforeFetch,
             forceRefresh
         );
-        fetchedOrScheduledThisMatch.addAll(scheduledPlayers);
     }
 
     private List<String> getTabPlayerNames() {
@@ -149,17 +163,16 @@ public class InGameTabStatsSyncService {
     }
 
     public synchronized void forceRefresh() {
-        fetchedOrScheduledThisMatch.clear();
         if (currentSnapshot != null && isSupportedMatch(currentSnapshot)) {
-            runScan(true, true);
+            runScan(false, true);
         }
     }
 
+    public synchronized void clear() { resetTracking(); }
+
     private void resetTracking() {
         inSupportedMatch = false;
-        matchStartMillis = 0L;
         lastScanMillis = 0L;
-        fetchedOrScheduledThisMatch.clear();
         statsChecker.resetInGameMatchWarningState();
     }
 }
