@@ -11,6 +11,19 @@ import org.junit.Test;
 public class ReplayRecordingPolicyTest {
 
     @Test
+    public void buffersOnlyBedwarsOrBrieflyUnknownTransitions() {
+        Assert.assertTrue(ReplayRecordingPolicy.shouldBuffer(bedwarsSnapshot(false, true), 0, 100));
+        Assert.assertTrue(ReplayRecordingPolicy.shouldBuffer(bedwarsSnapshot(false, false), 0, 100));
+        Assert.assertFalse(ReplayRecordingPolicy.shouldBuffer(bedwarsSnapshot(true, false), 200, 100));
+        Assert.assertFalse(ReplayRecordingPolicy.shouldBuffer(otherGameSnapshot(), 200, 100));
+        Assert.assertFalse(ReplayRecordingPolicy.shouldBuffer(
+            snapshotWithLines(null, true, Collections.emptyList()), 200, 100));
+        Assert.assertTrue(ReplayRecordingPolicy.shouldBuffer(GameSnapshot.empty(), 200, 100));
+        Assert.assertFalse(ReplayRecordingPolicy.shouldBuffer(GameSnapshot.empty(), 200, 200));
+        Assert.assertFalse(ReplayRecordingPolicy.shouldBuffer(GameSnapshot.empty(), 0, 100));
+    }
+
+    @Test
     public void doesNotTreatBedwarsPregameAsRecordableMatch() {
         Assert.assertFalse(ReplayRecordingPolicy.isRecordableMatch(bedwarsSnapshot(false, true)));
     }
