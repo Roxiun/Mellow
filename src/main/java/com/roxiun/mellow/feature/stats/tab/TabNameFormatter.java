@@ -29,7 +29,7 @@ public final class TabNameFormatter {
         if (!enabled || preserveIdentity || snapshot == null || !snapshot.isOnHypixel()
             || rankedName == null || rankedName.isEmpty()) return fallback + "§r";
 
-        GameDefinition<?> game = GameRegistry.find(com.roxiun.mellow.feature.stats.StatScopeResolver.resolveSupportedScope(snapshot));
+        GameDefinition<?> game = snapshot.getStatsGame();
         if (game == null || !game.usesRankNames(snapshot)) return fallback + "§r";
 
         // Decorate only the visible account name, never an alias or a provider's different identity.

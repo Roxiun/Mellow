@@ -12,23 +12,25 @@ public final class StatScopeResolver {
             return null;
         }
 
-        com.roxiun.mellow.stats.StatsSelection selection = com.roxiun.mellow.stats.GameRegistry.detect(snapshot);
-        return selection == null ? null : selection.game().scope();
+        return snapshot.getStatsGame() == null ? null : snapshot.getStatsGame().scope();
     }
 
     public static StatScope resolveInGameScope(GameSnapshot snapshot) {
         return resolveSupportedScope(snapshot);
     }
 
-    public static boolean isSupportedLiveMatch(GameSnapshot snapshot) {
+    public static boolean isSupportedStatsSession(GameSnapshot snapshot) {
         if (snapshot == null || !snapshot.isOnHypixel()) {
             return false;
         }
-        return snapshot.getPhase() == com.roxiun.mellow.gamestate.GamePhase.LIVE
-            && resolveSupportedScope(snapshot) != null;
+        StatScope scope = resolveSupportedScope(snapshot);
+        // Other games need a game server, not an inferred match-start signal.
+        return scope != null && !snapshot.isLobby() && (scope == StatScope.BEDWARS
+            ? snapshot.isInBedwarsMatch()
+            : snapshot.getServerName() != null && !snapshot.getServerName().isEmpty());
     }
 
     public static boolean isTntRun(GameSnapshot snapshot) {
-        return com.roxiun.mellow.stats.tntgames.tntrun.TntRunGame.matchesTntRun(snapshot);
+        return resolveSupportedScope(snapshot) == StatScope.TNT_RUN;
     }
 }

@@ -376,7 +376,7 @@ public class PregameStats {
             return;
         }
 
-        int secondsUntilStart = snapshot.getObservation().countdownSeconds;
+        int secondsUntilStart = snapshot.getCountdownSeconds(System.currentTimeMillis());
         if (secondsUntilStart <= 2) {
             return;
         }

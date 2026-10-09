@@ -2,6 +2,7 @@ package com.roxiun.mellow.feature.stats;
 
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
+import com.roxiun.mellow.stats.GameDefinition;
 import com.roxiun.mellow.feature.nicks.NickUtils;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import com.roxiun.mellow.util.player.PlayerUtils;
@@ -29,6 +30,8 @@ public class InGameTabStatsSyncService {
     private boolean inSupportedMatch;
     private long lastScanMillis;
     private GameSnapshot currentSnapshot;
+    private GameDefinition<?> statsGame;
+    private String statsMode;
 
     public InGameTabStatsSyncService(
         StatsChecker statsChecker,
@@ -57,13 +60,22 @@ public class InGameTabStatsSyncService {
             tabStats.clear();
             lastScanMillis = 0L;
         }
+        // A late API packet may replace a provisional scoreboard selection in the same world.
+        if (snapshot != null && (statsGame != snapshot.getStatsGame()
+            || !java.util.Objects.equals(statsMode, snapshot.getStatsMode()))) {
+            statsGame = snapshot.getStatsGame();
+            statsMode = snapshot.getStatsMode();
+            statsChecker.resetLookups();
+            tabStats.clear();
+            lastScanMillis = 0L;
+        }
         currentSnapshot = snapshot;
         boolean supportedNow = isSupportedMatch(snapshot);
         if (!supportedNow) {
             if (inSupportedMatch) {
                 tabStats.clear();
+                resetTracking();
             }
-            resetTracking();
             return;
         }
 
@@ -85,7 +97,7 @@ public class InGameTabStatsSyncService {
     }
 
     public boolean isSupportedMatch(GameSnapshot snapshot) {
-        return StatScopeResolver.isSupportedLiveMatch(snapshot);
+        return StatScopeResolver.isSupportedStatsSession(snapshot);
     }
 
     public synchronized GameSnapshot getCurrentSnapshot() {

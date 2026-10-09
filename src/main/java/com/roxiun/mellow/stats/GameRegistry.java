@@ -39,10 +39,17 @@ public final class GameRegistry {
         }
         return null;
     }
-    public static StatsSelection detect(GameSnapshot snapshot) {
+    /** Called when constructing context, never from a render hook. */
+    public static GameDefinition<?> identify(GameSnapshot snapshot) {
         if (snapshot != null && snapshot.isOnHypixel()) {
-            for (GameDefinition<?> game : GAMES) if (game.matches(snapshot)) return new StatsSelection(game, game.detectMode(snapshot));
+            // A TNT lobby has no selected game. Its leaderboard is not location evidence.
+            if (snapshot.isLobby() && snapshot.getGameType() == net.hypixel.data.type.GameType.TNTGAMES) return null;
+            for (GameDefinition<?> game : GAMES) if (game.matches(snapshot)) return game;
         }
         return null;
+    }
+    public static StatsSelection detect(GameSnapshot snapshot) {
+        return snapshot == null || snapshot.getStatsGame() == null ? null
+            : new StatsSelection(snapshot.getStatsGame(), snapshot.getStatsMode());
     }
 }

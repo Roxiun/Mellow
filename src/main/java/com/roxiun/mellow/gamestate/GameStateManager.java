@@ -81,7 +81,7 @@ public class GameStateManager {
             if (snapshot.get().isOnHypixel() && net.minecraft.client.Minecraft.getMinecraft().getNetHandler() == null) onDisconnect();
             return;
         }
-        updateFromScoreboard();
+        if (needsScoreboard(snapshot.get())) updateFromScoreboard();
         requestPartyInfo(false);
     }
 
@@ -121,24 +121,42 @@ public class GameStateManager {
             && current.getPhase() != GamePhase.LOBBY
             && com.roxiun.mellow.feature.bedwars.BedwarsChatSignalParser.isPregameCountdownMessage(message)) {
             if (current.getPhase() == GamePhase.LIVE) sessionId++;
-            publish(new GameSnapshot(true, current.getServerName(), current.getGameType(), current.getMode(), current.getMap(),
-                GamePhase.PREGAME, current.getScoreboardTitle(), current.getScoreboardLines(), current.getPartyState(),
-                current.getStateVersion() + 1, sessionId));
+            publish(current.withPhase(GamePhase.PREGAME, sessionId));
         }
     }
 
+    /** Location packets settle ordinary games; only unresolved context and Bed Wars need polling. */
+    static boolean needsScoreboard(GameSnapshot current) {
+        if (current.isLobby()) return false;
+        if (current.getGameType() == null || current.getGameType() == GameType.BEDWARS) return true;
+        if (current.getMode() != null && !current.getMode().isEmpty()) return false;
+        return current.getGameType() == GameType.TNTGAMES && current.getStatsGame() == null
+            || current.getGameType() == GameType.DUELS && "overall".equals(current.getStatsMode());
+    }
+
     private void updateFromScoreboard() {
-        GameSnapshot current = snapshot.get();
         ScoreboardState board = readScoreboard();
-        ScoreboardObservation observation = ScoreboardObservation.parse(board.title, board.lines);
+        updateFromScoreboard(board.title, board.lines);
+    }
+
+    void updateFromScoreboard(String title, List<String> lines) {
+        GameSnapshot current = snapshot.get();
+        ScoreboardObservation observation = ScoreboardObservation.parse(title, lines,
+            current.getPhase() != GamePhase.LIVE);
         GameType type = locationGameType != null ? locationGameType : observation.gameType != null ? observation.gameType : current.getGameType();
-        GamePhase phase = ScoreboardObservation.resolve(current.getPhase(), locationLobby, observation);
-        if (locationGameType != null && locationGameType != GameType.BEDWARS && !locationLobby) phase = GamePhase.LIVE;
+        GamePhase phase = type == GameType.BEDWARS
+            ? ScoreboardObservation.resolve(current.getPhase(), locationLobby, observation) : current.getPhase();
         publish(new GameSnapshot(true, current.getServerName(), type, current.getMode(), current.getMap(), phase,
-            board.title, board.lines, current.getPartyState(), current.getStateVersion() + 1, sessionId));
+            title, lines, current.getPartyState(), current.getStateVersion() + 1, sessionId,
+            observation, System.currentTimeMillis()));
     }
 
     private void handleLocationPacket(ClientboundLocationPacket packet) {
+        acceptLocation(packet);
+        requestPartyInfo(true);
+    }
+
+    void acceptLocation(ClientboundLocationPacket packet) {
         GameSnapshot current = snapshot.get();
         boolean changed = !packet.getServerName().equals(current.getServerName());
         if (changed && !awaitingLocation) {
@@ -150,12 +168,15 @@ public class GameStateManager {
             ? (GameType) packet.getServerType().get() : null;
         locationLobby = packet.getLobbyName().isPresent();
         // Do not combine a new location with a previous world's sidebar.
-        GamePhase phase = locationLobby ? GamePhase.LOBBY : changed ? GamePhase.UNKNOWN : current.getPhase();
+        boolean resetBoard = changed || locationGameType != current.getGameType()
+            || !packet.getMode().orElse("").equals(current.getMode()) || locationLobby;
+        GamePhase phase = locationLobby ? GamePhase.LOBBY : resetBoard ? GamePhase.UNKNOWN : current.getPhase();
         publish(new GameSnapshot(true, packet.getServerName(), locationGameType,
             packet.getMode().orElse(""), packet.getMap().orElse(""), phase,
-            changed ? "" : current.getScoreboardTitle(), changed ? java.util.Collections.emptyList() : current.getScoreboardLines(),
-            current.getPartyState(), current.getStateVersion() + 1, sessionId));
-        requestPartyInfo(true);
+            resetBoard ? "" : current.getScoreboardTitle(), resetBoard ? java.util.Collections.emptyList() : current.getScoreboardLines(),
+            current.getPartyState(), current.getStateVersion() + 1, sessionId,
+            resetBoard ? ScoreboardObservation.parse("", java.util.Collections.emptyList()) : current.getObservation(),
+            resetBoard ? System.currentTimeMillis() : current.getScoreboardObservedAt()));
     }
 
     private void handlePartyInfoPacket(ClientboundPartyInfoPacket packet) {

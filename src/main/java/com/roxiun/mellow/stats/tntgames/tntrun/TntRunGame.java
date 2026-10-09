@@ -54,8 +54,8 @@ public final class TntRunGame extends GameDefinition<TntRunPlayer> {
             return false;
         }
 
-        if (containsTntRunToken(snapshot.getMode())) {
-            return true;
+        if (snapshot.getMode() != null && !snapshot.getMode().isEmpty()) {
+            return "TNTRUN".equalsIgnoreCase(snapshot.getMode());
         }
         if (containsTntRunToken(snapshot.getMap())) {
             return true;

@@ -21,14 +21,18 @@ public final class ScoreboardObservation {
     }
 
     public static ScoreboardObservation parse(String title, List<String> lines) {
+        return parse(title, lines, true);
+    }
+
+    static ScoreboardObservation parse(String title, List<String> lines, boolean detectPhase) {
         String heading = normalize(title);
         GameType type = com.roxiun.mellow.stats.GameRegistry.scoreboardType(heading);
         boolean waiting = false, live = false;
         int countdown = -1, stage = -1, remaining = -1;
         for (String raw : lines == null ? Collections.<String>emptyList() : lines) {
             String line = normalize(raw);
-            boolean starting = line.contains("starting in") || line.contains("starts in") || line.contains("start in");
-            waiting |= line.matches("players(?::|\\s|$).*") && !line.startsWith("players left")
+            boolean starting = detectPhase && (line.contains("starting in") || line.contains("starts in") || line.contains("start in"));
+            if (detectPhase) waiting |= line.matches("players(?::|\\s|$).*") && !line.startsWith("players left")
                 || starting || line.contains("waiting for players");
             Matcher time = TIME.matcher(line);
             if (time.find()) {
@@ -37,8 +41,10 @@ public final class ScoreboardObservation {
                 int scheduled = stageTime(line.substring(0, time.start()));
                 if (scheduled >= 0 && stage < 0) { stage = scheduled; remaining = seconds; live = true; }
             }
-            Matcher start = START.matcher(line);
-            if (start.matches()) countdown = Integer.parseInt(start.group(1));
+            if (detectPhase) {
+                Matcher start = START.matcher(line);
+                if (start.matches()) countdown = Integer.parseInt(start.group(1));
+            }
         }
         return new ScoreboardObservation(type, waiting, live, countdown, stage, remaining);
     }

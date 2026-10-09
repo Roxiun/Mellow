@@ -50,7 +50,7 @@ public class TabOverlayRouter {
     }
 
     public boolean isPinned() {
-        return isExtendedModeActive() && pinnedByDoubleTap;
+        return pinnedByDoubleTap && isExtendedModeActive();
     }
 
     //? if ornithe {

@@ -211,7 +211,7 @@ public class StatsChecker {
     private boolean isCurrent(long session, long generation) {
         GameSnapshot current = HypixelFeatures.getInstance().getGameSnapshot();
         return generation == fetchGeneration && current.getSessionId() == session
-            && StatScopeResolver.isSupportedLiveMatch(current);
+            && StatScopeResolver.isSupportedStatsSession(current);
     }
 
     private boolean shouldDeferRemoteTagLookup() {

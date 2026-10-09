@@ -178,13 +178,13 @@ public enum DuelsMode {
     }
 
     public static DuelsMode fromSnapshot(GameSnapshot snapshot) {
-        if (snapshot == null || snapshot.getGameType() != GameType.DUELS) {
+        if (snapshot == null || snapshot.getGameType() != GameType.DUELS || snapshot.isLobby()) {
             return OVERALL;
         }
 
         String normalizedMode = normalize(snapshot.getMode());
         DuelsMode modeMatch = fromModeToken(normalizedMode);
-        if (modeMatch != OVERALL) {
+        if (!normalizedMode.isEmpty()) {
             return modeMatch;
         }
 
