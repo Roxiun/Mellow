@@ -52,15 +52,21 @@ public class AnticheatManager {
         playerDataMap.put(player.getUniqueID(), new ACPlayerData(player));
     }
 
-    public void unregisterPlayer(EntityPlayer player) {
-        if (player != null) {
-            playerDataMap.remove(player.getUniqueID());
+    public void prunePlayers(net.minecraft.world.World world) {
+        if (world == null || !Mellow.config.anticheatEnabled) {
+            clearPlayers();
+            return;
         }
+        playerDataMap.values().removeIf(data -> {
+            EntityPlayer player = data.getPlayer();
+            return player.worldObj != world || world.getEntityByID(player.getEntityId()) != player;
+        });
     }
 
     public ACPlayerData getPlayerData(EntityPlayer player) {
         if (player == null) return null;
-        return playerDataMap.get(player.getUniqueID());
+        ACPlayerData data = playerDataMap.get(player.getUniqueID());
+        return data != null && data.getPlayer() == player ? data : null;
     }
 
     public void clearPlayers() {
