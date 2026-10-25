@@ -17,7 +17,7 @@ import java.util.Locale;
 public class XadiaApi {
 
     private static final String PLAYER_TAGS_ENDPOINT =
-        "https://xadia.sniped.me/v1/players";
+        "https://xadia.club/v1/players";
 
     private final TagRequests<XadiaTag> tagCache =
         new TagRequests<>();

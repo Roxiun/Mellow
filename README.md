@@ -27,7 +27,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 - Identity lookup uses Mowojang with fallback providers. Retired Seraph tag, reporting, ping, and client-detection integrations have been removed.
 
-- Supports [Xadia API](https://xadia.sniped.me/) tags, including verified and unverified reports
+- Supports [Xadia API](https://xadia.club/) tags, including verified and unverified reports
 - Supports [Watcher](https://docs.watchertag.com/) tags with colored chat details and bracketed tab badges
 
 - Import your own local blacklist

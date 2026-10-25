@@ -22,7 +22,7 @@ public class XadiaApiTest {
         + "{\"type\":\"possibly_cheating\",\"label\":\"Risky\",\"reason\":null,\"verified\":null}]}]}";
 
     private FakeHttpURLConnection connection(int status, String body) throws Exception {
-        return new FakeHttpURLConnection(new URL("https://xadia.sniped.me/v1/players"), status,
+        return new FakeHttpURLConnection(new URL("https://xadia.club/v1/players"), status,
             body, "{\"error\":\"request rejected\"}");
     }
 

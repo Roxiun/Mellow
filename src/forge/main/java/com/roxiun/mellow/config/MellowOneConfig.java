@@ -1545,7 +1545,7 @@ public class MellowOneConfig extends Config {
     public static boolean ignoredCoralWarning;
 
     @Switch(
-        description = "Look up player tags on xadia.sniped.me. Requires a personal key from the Xadia Discord bot (/key generate). Configure it in API Keys > Xadia.",
+        description = "Look up player tags on xadia.club. Requires a personal key from the Xadia Discord bot (/key generate). Configure it in API Keys > Xadia.",
         name = "Enable Xadia",
         category = "Tags & Blacklists",
         subcategory = "Xadia"
