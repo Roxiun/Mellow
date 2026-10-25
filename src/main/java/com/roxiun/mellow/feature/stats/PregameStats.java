@@ -129,7 +129,9 @@ public class PregameStats {
         AsyncExecutor.getInstance().profileIo(() -> handlePlayer(username, true, session));
     }
 
-    private ParsedChatMessage parseChatMessage(String message) {
+    static ParsedChatMessage parseChatMessage(String message) {
+        // Hypixel command help resembles an unranked player's chat message.
+        if (message.startsWith("Usage: /")) return null;
         Matcher chatMatch = BEDWARS_CHAT_PATTERN.matcher(message);
         if (chatMatch.find()) {
             return new ParsedChatMessage(chatMatch.group(1), chatMatch.group(2));
@@ -421,10 +423,10 @@ public class PregameStats {
         });
     }
 
-    private static class ParsedChatMessage {
+    static class ParsedChatMessage {
 
-        private final String sender;
-        private final String content;
+        final String sender;
+        final String content;
 
         private ParsedChatMessage(String sender, String content) {
             this.sender = sender;
