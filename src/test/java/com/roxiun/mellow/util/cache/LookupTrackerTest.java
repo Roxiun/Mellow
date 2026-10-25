@@ -28,6 +28,15 @@ public class LookupTrackerTest {
         assertNull(tracker.begin("alex"));
         assertTrue(tracker.finished("alex"));
     }
+    @Test public void providerCooldownDoesNotConsumeTheOnlyRetryEarly() {
+        AtomicLong clock = new AtomicLong();
+        LookupTracker<String> tracker = new LookupTracker<>(clock::get);
+        tracker.finish("alex", tracker.begin("alex"), false, 60_000L);
+        clock.set(30_000);
+        assertNull(tracker.begin("alex"));
+        clock.set(60_000);
+        assertNotNull(tracker.begin("alex"));
+    }
     @Test public void invalidatingOnePlayerRejectsTheirOldResponseButPreservesOthers() {
         LookupTracker<String> tracker = new LookupTracker<>();
         LookupTracker.Attempt alex = tracker.begin("alex"), sam = tracker.begin("sam");

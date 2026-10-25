@@ -360,7 +360,7 @@ public class MellowOneConfig extends Config {
 
     @Switch(
         title = "Print Provider Tag Alerts",
-        description = "Print Coral and Xadia tag alerts during stats lookups. Local blacklist warnings are independent.",
+        description = "Print Coral, Xadia and Watcher tag alerts during stats lookups. Local blacklist warnings are independent.",
         category = "Tags & Blacklists",
         subcategory = "Chat Warnings"
     )
@@ -436,6 +436,15 @@ public class MellowOneConfig extends Config {
         subcategory = "Xadia"
     )
     public boolean xadiaVerifiedOnly = false;
+
+    @Switch(
+        description = "Look up Watcher tags. Get a personal key with /apikey in discord.gg/watchertag and add it in API Keys > Watcher.",
+        title = "Enable Watcher", category = "Tags & Blacklists", subcategory = "Watcher"
+    )
+    public boolean watcher = false;
+
+    @Switch(title = "Show Watcher Tags in Tab", category = "Tags & Blacklists", subcategory = "Watcher")
+    public boolean showWatcherTagsInTab = true;
 
     @Switch(title = "Auto Skin Denicker", category = "Denicker", subcategory = "Skin Denicker")
     public boolean autoSkinDenick = true;
@@ -670,6 +679,9 @@ public class MellowOneConfig extends Config {
     @Include
     public String xadiaKey = "";
 
+    @Include
+    public String watcherKey = "";
+
     public EmeraldCounterHUD emeraldCounterHUD = new EmeraldCounterHUD();
     public DiamondCounterHUD diamondCounterHUD = new DiamondCounterHUD();
     public BedwarsUpgradesTrapsHUD upgradesTrapsHUD = new BedwarsUpgradesTrapsHUD();
@@ -738,7 +750,7 @@ public class MellowOneConfig extends Config {
             "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding", "highlightTaggedPlayers",
             "bedwarsStatOrder", "skywarsStatOrder", "duelsStatOrder", "buildBattleStatOrder", "tntRunStatOrder", "tntTagStatOrder", "bowSpleefStatOrder", "murderMysteryStatOrder", "showDot12", "showDot23", "showDot34",
             "showDot45", "showDot56", "showDot67", "showDot78", "showDot89", "showDot910",
-            "showUrchinTagsInTab", "showXadiaTagsInTab");
+            "showUrchinTagsInTab", "showXadiaTagsInTab", "showWatcherTagsInTab");
         dependOn("extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
             "extendedTabStatsShowHeads", "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding",
             "highlightTaggedPlayers");
@@ -750,6 +762,7 @@ public class MellowOneConfig extends Config {
         dependOn("autoLeaveBlacklistedPregameChat", "autoLeaveBlacklistedPregameCommand");
         dependOn("urchin", "showUrchinTagsInTab");
         dependOn("xadia", "showXadiaTagsInTab", "xadiaVerifiedOnly");
+        dependOn("watcher", "showWatcherTagsInTab");
         dependOn("showHiddenWinstreaks", "winstreakMinStars", "winstreakMinFkdr");
         dependOn("numberDenicker", "numberDenickerFuzzy", "minFinalsForDenick");
         dependOn("coloredHitboxes", "coloredHitboxesAffectVanillaDebug", "coloredHitboxesAffectPolyHitbox");
@@ -857,6 +870,16 @@ public class MellowOneConfig extends Config {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
         mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Xadia API Key", xadiaKey, value -> {
             xadiaKey = value;
+            save();
+        })));
+    }
+
+    @Button(description = "Used by Tags & Blacklists > Watcher. Get a key with /apikey in the Watcher Discord.",
+        title = "Watcher API Key", text = "Edit Key", category = "API Keys", subcategory = "Watcher")
+    public void editWatcherKey() {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        mc.addScheduledTask(() -> mc.displayGuiScreen(new ApiKeyScreen(mc.currentScreen, "Watcher API Key", watcherKey, value -> {
+            watcherKey = value;
             save();
         })));
     }

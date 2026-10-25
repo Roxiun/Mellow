@@ -14,6 +14,11 @@ public final class TagReport {
         this.failures = Collections.unmodifiableMap(new LinkedHashMap<>(failures));
     }
     public static TagReport empty() { return new TagReport(Collections.emptyList(), Collections.emptyMap()); }
+    public TagReport withTags(List<PlayerTag> additional) {
+        List<PlayerTag> combined = new ArrayList<>(tags);
+        combined.addAll(additional);
+        return new TagReport(combined, failures);
+    }
     public List<PlayerTag> getTags() { return tags; }
     public Map<String, String> getFailures() { return failures; }
     public List<PlayerTag> from(String source) {

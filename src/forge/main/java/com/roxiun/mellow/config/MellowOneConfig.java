@@ -1461,7 +1461,7 @@ public class MellowOneConfig extends Config {
     public static boolean ignoredDotsInfo;
 
     @Switch(
-        description = "Print Coral and Xadia tag alerts during stats lookups. Local blacklist warnings are independent.",
+        description = "Print Coral, Xadia and Watcher tag alerts during stats lookups. Local blacklist warnings are independent.",
         name = "Print Provider Tag Alerts",
         category = "Tags & Blacklists",
         subcategory = "Chat Warnings"
@@ -1566,6 +1566,15 @@ public class MellowOneConfig extends Config {
         subcategory = "Xadia"
     )
     public boolean xadiaVerifiedOnly = false;
+
+    @Switch(
+        description = "Look up Watcher tags. Get a personal key with /apikey in discord.gg/watchertag and add it in API Keys > Watcher.",
+        name = "Enable Watcher", category = "Tags & Blacklists", subcategory = "Watcher"
+    )
+    public boolean watcher = false;
+
+    @Switch(name = "Show Watcher Tags in Tab", category = "Tags & Blacklists", subcategory = "Watcher")
+    public boolean showWatcherTagsInTab = true;
 
     @Switch(
         name = "Auto Skin Denicker",
@@ -1985,6 +1994,10 @@ public class MellowOneConfig extends Config {
     )
     public String xadiaKey = "";
 
+    @Text(description = "Used by Tags & Blacklists > Watcher. Get a key with /apikey in the Watcher Discord.",
+        name = "Watcher API Key", category = "API Keys", subcategory = "Watcher", secure = true, multiline = false)
+    public String watcherKey = "";
+
     @Info(
         text = "Manage all service API keys here. Feature-specific toggles remain in their own categories.",
         type = InfoType.INFO,
@@ -2032,7 +2045,7 @@ public class MellowOneConfig extends Config {
             "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding", "highlightTaggedPlayers",
             "showDot12", "showDot23", "showDot34",
             "showDot45", "showDot56", "showDot67", "showDot78", "showDot89", "showDot910",
-            "showUrchinTagsInTab", "showXadiaTagsInTab");
+            "showUrchinTagsInTab", "showXadiaTagsInTab", "showWatcherTagsInTab");
         dependOn("extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
             "extendedTabStatsShowHeads", "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding",
             "highlightTaggedPlayers");
@@ -2043,6 +2056,7 @@ public class MellowOneConfig extends Config {
         dependOn("autoLeaveBlacklistedPregameChat", "autoLeaveBlacklistedPregameCommand");
         dependOn("urchin", "showUrchinTagsInTab");
         dependOn("xadia", "showXadiaTagsInTab", "xadiaVerifiedOnly");
+        dependOn("watcher", "showWatcherTagsInTab");
         dependOn("showHiddenWinstreaks", "winstreakMinStars", "winstreakMinFkdr");
         dependOn("numberDenicker", "numberDenickerFuzzy", "minFinalsForDenick");
         dependOn("coloredHitboxes", "coloredHitboxesAffectVanillaDebug", "coloredHitboxesAffectPolyHitbox");

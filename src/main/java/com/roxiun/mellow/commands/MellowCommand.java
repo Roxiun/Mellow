@@ -80,7 +80,7 @@ public class MellowCommand extends CommandBase {
         );
         sender.addChatMessage(
             new ChatComponentText(
-                "§r§5/tagignore <add | remove | list | import> (alias: /tignore):§d Suppress Coral/Xadia tag alert lines for selected players.§r"
+                "§r§5/tagignore <add | remove | list | import> (alias: /tignore):§d Suppress Coral/Xadia/Watcher tag alert lines for selected players.§r"
             )
         );
         sender.addChatMessage(

@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.roxiun.mellow.util.cache.TimedValueCache;
 import com.roxiun.mellow.util.cache.RequestCache;
 import com.roxiun.mellow.api.tags.TagReport;
+import com.roxiun.mellow.api.tags.PlayerTag;
+import com.roxiun.mellow.api.watcher.WatcherApi;
 import com.roxiun.mellow.api.xadia.XadiaApi;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.mojang.MojangApi;
@@ -41,6 +43,7 @@ public class PlayerCache {
     private final MojangApi mojangApi;
     private final ProviderManager providerManager;
     private final XadiaApi xadiaApi;
+    private final WatcherApi watcherApi;
     private final CoralApi coralApi;
     private final MellowOneConfig config;
 
@@ -59,6 +62,12 @@ public class PlayerCache {
     public PlayerCache(MojangApi mojangApi, ProviderManager providerManager,
         CoralApi coralApi,
         XadiaApi xadiaApi, MellowOneConfig config) {
+        this(mojangApi, providerManager, coralApi, xadiaApi, new WatcherApi(), config);
+    }
+
+    public PlayerCache(MojangApi mojangApi, ProviderManager providerManager, CoralApi coralApi,
+        XadiaApi xadiaApi, WatcherApi watcherApi, MellowOneConfig config) {
+        this.watcherApi = watcherApi;
         this.xadiaApi = xadiaApi;
         this.mojangApi = mojangApi;
         this.providerManager = providerManager;
@@ -145,7 +154,12 @@ public class PlayerCache {
                     uuid, profile.getName(), config.xadiaKey, config.xadiaVerifiedOnly);
             } catch (IOException error) { failures.put("Xadia", error.getMessage()); }
         }
-        return profile.withTags(TagReport.nativeTags(coralTags, xadiaTags, failures));
+        List<PlayerTag> watcherTags = java.util.Collections.emptyList();
+        if (config.watcher) {
+            try { watcherTags = watcherApi.fetchTags(uuid, profile.getName(), config.watcherKey); }
+            catch (IOException error) { failures.put("Watcher", error.getMessage()); }
+        }
+        return profile.withTags(TagReport.nativeTags(coralTags, xadiaTags, failures).withTags(watcherTags));
     }
 
     public void prefetchStats(java.util.Set<String> uuids) {
@@ -180,14 +194,19 @@ public class PlayerCache {
                 ? coralApi.fetchBatch(batch, config.getCoralApiKey()) : java.util.Collections.emptyMap();
             Map<String, ProviderResult<List<XadiaTag>>> xadia = config.xadia
                 ? xadiaApi.fetchBatch(batch, config.xadiaKey, config.xadiaVerifiedOnly) : java.util.Collections.emptyMap();
+            Map<String, ProviderResult<List<PlayerTag>>> watcher = config.watcher
+                ? watcherApi.fetchPlayers(batch, config.watcherKey) : java.util.Collections.emptyMap();
             for (String id : batch) {
                 Map<String, String> errors = new java.util.LinkedHashMap<>();
                 ProviderResult<List<CoralTag>> c = coral.get(id);
                 ProviderResult<List<XadiaTag>> x = xadia.get(id);
+                ProviderResult<List<PlayerTag>> w = watcher.get(id);
                 if (c != null && !c.isSuccess()) errors.put("Coral", c.getError());
                 if (x != null && !x.isSuccess()) errors.put("Xadia", x.getError());
+                if (w != null && !w.isSuccess()) errors.put("Watcher", w.getError());
                 reports.put(id, TagReport.nativeTags(
-                    c == null ? null : c.getValue(), x == null ? null : x.getValue(), errors));
+                    c == null ? null : c.getValue(), x == null ? null : x.getValue(), errors)
+                    .withTags(w != null && w.isSuccess() ? w.getValue() : java.util.Collections.emptyList()));
             }
         }
         return reports;
@@ -278,6 +297,7 @@ public class PlayerCache {
     public void clearCache() {
         providerCooldown.clear();
         xadiaApi.clearCache();
+        watcherApi.clearCache();
         clearIdentityCache();
         rawDataCache.clear();
         if (Mellow.coralApi != null) {
@@ -306,6 +326,7 @@ public class PlayerCache {
         }
 
         xadiaApi.clearPlayer(null, playerName);
+        watcherApi.clearPlayer(null, playerName);
         clearPlayerStats(playerName);
         if (mojangApi != null) {
             mojangApi.clearPlayer(playerName);
@@ -321,6 +342,7 @@ public class PlayerCache {
 
         String fullUuid = trustedTabUuid.toString();
         xadiaApi.clearPlayer(fullUuid, playerName);
+        watcherApi.clearPlayer(fullUuid, playerName);
         String compactUuid = fullUuid.replace("-", "");
         if (Mellow.auroraPingService != null) {
             Mellow.auroraPingService.clearPlayer(compactUuid);
@@ -342,6 +364,7 @@ public class PlayerCache {
     public void clearPlayerTags(String uuid, String name) {
         coralApi.clearPlayer(uuid, name);
         xadiaApi.clearPlayer(uuid, name);
+        watcherApi.clearPlayer(uuid, name);
     }
 
     public void clearPlayerStats(String playerName) {

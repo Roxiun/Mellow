@@ -1,5 +1,6 @@
 package com.roxiun.mellow.feature.stats;
 
+import com.roxiun.mellow.feature.tags.TagPolicy;
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.data.TabStats;
 import com.roxiun.mellow.stats.GameDefinition;
@@ -51,8 +52,7 @@ public class InGameTabStatsSyncService {
             tabStats.clear();
             resetTracking();
         }
-        String nextSettings = config.statsProvider + "|" + config.hypixelApiKey + "|" + config.getCoralApiKey()
-            + "|" + config.isCoralEnabled() + "|" + config.xadia + "|" + config.xadiaKey + "|" + config.xadiaVerifiedOnly
+        String nextSettings = config.statsProvider + "|" + config.hypixelApiKey + "|" + TagPolicy.settingsKey(config)
             + "|" + config.tabStats + "|" + config.printStats + "|" + config.printBlacklistTags;
         if (!settings.equals(nextSettings)) {
             settings = nextSettings;

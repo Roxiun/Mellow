@@ -119,6 +119,24 @@ public class XadiaApiTest {
     }
 
     @Test
+    public void batchKeepsVerificationAndSharesIndividualLookupCache() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        FakeHttpURLConnection connection = connection(200, RESPONSE);
+        XadiaApi api = api(connection, calls);
+        java.util.Map<String, com.roxiun.mellow.api.model.ProviderResult<List<XadiaTag>>> results = api.fetchBatch(
+            new java.util.LinkedHashSet<>(Arrays.asList("player", "omitted")), "key", true);
+        Assert.assertTrue(results.get("player").isSuccess());
+        Assert.assertFalse(results.get("omitted").isSuccess());
+        Assert.assertEquals(Boolean.TRUE, results.get("player").getValue().get(0).getVerified());
+        Assert.assertEquals(3, api.fetchXadiaTags(null, "player", "key", true).size());
+        Assert.assertEquals(1, calls.get());
+        Assert.assertEquals("POST", connection.getRequestMethod());
+        JsonObject body = new JsonParser().parse(connection.getWrittenBody()).getAsJsonObject();
+        Assert.assertTrue(body.get("verified_only").getAsBoolean());
+        Assert.assertEquals(2, body.getAsJsonArray("players").size());
+    }
+
+    @Test
     public void profileAndTabCopiesKeepXadiaTags() {
         XadiaTag tag = new XadiaTag("sniper", "Sniper", null, true);
         PlayerProfile original = PlayerProfile.identity("uuid", "player");

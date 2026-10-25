@@ -44,8 +44,7 @@ public final class PartyBlacklistWarningService {
             current.addAll(snapshot.getPartyState().getMembers().keySet());
         if (mc.getSession() != null && mc.getSession().getProfile() != null)
             current.remove(mc.getSession().getProfile().getId());
-        String nextSettings = config.isCoralEnabled() + "|" + config.getCoralApiKey() + "|" + config.xadia
-            + "|" + config.xadiaKey + "|" + config.xadiaVerifiedOnly;
+        String nextSettings = TagPolicy.settingsKey(config);
         if (snapshot == null || !snapshot.isOnHypixel()) reset();
         if (!settings.equals(nextSettings)) {
             settings = nextSettings;
@@ -62,7 +61,7 @@ public final class PartyBlacklistWarningService {
                 if (local != null) warn(uuid, Collections.singletonMap("Local", local.getReason()));
             }
         }
-        if (!config.isCoralEnabled() && !config.xadia) return;
+        if (!TagPolicy.anyEnabled(config)) return;
         Map<UUID, LookupTracker.Attempt> attempts = new LinkedHashMap<>();
         Set<String> uuids = new LinkedHashSet<>();
         for (UUID uuid : current) {
@@ -80,7 +79,7 @@ public final class PartyBlacklistWarningService {
                     for (Map.Entry<UUID, LookupTracker.Attempt> entry : attempts.entrySet()) {
                         UUID uuid = entry.getKey();
                         TagReport report = reports.get(uuid.toString().replace("-", ""));
-                        if (!lookups.finish(uuid, entry.getValue(), report != null && report.getFailures().isEmpty())) continue;
+                        if (!lookups.finish(uuid, entry.getValue(), report != null && report.getFailures().isEmpty(), TagPolicy.retryDelayMillis(report))) continue;
                         if (report != null) reportsByMember.put(uuid, report);
                         if (report != null && members.contains(uuid) && config.partyBlacklistWarning)
                             warn(uuid, TagPolicy.warnings(report, true, ignored != null && ignored.isTagIgnored(uuid)));

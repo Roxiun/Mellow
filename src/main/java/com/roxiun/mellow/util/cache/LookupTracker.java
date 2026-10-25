@@ -28,10 +28,13 @@ public final class LookupTracker<K> {
         return next;
     }
     public synchronized boolean finish(K key, Attempt attempt, boolean success) {
+        return finish(key, attempt, success, RETRY_DELAY_MS);
+    }
+    public synchronized boolean finish(K key, Attempt attempt, boolean success, long retryDelayMillis) {
         if (entries.get(key) != attempt) return false;
         attempt.pending = false;
         attempt.done = success;
-        attempt.retryAt = clock.getAsLong() + RETRY_DELAY_MS;
+        attempt.retryAt = clock.getAsLong() + Math.max(RETRY_DELAY_MS, retryDelayMillis);
         return true;
     }
     public synchronized boolean finished(K key) {

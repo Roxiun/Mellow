@@ -179,7 +179,7 @@ public class PregameStats {
             return;
         }
         inSession(session, () -> publishProfile(username, identityResult, false, session));
-        if (config.printBlacklistTags && (config.isCoralEnabled() || config.xadia)) {
+        if (config.printBlacklistTags && TagPolicy.anyEnabled(config)) {
             AsyncExecutor.getInstance().supplementalIo(() -> {
                 PlayerProfile tagged = playerCache.enrichProfileWithTags(identity);
                 inSession(session, () -> publishProfile(username, ProfileFetchResult.success(tagged, null), false, session));

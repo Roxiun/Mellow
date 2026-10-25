@@ -10,7 +10,7 @@ public class FormattingUtils {
     /** Shared source styling for manual headings and automatic alerts. */
     public static String formatTagSource(String source, boolean bold) {
         String color = "Coral".equals(source) ? "§5" : "Xadia".equals(source) ? "§d"
-            : "Local".equals(source) ? "§c" : "§7";
+            : "Watcher".equals(source) ? "§b" : "Local".equals(source) ? "§c" : "§7";
         return color + (bold ? "§l" : "") + source + "§r" + color;
     }
 
@@ -72,12 +72,35 @@ public class FormattingUtils {
         return color + text;
     }
 
+    public static String formatTagLabel(String label, String color) {
+        return color + "§l" + label + "§r";
+    }
+
+    public static String formatTagBadge(String icon, String color) {
+        return "§8[" + color + icon + "§8]§r";
+    }
+
+    /** Map Cubelify's RGB badge colour to the closest Minecraft 1.8 chat colour. */
+    public static String legacyColor(int rgb) {
+        int[] palette = {0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
+            0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF};
+        int closest = 0, distance = Integer.MAX_VALUE;
+        for (int i = 0; i < palette.length; i++) {
+            int r = ((rgb >> 16) & 255) - ((palette[i] >> 16) & 255);
+            int g = ((rgb >> 8) & 255) - ((palette[i] >> 8) & 255);
+            int b = (rgb & 255) - (palette[i] & 255);
+            int candidate = r * r + g * g + b * b;
+            if (candidate < distance) { closest = i; distance = candidate; }
+        }
+        return "§" + "0123456789abcdef".charAt(closest);
+    }
+
     public static String formatXadiaTags(List<XadiaTag> tags) {
         return tags.stream().map(FormattingUtils::formatXadiaTag).collect(Collectors.joining(", "));
     }
 
     public static String formatXadiaTag(XadiaTag tag) {
-        String text = getXadiaTagColor(tag.getType()) + "§l" + tag.getLabel() + "§r";
+        String text = formatTagLabel(tag.getLabel(), getXadiaTagColor(tag.getType()));
         if (Boolean.FALSE.equals(tag.getVerified())) text += " §e[Unverified]";
         if (Boolean.TRUE.equals(tag.getVerified())) text += " §a[Verified]";
         if (tag.getReason() != null && !tag.getReason().trim().isEmpty()) text += " §7(" + tag.getReason() + ")";
@@ -95,7 +118,7 @@ public class FormattingUtils {
             case "alt": icon = "A"; break;
             default: icon = tag.getLabel();
         }
-        return "§8[" + getXadiaTagColor(tag.getType()) + icon + "§8]§r";
+        return formatTagBadge(icon, getXadiaTagColor(tag.getType()));
     }
 
     private static String getXadiaTagColor(String type) {

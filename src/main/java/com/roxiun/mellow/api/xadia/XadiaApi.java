@@ -5,19 +5,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.tags.TagRequests;
-import java.io.BufferedReader;
+import com.roxiun.mellow.api.tags.TagHttp;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 public class XadiaApi {
 
@@ -45,42 +40,14 @@ public class XadiaApi {
 
         String cacheKey = buildTagCacheKey(identifier, apiKey) + "|" + verifiedOnly;
         return copyTags(tagCache.get(cacheKey, () -> {
-        URL url = new URL(PLAYER_TAGS_ENDPOINT);
-        HttpURLConnection connection = openConnection(url);
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("X-API-Key", apiKey);
-        connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty(
-            "User-Agent",
-            Mellow.NAME + "/" + Mellow.VERSION
-        );
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
-
-        List<XadiaTag> tags;
-        try {
+            URL url = new URL(PLAYER_TAGS_ENDPOINT);
+            HttpURLConnection connection = openConnection(url);
             JsonArray players = new JsonArray();
             players.add(new com.google.gson.JsonPrimitive(identifier));
             JsonObject request = new JsonObject();
             request.add("players", players);
             request.addProperty("verified_only", verifiedOnly);
-            try (java.io.OutputStream output = connection.getOutputStream()) {
-                output.write(request.toString().getBytes(StandardCharsets.UTF_8));
-            }
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw buildHttpException(connection, responseCode);
-            }
-
-            try (InputStream input = connection.getInputStream()) {
-                tags = parseTags(readBody(input));
-            }
-        } finally {
-            connection.disconnect();
-        }
-        return copyTags(tags);
+            return parseTags(TagHttp.request(connection, "Xadia", apiKey, request));
         }));
     }
 
@@ -93,39 +60,28 @@ public class XadiaApi {
             if (apiKey.isEmpty()) throw new IOException("A Xadia API key is required.");
             if (missing.size() > 100) throw new IOException("Batch exceeds 100 players");
             HttpURLConnection connection = openConnection(new URL(PLAYER_TAGS_ENDPOINT));
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("X-API-Key", apiKey);
-            connection.setRequestProperty("User-Agent", Mellow.NAME + "/" + Mellow.VERSION);
-            connection.setConnectTimeout(5000); connection.setReadTimeout(5000);
             try {
                 JsonArray array = new JsonArray();
                 for (String id : missing) array.add(new com.google.gson.JsonPrimitive(id));
-                JsonObject body = new JsonObject(); body.add("players", array); body.addProperty("verified_only", verifiedOnly);
-                try (java.io.OutputStream output = connection.getOutputStream()) {
-                    output.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                }
-                int status = connection.getResponseCode();
-                if (status != 200) throw buildHttpException(connection, status);
-                JsonObject response;
-                try (InputStream input = connection.getInputStream()) {
-                    response = new JsonParser().parse(readBody(input)).getAsJsonObject();
-                }
+                JsonObject body = new JsonObject();
+                body.add("players", array);
+                body.addProperty("verified_only", verifiedOnly);
+                JsonObject response = new JsonParser().parse(
+                    TagHttp.request(connection, "Xadia", apiKey, body)).getAsJsonObject();
                 java.util.Map<String, List<XadiaTag>> parsed = new java.util.LinkedHashMap<>();
-            JsonArray results = response.getAsJsonArray("results");
-            if (results == null) throw new IOException("Missing results");
-            for (JsonElement element : results) {
-                JsonObject player = element.getAsJsonObject();
-                String id = normalizeIdentifier(player.get("query").getAsString());
-                JsonObject single = new JsonObject();
-                JsonArray one = new JsonArray(); one.add(player); single.add("results", one);
-                parsed.put(id, parseTags(single.toString()));
-            }
+                JsonArray results = response.getAsJsonArray("results");
+                if (results == null) throw new IOException("Missing results");
+                for (JsonElement element : results) {
+                    JsonObject player = element.getAsJsonObject();
+                    String id = normalizeIdentifier(player.get("query").getAsString());
+                    JsonObject single = new JsonObject();
+                    JsonArray one = new JsonArray(); one.add(player); single.add("results", one);
+                    parsed.put(id, parseTags(single.toString()));
+                }
                 return parsed;
             } catch (RuntimeException error) {
                 throw new IOException("Malformed Xadia batch response", error);
-            } finally { connection.disconnect(); }
+            }
         });
     }
 
@@ -174,39 +130,6 @@ public class XadiaApi {
         return value == null || value.isJsonNull()
             ? null
             : value.getAsString();
-    }
-
-    private IOException buildHttpException(
-        HttpURLConnection connection,
-        int responseCode
-    ) {
-        String detail = "";
-        InputStream errorStream = connection.getErrorStream();
-        if (errorStream != null) {
-            try (InputStream input = errorStream) {
-                JsonObject error = new JsonParser()
-                    .parse(readBody(input))
-                    .getAsJsonObject();
-                if (error.has("error")) {
-                    detail = ": " + error.get("error").getAsString();
-                }
-            } catch (Exception ignored) {}
-        }
-        return new IOException(
-            "Xadia API request failed with response code " +
-            responseCode +
-            detail
-        );
-    }
-
-    private String readBody(InputStream input) throws IOException {
-        try (
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(input, StandardCharsets.UTF_8)
-            )
-        ) {
-            return reader.lines().collect(Collectors.joining());
-        }
     }
 
     public void clearCache() {

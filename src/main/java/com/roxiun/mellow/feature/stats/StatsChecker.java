@@ -173,7 +173,7 @@ public class StatsChecker {
                     String name = entry.getKey();
                     TagReport report = fetchedReports.get(entry.getValue().getUuid().replace("-", ""));
                     if (report == null) report = new TagReport(java.util.Collections.emptyList(), java.util.Collections.singletonMap("Tags", "Missing result"));
-                    tagRequests.finish(name.toLowerCase(Locale.ROOT), tagAttempts.get(name), report.getFailures().isEmpty());
+                    tagRequests.finish(name.toLowerCase(Locale.ROOT), tagAttempts.get(name), report.getFailures().isEmpty(), TagPolicy.retryDelayMillis(report));
                     report = report.retainFailedSources(matchTags.getOrDefault(name, TagReport.empty()));
                     matchTags.put(name, report);
                     PlayerProfile tagged = entry.getValue().withTags(report);
@@ -219,18 +219,11 @@ public class StatsChecker {
             return false;
         }
 
-        boolean tabNeedsCoralTags = config.shouldShowCoralTagsInTab() && config.isCoralEnabled();
-        boolean warningNeedsTags =
-            config.printBlacklistTags && (config.isCoralEnabled() || config.xadia);
-        return tabNeedsCoralTags || (config.xadia && config.showXadiaTagsInTab) || warningNeedsTags;
+        return TagPolicy.anyVisibleInTab(config) || (config.printBlacklistTags && TagPolicy.anyEnabled(config));
     }
 
     private boolean shouldShowRemoteTagsInTab() {
-        return (
-            config != null &&
-            ((config.shouldShowCoralTagsInTab() && config.isCoralEnabled()) ||
-                (config.xadia && config.showXadiaTagsInTab))
-        );
+        return TagPolicy.anyVisibleInTab(config);
     }
 
     private void maybeReportLiveFetchFailure(
@@ -309,7 +302,7 @@ public class StatsChecker {
         ) {
             return true;
         }
-        return config.printBlacklistTags && (config.isCoralEnabled() || config.xadia);
+        return config.printBlacklistTags && TagPolicy.anyEnabled(config);
     }
 
     private void warmHiddenWinstreakCache(

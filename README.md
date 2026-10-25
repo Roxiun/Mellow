@@ -28,6 +28,7 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 - Identity lookup uses Mowojang with fallback providers. Retired Seraph tag, reporting, ping, and client-detection integrations have been removed.
 
 - Supports [Xadia API](https://xadia.sniped.me/) tags, including verified and unverified reports
+- Supports [Watcher](https://docs.watchertag.com/) tags with colored chat details and bracketed tab badges
 
 - Import your own local blacklist
 
@@ -92,7 +93,7 @@ Open OneConfig with **Right Shift**. New configurations use **Bordic** for keyle
 
 Match stats fetch automatically. `/who` is optional; use `/refresh` to re-fetch stats during a supported live match.
 
-Enable Coral or Xadia and add their keys under **API Keys**. Xadia keys come from `/key generate` in its Discord bot; **Verified Tags Only** hides unverified reports. Number denicking requires an Aurora key and its feature toggle.
+Enable Coral, Xadia or Watcher under **Tags & Blacklists** and add their keys under **API Keys**. Watcher is off by default; get its key with `/apikey` in [Watcher’s Discord](https://discord.gg/watchertag). Each provider has its own tab visibility toggle. Xadia keys come from `/key generate` in its Discord bot; **Verified Tags Only** hides unverified reports. Number denicking requires an Aurora key and its feature toggle.
 
 Under **Tab Stats**, Ornithe uses draggable entries that you can uncheck to hide. Forge uses stat-slot dropdowns. Configure HUDs in the OneConfig HUD editor.
 
@@ -108,7 +109,7 @@ Under **Tab Stats**, Ornithe uses draggable entries that you can uncheck to hide
 | `/coral <player>`, `/xadia <player>` | Provider tag lookups |
 | `/blacklist add/remove/list/import` | Manage your local blacklist; `/bl` also works |
 | `/annoylist add/remove/list/import` | Manage your annoy list |
-| `/tagignore add/remove/list/import` | Suppress Coral/Xadia tag alerts for selected players |
+| `/tagignore add/remove/list/import` | Suppress Coral/Xadia/Watcher tag alerts for selected players |
 | `/skindenick <player>` | Skin-based denicking |
 | `/denick <finals/beds> <number>` | Number-based denicking |
 | `/refresh` | Refresh stats in a live match |
@@ -124,7 +125,7 @@ List commands take `add <player> [reason]`, `remove <player>`, `list`, or `impor
 
 Replay subcommands: `list`, `open <id/index>`, `info <id/index>`, `delete <id/index>`, and `tp <player>` (also `spectate`).
 
-Coral and Xadia use native tag integrations. Stats and tags load independently; failed sources are reported separately.
+Coral and Xadia use native tag integrations; Watcher uses its documented `/api/v1/cubelify` endpoint. Stats and tags load independently; failed sources are reported separately.
 
 ## Data and game-state flow
 
@@ -132,8 +133,8 @@ Coral and Xadia use native tag integrations. Stats and tags load independently; 
 - `feature/stats/InGameTabStatsSyncService` scans the live roster every 1.5 seconds. `StatsChecker` applies local checks immediately, schedules stats and tags independently, and applies results on the client thread only while their session and refresh generation remain current. Party checks use membership UUIDs independently of the match and never fetch stats. Successful remote checks are retained per member for the connection session, including across leaving/rejoining the party; newcomers are still checked. Local lists remain checked locally.
 - `cache/PlayerCache` owns request sharing and freshness. Adapters live in `api/hypixel/provider`; `HypixelPlayerData` handles provider envelopes and identity/rank differences. Raw responses are shared across commands, views, and game scopes. `stats/PlayerStatsService` parses a caller-supplied `StatsSelection`, without consulting live client state.
 - `stats/GameRegistry` lists supported games. Each game owns its parser, typed stats, submodes, tab columns, defaults, and chat output. Tab renderers consume `StatDefinition` metadata. `PlayerProfile` stores typed game results without a field per game. All supported games configure their column layouts inside OneConfig: checkable draggable lists on Ornithe and ordered dropdowns on Forge, using each platform's existing config file. Missing game data does not fall back to Bed Wars.
-- Native Coral and Xadia adapters share request caching through `api/tags/TagRequests`. Their responses become `TagReport` / `PlayerTag` values used by alerts and overlays. A report preserves failures separately from empty successful results. `TagPolicy` centralizes automatic tag suppression and tab visibility; manual lookups show the fetched report. `CubelifyParser` supplies shared envelope decoding with explicit provider mappings for warning tags, metadata, and HTTP-200 error badges.
-- Roster lookups use Coral/Xadia batches and Bordic bulk stats, in groups of at most 100. Single and batch requests share cache entries. Shared stats and tag responses stay fresh for five minutes. Successful identity lookups are retained for the connection session (bounded to 4,096 entries per cache), and cleared on disconnect or explicit cache clearing; identity failures expire after 30 seconds. Successful roster lookups are retained for the match; expiry does not trigger polling. Automatic failures receive at most one retry after 30 seconds; stats rate limits impose a provider cooldown. Upstream provider caches may contain older data.
+- Coral, Xadia and Watcher share JSON HTTP handling through `api/tags/TagHttp` and request caching through `api/tags/TagRequests`. Watcher uses `CubelifyParser`; Xadia keeps its native API to preserve verification and reasons. Their responses become `TagReport` / `PlayerTag` values used by alerts and overlays. A report preserves failures separately from empty successful results. `TagPolicy` centralizes automatic tag suppression and tab visibility; manual lookups show the fetched report. `CubelifyParser` supplies shared envelope decoding with explicit provider mappings for warning tags, metadata, and HTTP-200 error badges.
+- Roster lookups use Coral/Xadia batches and Bordic bulk stats, in groups of at most 100. Single and batch requests share cache entries. Shared stats and tag responses stay fresh for five minutes. Successful identity lookups are retained for the connection session (bounded to 4,096 entries per cache), and cleared on disconnect or explicit cache clearing; identity failures expire after 30 seconds. Successful roster lookups are retained for the match; expiry does not trigger polling. Watcher has no documented batch endpoint: roster lookups reuse its individual cache, with at most 60 requests per rolling minute per key and a one-minute cooldown on HTTP 429. Cache clears do not reset that quota. Automatic failures receive at most one retry after 30 seconds (60 seconds for Watcher); stats rate limits impose a provider cooldown. Upstream provider caches may contain older data.
 - `/refresh` invalidates current players' stats and tags while retaining good displayed rows until replacements arrive. `/clearcache` invalidates cached and pending results without changing local lists. `RequestCache` bounds retained entries and shares pending work; clearing an entry detaches its old completion. Ping discovery runs from ticks, with rendering limited to cache reads; successful values remain for the match instead of being periodically refreshed.
 
 Supported game IDs include `tnt_tag`, `bow_spleef`, and `murder_mystery`. For example, `/mellowstats Player murder_mystery double_up` selects Double Up; Murder Mystery also supports `overall`, `classic`, `assassins`, and `infection`. Infection kills combine its infected and survivor counters. Bow Spleef's ratio is wins divided by deaths (wins when deaths are zero).

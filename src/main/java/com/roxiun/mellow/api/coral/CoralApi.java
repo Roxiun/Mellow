@@ -5,12 +5,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.tags.TagRequests;
-import java.io.BufferedReader;
+import com.roxiun.mellow.api.tags.TagHttp;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -18,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 public class CoralApi {
 
@@ -45,36 +41,13 @@ public class CoralApi {
 
         String cacheKey = buildTagCacheKey(identifier, apiKey);
         return copyTags(tagCache.get(cacheKey, () -> {
-        URL url = new URL(
-            PLAYER_TAGS_ENDPOINT +
-            "?player=" +
-            URLEncoder.encode(identifier, StandardCharsets.UTF_8.name())
-        );
-        HttpURLConnection connection = openConnection(url);
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("X-API-Key", apiKey);
-        connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty(
-            "User-Agent",
-            Mellow.NAME + "/" + Mellow.VERSION
-        );
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
-
-        List<CoralTag> tags;
-        try {
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw buildHttpException(connection, responseCode);
-            }
-
-            try (InputStream input = connection.getInputStream()) {
-                tags = parseTags(readBody(input));
-            }
-        } finally {
-            connection.disconnect();
-        }
-        return copyTags(tags);
+            URL url = new URL(
+                PLAYER_TAGS_ENDPOINT +
+                "?player=" +
+                URLEncoder.encode(identifier, StandardCharsets.UTF_8.name())
+            );
+            HttpURLConnection connection = openConnection(url);
+            return parseTags(TagHttp.request(connection, "Coral", apiKey, null));
         }));
     }
 
@@ -87,36 +60,24 @@ public class CoralApi {
             if (apiKey.isEmpty()) throw new IOException("A Coral API key is required.");
             if (missing.size() > 100) throw new IOException("Batch exceeds 100 players");
             HttpURLConnection connection = openConnection(new URL("https://api.urchin.gg/v3/players"));
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("X-API-Key", apiKey);
-            connection.setRequestProperty("User-Agent", Mellow.NAME + "/" + Mellow.VERSION);
-            connection.setConnectTimeout(5000); connection.setReadTimeout(5000);
             try {
                 JsonArray array = new JsonArray();
                 for (String id : missing) array.add(new com.google.gson.JsonPrimitive(id));
-                JsonObject body = new JsonObject(); body.add("uuids", array);
-                try (java.io.OutputStream output = connection.getOutputStream()) {
-                    output.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                }
-                int status = connection.getResponseCode();
-                if (status != 200) throw buildHttpException(connection, status);
-                JsonObject response;
-                try (InputStream input = connection.getInputStream()) {
-                    response = new JsonParser().parse(readBody(input)).getAsJsonObject();
-                }
+                JsonObject body = new JsonObject();
+                body.add("uuids", array);
+                JsonObject response = new JsonParser().parse(
+                    TagHttp.request(connection, "Coral", apiKey, body)).getAsJsonObject();
                 java.util.Map<String, List<CoralTag>> parsed = new java.util.LinkedHashMap<>();
-            JsonObject players = response.getAsJsonObject("players");
-            if (players == null) throw new IOException("Missing players");
-            for (java.util.Map.Entry<String, JsonElement> entry : players.entrySet()) {
-                JsonObject single = new JsonObject(); single.add("tags", entry.getValue());
-                parsed.put(normalizeIdentifier(entry.getKey()), parseTags(single.toString()));
-            }
+                JsonObject players = response.getAsJsonObject("players");
+                if (players == null) throw new IOException("Missing players");
+                for (java.util.Map.Entry<String, JsonElement> entry : players.entrySet()) {
+                    JsonObject single = new JsonObject(); single.add("tags", entry.getValue());
+                    parsed.put(normalizeIdentifier(entry.getKey()), parseTags(single.toString()));
+                }
                 return parsed;
             } catch (RuntimeException error) {
                 throw new IOException("Malformed Coral batch response", error);
-            } finally { connection.disconnect(); }
+            }
         });
     }
 
@@ -171,39 +132,6 @@ public class CoralApi {
         return value == null || value.isJsonNull()
             ? null
             : value.getAsString();
-    }
-
-    private IOException buildHttpException(
-        HttpURLConnection connection,
-        int responseCode
-    ) {
-        String detail = "";
-        InputStream errorStream = connection.getErrorStream();
-        if (errorStream != null) {
-            try (InputStream input = errorStream) {
-                JsonObject error = new JsonParser()
-                    .parse(readBody(input))
-                    .getAsJsonObject();
-                if (error.has("error")) {
-                    detail = ": " + error.get("error").getAsString();
-                }
-            } catch (Exception ignored) {}
-        }
-        return new IOException(
-            "Coral API request failed with response code " +
-            responseCode +
-            detail
-        );
-    }
-
-    private String readBody(InputStream input) throws IOException {
-        try (
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(input, StandardCharsets.UTF_8)
-            )
-        ) {
-            return reader.lines().collect(Collectors.joining());
-        }
     }
 
     public void clearCache() {
