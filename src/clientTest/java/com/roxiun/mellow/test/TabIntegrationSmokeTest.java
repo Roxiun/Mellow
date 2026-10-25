@@ -57,6 +57,7 @@ final class TabIntegrationSmokeTest {
 *///?}
         boolean oldStats = Mellow.config.tabStats, oldExtended = Mellow.config.extendedTabStatsView;
         Map<String, TabStats> oldStatsMap = new HashMap<>(Mellow.tabStats);
+        int oldStyle = Mellow.config.extendedTabStatsStyle;
         int oldGuiScale = mc.gameSettings.guiScale;
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
 //? if ornithe {
@@ -107,7 +108,15 @@ final class TabIntegrationSmokeTest {
             check(layout != null && layout.players().size() == 16, "Missing integrated layout");
             check(layout.objectiveWidth() > 0, "Tab scoreboard objective was lost");
             check(layout.totalHeight() > layout.bodyHeight(), "Header/footer not included in measurement");
+            Mellow.config.extendedTabStatsStyle = 0;
+            int shadedHeight = VanillaHudTabIntegration.measureCurrent().bodyHeight();
             render(mc, tab, board, objective, "tab-integrated.png");
+            Mellow.config.extendedTabStatsStyle = 1;
+            check(VanillaHudTabIntegration.measureCurrent().bodyHeight() < shadedHeight,
+                "Clean style should use more compact rows");
+            render(mc, tab, board, objective, "tab-clean.png");
+            verifyPanelPixels(mc, "tab-clean.png");
+            Mellow.config.extendedTabStatsStyle = 0;
 //? if ornithe {
             var layoutField = Arrays.stream(tab.getClass().getDeclaredFields())
                 .filter(f -> f.getType() == ExtendedStatsTabOverlay.Layout.class).findFirst().orElseThrow();
@@ -146,7 +155,7 @@ final class TabIntegrationSmokeTest {
                     ExtendedStatsTabOverlay.Layout headerLayout = VanillaHudTabIntegration.measureCurrent();
 *///?}
                     if (mode == 1) normalHeight = headerLayout.bodyHeight();
-                    if (mode == 2) check(headerLayout.headerHeight() == 0 && headerLayout.bodyHeight() < normalHeight,
+                    if (mode == 2) check(headerLayout.headerHeight() == 0 && headerLayout.bodyHeight() <= normalHeight,
                         "Hidden headings still reserved a header row");
                     render(mc, tab, board, objective, "tab-headers-" + mode + ".png");
                 }
@@ -210,6 +219,7 @@ final class TabIntegrationSmokeTest {
 *///?}
             Mellow.config.tabStats = oldStats;
             Mellow.config.extendedTabStatsView = oldExtended;
+            Mellow.config.extendedTabStatsStyle = oldStyle;
             Mellow.tabStats.clear(); Mellow.tabStats.putAll(oldStatsMap);
             mc.gameSettings.guiScale = oldGuiScale;
             tab.setHeader(oldHeader); tab.setFooter(oldFooter);

@@ -198,6 +198,15 @@ public class MellowOneConfig extends Config {
     @Switch(title = "Extended Tab Stats View", category = "Tab Stats", subcategory = "Extended View")
     public boolean extendedTabStatsView = true;
 
+    @Dropdown(
+        title = "Style",
+        options = {"Extended Tabs", "Extended Tabs Clean"},
+        description = "Extended Tabs adds shaded rows and spacing. Clean keeps the compact layout.",
+        category = "Tab Stats",
+        subcategory = "Extended View"
+    )
+    public int extendedTabStatsStyle = 0;
+
     @Switch(
         title = "Extended View In Lobbies",
         description = "Allows Extended Tab Stats View while in game lobbies.",
@@ -725,12 +734,12 @@ public class MellowOneConfig extends Config {
         dependOn("enableReplayRecording", "recordChatInReplays");
         dependOn("printStats", "tags");
         dependOn("tabStats", "showStarsWithBrackets", "showNickWithBrackets", "showRanksInGameTabStats",
-            "extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
+            "extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
             "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding", "highlightTaggedPlayers",
             "bedwarsStatOrder", "skywarsStatOrder", "duelsStatOrder", "buildBattleStatOrder", "tntRunStatOrder", "tntTagStatOrder", "bowSpleefStatOrder", "murderMysteryStatOrder", "showDot12", "showDot23", "showDot34",
             "showDot45", "showDot56", "showDot67", "showDot78", "showDot89", "showDot910",
             "showUrchinTagsInTab", "showXadiaTagsInTab");
-        dependOn("extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
+        dependOn("extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
             "extendedTabStatsShowHeads", "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding",
             "highlightTaggedPlayers");
         displayWhen("extendedTabStatsStripCombinedTeamPadding",

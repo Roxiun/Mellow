@@ -288,6 +288,15 @@ public class MellowOneConfig extends Config {
     )
     public boolean extendedTabStatsView = true;
 
+    @Dropdown(
+        name = "Style",
+        options = {"Extended Tabs", "Extended Tabs Clean"},
+        description = "Extended Tabs adds shaded rows and spacing. Clean keeps the compact layout.",
+        category = "Tab Stats",
+        subcategory = "Extended View"
+    )
+    public int extendedTabStatsStyle = 0;
+
     @Switch(
         description = "Allows Extended Tab Stats View while in game lobbies.",
         name = "Extended View In Lobbies",
@@ -2019,12 +2028,12 @@ public class MellowOneConfig extends Config {
         dependOn("enableReplayRecording", "recordChatInReplays");
         dependOn("printStats", "tags");
         dependOn("tabStats", "showStarsWithBrackets", "showNickWithBrackets", "showRanksInGameTabStats",
-            "extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
+            "extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
             "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding", "highlightTaggedPlayers",
             "showDot12", "showDot23", "showDot34",
             "showDot45", "showDot56", "showDot67", "showDot78", "showDot89", "showDot910",
             "showUrchinTagsInTab", "showXadiaTagsInTab");
-        dependOn("extendedTabStatsView", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
+        dependOn("extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
             "extendedTabStatsShowHeads", "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding",
             "highlightTaggedPlayers");
         hideIf("extendedTabStatsStripCombinedTeamPadding",

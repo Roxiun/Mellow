@@ -156,15 +156,15 @@ public class ExtendedStatsTabOverlay extends Gui {
         // Expand the native shell equally on both sides, including wide headers/footers.
         // Content stays centered and retains its existing cell spacing and scale.
         width += OUTER_PADDING_X * 2;
-        int headerHeight = config.extendedTabStatsHeaders == 2 ? 0 : HEADER_HEIGHT;
+        int headerHeight = config.extendedTabStatsHeaders == 2 ? 0 : HEADER_HEIGHT + (hasRowBackgrounds() ? 1 : 0);
         int availableBody = Math.max(9, screenHeight - TOP_Y - textHeight - BORDER);
-        int capacity = Math.max(1, (int) ((availableBody - 8) / scale - headerHeight) / ENTRY_HEIGHT);
+        int capacity = Math.max(1, (int) ((availableBody - 8) / scale - headerHeight) / getRowStep());
         boolean scrolls = players.size() > capacity;
         if (scrolls) capacity = Math.max(1, capacity - 1); // Dedicated scroll status line.
         maxVisiblePlayers = capacity;
         int count = Math.min(players.size(), capacity);
         scrollIndex = MathHelper.clamp_int(scrollIndex, 0, Math.max(0, players.size() - count));
-        int pixels = MathHelper.ceiling_float_int((headerHeight + count * ENTRY_HEIGHT + (scrolls ? 9 : 0)) * scale);
+        int pixels = MathHelper.ceiling_float_int((headerHeight + count * getRowStep() + (scrolls ? 9 : 0)) * scale);
         // Vanilla reserves its body in nine-pixel rows. Keep footer positioning native.
         int bodyHeight = ((pixels + 8) / 9) * 9;
         return new Layout(scope, players, columns, widths, tableWidth, width, bodyHeight,
@@ -180,28 +180,32 @@ public class ExtendedStatsTabOverlay extends Gui {
             GlStateManager.translate(screenWidth / 2 - layout.tableWidth() * layout.scale() / 2, top, 0);
             GlStateManager.scale(layout.scale(), layout.scale(), 1);
             GlStateManager.color(1, 1, 1, 1);
-            drawHeaders(layout.columns(), layout.widths(), layout.scope(), 0, 0);
+            int textOffset = hasRowBackgrounds() ? 1 : 0;
+            if (hasRowBackgrounds() && layout.headerHeight() > 0) {
+                drawRect(0, 0, layout.tableWidth(), HEADER_HEIGHT, 0x20FFFFFF);
+            }
+            drawHeaders(layout.columns(), layout.widths(), layout.scope(), 0, textOffset);
             int scoreX = layout.tableWidth() - layout.objectiveWidth();
             if (layout.objectiveWidth() > 0 && layout.headerHeight() > 0) {
                 String title = layout.objective().getRenderType() == IScoreObjectiveCriteria.EnumRenderType.HEARTS
                     ? "HP" : layout.objective().getDisplayName();
-                mc.fontRendererObj.drawStringWithShadow(formatHeader(title), scoreX + 3, 0, -1);
+                mc.fontRendererObj.drawStringWithShadow(formatHeader(title), scoreX + 3, textOffset, -1);
             }
             int end = Math.min(layout.players().size(), scrollIndex + layout.visibleCount());
             int y = layout.headerHeight();
             for (NetworkPlayerInfo info : layout.players().subList(scrollIndex, end)) {
                 int background = getRowBackground(info);
-                if (background != 0) drawRect(0, y, layout.tableWidth(), y + ENTRY_HEIGHT, background);
-                drawValues(layout.columns(), layout.widths(), layout.scope(), info, 0, y);
+                if (background != 0) drawRect(0, y, layout.tableWidth(), y + getRowStep() - (hasRowBackgrounds() ? 1 : 0), background);
+                drawValues(layout.columns(), layout.widths(), layout.scope(), info, 0, y + textOffset);
                 if (layout.objectiveWidth() > 0 && info.getGameType() != WorldSettings.GameType.SPECTATOR) {
                     //? if ornithe {
                     ((PlayerTabOverlayAccessor) vanilla).mellow$drawScoreboardValues(
-                        layout.objective(), y, info.getGameProfile().getName(), scoreX + 3,
+                        layout.objective(), y + textOffset, info.getGameProfile().getName(), scoreX + 3,
                         layout.tableWidth() - 3, info);
                     //?} else {
                     /*if (layout.objective().getRenderType() == IScoreObjectiveCriteria.EnumRenderType.HEARTS) {
                         ((PlayerTabOverlayAccessor) vanilla).mellow$drawScoreboardValues(
-                            layout.objective(), y, info.getGameProfile().getName(), scoreX + 3,
+                            layout.objective(), y + textOffset, info.getGameProfile().getName(), scoreX + 3,
                             layout.tableWidth() - 3, info);
                     } else {
                         // VanillaHUD's native numeric-score redirect assumes vanilla row/ping
@@ -209,11 +213,11 @@ public class ExtendedStatsTabOverlay extends Gui {
                         String score = "§e" + layout.objective().getScoreboard().getValueFromObjective(
                             info.getGameProfile().getName(), layout.objective()).getScorePoints();
                         mc.fontRendererObj.drawStringWithShadow(score,
-                            layout.tableWidth() - 3 - mc.fontRendererObj.getStringWidth(score), y, -1);
+                            layout.tableWidth() - 3 - mc.fontRendererObj.getStringWidth(score), y + textOffset, -1);
                     }
                     *///?}
                 }
-                y += ENTRY_HEIGHT;
+                y += getRowStep();
             }
             if (layout.players().size() > layout.visibleCount()) {
                 String status = "§7" + (scrollIndex + 1) + "–" + end + " / " + layout.players().size();
@@ -917,6 +921,14 @@ public class ExtendedStatsTabOverlay extends Gui {
         return safe;
     }
 
+    private boolean hasRowBackgrounds() {
+        return config.extendedTabStatsStyle == 0;
+    }
+
+    private int getRowStep() {
+        return hasRowBackgrounds() ? 12 : ENTRY_HEIGHT;
+    }
+
     private int getRowBackground(NetworkPlayerInfo info) {
         if (
             Mellow.config != null &&
@@ -925,7 +937,7 @@ public class ExtendedStatsTabOverlay extends Gui {
         ) {
             return 0x40550000;
         }
-        return 0;
+        return hasRowBackgrounds() ? 0x20FFFFFF : 0;
     }
 
     private boolean isPlayerTagged(NetworkPlayerInfo info) {
