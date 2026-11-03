@@ -100,7 +100,8 @@ public class FormattingUtils {
     }
 
     public static String formatXadiaTag(XadiaTag tag) {
-        String text = formatTagLabel(tag.getLabel(), getXadiaTagColor(tag.getType()));
+        String label = "possibly_cheating".equals(tag.getType()) ? "Risky" : tag.getLabel();
+        String text = formatTagLabel(label, getXadiaTagColor(tag.getType()));
         if (Boolean.FALSE.equals(tag.getVerified())) text += " §e[Unverified]";
         if (Boolean.TRUE.equals(tag.getVerified())) text += " §a[Verified]";
         if (tag.getReason() != null && !tag.getReason().trim().isEmpty()) text += " §7(" + tag.getReason() + ")";
