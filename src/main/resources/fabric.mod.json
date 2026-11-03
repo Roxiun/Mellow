@@ -16,7 +16,7 @@
     "minecraft": "1.8.9",
     "fabricloader": ">=0.19.3",
     "java": ">=25",
-    "oneconfig": ">=1.2.13",
+    "oneconfig": ">=1.6.1",
     "pylon": ">=0.1.7"
   },
   "description": "Hypixel stats, Bed Wars HUDs, player tags and replays for Ornithe.",

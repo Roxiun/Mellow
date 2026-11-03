@@ -68,7 +68,7 @@ dependencies.registerTransform(UnpackModBundle::class) {
 // Exercise the dependency versions shipped by OneClient as well as newer releases.
 val oneClientBaseline = providers.gradleProperty("oneClientBaseline").isPresent
 val oneClientCurrent = providers.gradleProperty("oneClientCurrent").isPresent
-val oneConfigVersion = if (oneClientCurrent) "sArr1CT5" else if (oneClientBaseline) "JmPNe6D8" else "lzo51827"
+val oneConfigVersion = if (oneClientCurrent) "sArr1CT5" else if (oneClientBaseline) "JmPNe6D8" else "kG8g85g8"
 val vanillaHudVersion = if (oneClientCurrent) "85IIZdpz" else if (oneClientBaseline) "mIWg3d4V" else "Gpl9yiBF"
 
 dependencies {
@@ -78,10 +78,10 @@ dependencies {
     })
     modImplementation("net.fabricmc:fabric-loader:0.19.3")
     ploceus.dependOsl("0.21.1")
-    modCompileOnly("org.polyfrost.oneconfig:1.8.9-ornithe:1.2.10")
+    modCompileOnly("org.polyfrost.oneconfig:1.8.9-ornithe:1.6.1")
     oneConfigBundle("maven.modrinth:oneconfig:$oneConfigVersion")
     for (module in listOf("config", "config-impl", "events", "hud", "ui", "utils", "internal", "poly-compose")) {
-        compileOnly("org.polyfrost.oneconfig:$module:1.2.10")
+        compileOnly("org.polyfrost.oneconfig:$module:1.6.1")
     }
     modImplementation("pl.tomgirl:pylon:${if (oneClientCurrent) "0.2.0" else "0.1.7"}")
     modImplementation("net.fabricmc:fabric-language-kotlin:1.13.13+kotlin.2.4.10")
