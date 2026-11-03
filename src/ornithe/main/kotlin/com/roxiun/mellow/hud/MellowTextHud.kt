@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import org.polyfrost.compose.composables.*
 import org.polyfrost.compose.layout.PolyInsets
-import org.polyfrost.compose.render.FontManager
+import org.polyfrost.compose.render.PolyFont
 import org.polyfrost.compose.render.PolyColor
 import org.polyfrost.oneconfig.api.hud.v1.Font
 import org.polyfrost.oneconfig.api.hud.v1.TextHud
@@ -85,18 +85,18 @@ abstract class MellowTextHud(id: String, title: String, prefix: String) :
             if (textItalic) "poppins-bold-italic" else "poppins-bold"
         } else getPoppinsFontName()
         val fontSize = 8f * textScale
-        val skiaFont = FontManager.getFont(fontSize, fontName)
-        val metrics = skiaFont.metrics
-        val width = skiaFont.measureTextWidth(plain)
+        val font = PolyFont(fontName, fontSize)
+        val metrics = font.metrics
+        val width = font.measureTextWidth(plain)
         val height = metrics.descent - metrics.ascent + metrics.leading
         val shadow = PolyColor(shadowColor, shadowChroma, shadowChromaSpeed)
         PolyCanvas(modifier = PolyModifier.size(width, height)) { x, y, _, _ ->
             val baseline = y - metrics.ascent
-            if (showShadow) text(plain, x + shadowOffsetX, baseline + shadowOffsetY, shadow, skiaFont)
-            text(plain, x, baseline, color, skiaFont)
+            if (showShadow) text(plain, x + shadowOffsetX, baseline + shadowOffsetY, shadow, font)
+            text(plain, x, baseline, color, font)
             if (textUnderline) {
-                val underlineY = baseline + (metrics.underlinePosition ?: fontSize * 0.08f)
-                val thickness = metrics.underlineThickness ?: fontSize * 0.06f
+                val underlineY = baseline + metrics.underlinePosition
+                val thickness = metrics.underlineThickness
                 if (showShadow) line(x + shadowOffsetX, underlineY + shadowOffsetY,
                     x + width + shadowOffsetX, underlineY + shadowOffsetY, shadow, thickness)
                 line(x, underlineY, x + width, underlineY, color, thickness)

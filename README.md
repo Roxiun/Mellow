@@ -60,7 +60,7 @@ Choose the release JAR matching your **Minecraft 1.8.9 loader**:
 | Target | Client Java | Settings |
 | --- | --- | --- |
 | Forge | Java 8 | OneConfig v0 |
-| Ornithe / OneClient | Java 25 | OneConfig v1 1.2.13+ |
+| Ornithe / OneClient | Java 25 | OneConfig v1 1.6.1+ |
 
 Ornithe requires the complete OneConfig release and its dependencies (Compose Multiplatform and Fabric Language Kotlin), plus Pylon 0.1.7+. Optional integrations are PolyHitbox 1.3.1+, PolyNametag 1.2.1+ and VanillaHUD 3.5.3+. Use dependency releases matching your loader.
 
