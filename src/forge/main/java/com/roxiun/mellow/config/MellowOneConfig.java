@@ -44,7 +44,7 @@ public class MellowOneConfig extends Config {
         category = "Stats",
         subcategory = "General"
     )
-    public int statsProvider = 3; // Bordic
+    public int statsProvider = 2; // Abyss
 
     @Switch(
         name = "Auto /who",

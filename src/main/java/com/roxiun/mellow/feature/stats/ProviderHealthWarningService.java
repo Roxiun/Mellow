@@ -69,13 +69,8 @@ public final class ProviderHealthWarningService {
     }
 
     static String getWarningMessage(int statsProvider, String hypixelApiKey) {
-        if (statsProvider == 1 || statsProvider == 2) {
-            String providerName = statsProvider == 1 ? "Nadeshiko" : "Abyss";
-            return (
-                "§e" +
-                providerName +
-                " is deprecated. Switch your Stats Provider to §bBordic§e for keyless stats, or use §bHypixel Public API§e and add a key in §bAPI Keys > Hypixel§e."
-            );
+        if (statsProvider == 1) {
+            return "§eNadeshiko is deprecated. Switch your Stats Provider to §bBordic§e for keyless stats, or use §bHypixel Public API§e and add a key in §bAPI Keys > Hypixel§e.";
         }
 
         if (

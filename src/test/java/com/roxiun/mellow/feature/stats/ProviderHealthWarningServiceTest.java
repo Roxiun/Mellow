@@ -18,9 +18,7 @@ public class ProviderHealthWarningServiceTest {
         assertTrue(nadeshikoWarning.contains("Nadeshiko is deprecated"));
         assertTrue(nadeshikoWarning.contains("Bordic"));
         assertTrue(nadeshikoWarning.contains("Hypixel Public API"));
-        assertTrue(abyssWarning.contains("Abyss is deprecated"));
-        assertTrue(abyssWarning.contains("Bordic"));
-        assertTrue(abyssWarning.contains("Hypixel Public API"));
+        assertNull(abyssWarning);
     }
 
     @Test
