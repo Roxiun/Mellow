@@ -1,6 +1,10 @@
 package com.roxiun.mellow.mixin.nametag;
 
-import cc.polyfrost.oneconfig.config.core.OneColor;
+//? if ornithe {
+import com.roxiun.mellow.util.RgbaColor;
+//?} else {
+/*import cc.polyfrost.oneconfig.config.core.OneColor;
+*///?}
 import com.roxiun.mellow.util.nametag.NametagRenderContext;
 import net.minecraft.client.renderer.entity.Render;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +27,11 @@ public class RenderNametagColorMixin {
             return;
         }
 
-        OneColor color = NametagRenderContext.getColor();
+        //? if ornithe {
+        RgbaColor color = NametagRenderContext.getColor();
+        //?} else {
+        /*OneColor color = NametagRenderContext.getColor();
+        *///?}
         if (color == null) {
             return;
         }

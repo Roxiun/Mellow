@@ -1,15 +1,13 @@
 package com.roxiun.mellow.api.coral;
 
+import com.roxiun.mellow.api.model.ProviderResult;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.roxiun.mellow.Mellow;
-import com.roxiun.mellow.util.cache.TimedValueCache;
-import java.io.BufferedReader;
+import com.roxiun.mellow.api.tags.TagRequests;
+import com.roxiun.mellow.api.tags.TagHttp;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -17,16 +15,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 public class CoralApi {
 
     private static final String PLAYER_TAGS_ENDPOINT =
         "https://api.urchin.gg/v3/player/tags";
-    private static final long TAG_CACHE_TTL_MS = 120_000L;
 
-    private final TimedValueCache<String, List<CoralTag>> tagCache =
-        new TimedValueCache<>(TAG_CACHE_TTL_MS);
+    private final TagRequests<CoralTag> tagCache =
+        new TagRequests<>();
 
     public List<CoralTag> fetchCoralTags(
         String uuid,
@@ -44,41 +40,45 @@ public class CoralApi {
         }
 
         String cacheKey = buildTagCacheKey(identifier, apiKey);
-        if (tagCache.containsFresh(cacheKey)) {
-            return copyTags(tagCache.get(cacheKey));
-        }
+        return copyTags(tagCache.get(cacheKey, () -> {
+            URL url = new URL(
+                PLAYER_TAGS_ENDPOINT +
+                "?player=" +
+                URLEncoder.encode(identifier, StandardCharsets.UTF_8.name())
+            );
+            HttpURLConnection connection = openConnection(url);
+            return parseTags(TagHttp.request(connection, "Coral", apiKey, null));
+        }));
+    }
 
-        URL url = new URL(
-            PLAYER_TAGS_ENDPOINT +
-            "?player=" +
-            URLEncoder.encode(identifier, StandardCharsets.UTF_8.name())
-        );
-        HttpURLConnection connection = openConnection(url);
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("X-API-Key", apiKey);
-        connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty(
-            "User-Agent",
-            Mellow.NAME + "/" + Mellow.VERSION
-        );
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
-
-        List<CoralTag> tags;
-        try {
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw buildHttpException(connection, responseCode);
+    public java.util.Map<String, ProviderResult<List<CoralTag>>> fetchBatch(
+        java.util.Set<String> uuids, String key) {
+        String apiKey = normalizeApiKey(key);
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        for (String id : uuids) ids.add(normalizeIdentifier(id));
+        return tagCache.getAll(ids, apiKey, missing -> {
+            if (apiKey.isEmpty()) throw new IOException("A Coral API key is required.");
+            if (missing.size() > 100) throw new IOException("Batch exceeds 100 players");
+            HttpURLConnection connection = openConnection(new URL("https://api.urchin.gg/v3/players"));
+            try {
+                JsonArray array = new JsonArray();
+                for (String id : missing) array.add(new com.google.gson.JsonPrimitive(id));
+                JsonObject body = new JsonObject();
+                body.add("uuids", array);
+                JsonObject response = new JsonParser().parse(
+                    TagHttp.request(connection, "Coral", apiKey, body)).getAsJsonObject();
+                java.util.Map<String, List<CoralTag>> parsed = new java.util.LinkedHashMap<>();
+                JsonObject players = response.getAsJsonObject("players");
+                if (players == null) throw new IOException("Missing players");
+                for (java.util.Map.Entry<String, JsonElement> entry : players.entrySet()) {
+                    JsonObject single = new JsonObject(); single.add("tags", entry.getValue());
+                    parsed.put(normalizeIdentifier(entry.getKey()), parseTags(single.toString()));
+                }
+                return parsed;
+            } catch (RuntimeException error) {
+                throw new IOException("Malformed Coral batch response", error);
             }
-
-            try (InputStream input = connection.getInputStream()) {
-                tags = parseTags(readBody(input));
-            }
-        } finally {
-            connection.disconnect();
-        }
-        tagCache.put(cacheKey, copyTags(tags));
-        return copyTags(tags);
+        });
     }
 
     protected HttpURLConnection openConnection(URL url) throws IOException {
@@ -134,39 +134,6 @@ public class CoralApi {
             : value.getAsString();
     }
 
-    private IOException buildHttpException(
-        HttpURLConnection connection,
-        int responseCode
-    ) {
-        String detail = "";
-        InputStream errorStream = connection.getErrorStream();
-        if (errorStream != null) {
-            try (InputStream input = errorStream) {
-                JsonObject error = new JsonParser()
-                    .parse(readBody(input))
-                    .getAsJsonObject();
-                if (error.has("error")) {
-                    detail = ": " + error.get("error").getAsString();
-                }
-            } catch (Exception ignored) {}
-        }
-        return new IOException(
-            "Coral API request failed with response code " +
-            responseCode +
-            detail
-        );
-    }
-
-    private String readBody(InputStream input) throws IOException {
-        try (
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(input, StandardCharsets.UTF_8)
-            )
-        ) {
-            return reader.lines().collect(Collectors.joining());
-        }
-    }
-
     public void clearCache() {
         tagCache.clear();
     }
@@ -197,7 +164,11 @@ public class CoralApi {
     }
 
     private String normalizeIdentifier(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        if (normalized.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            return normalized.replace("-", "");
+        }
+        return normalized;
     }
 
     private boolean matchesCachePrefix(String key, String prefix) {

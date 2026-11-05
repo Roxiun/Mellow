@@ -1,6 +1,7 @@
 package com.roxiun.mellow.feature.profileviewer.model;
 
-import com.roxiun.mellow.api.bedwars.BedwarsPlayer;
+import com.roxiun.mellow.stats.bedwars.BedwarsMode;
+import com.roxiun.mellow.stats.bedwars.BedwarsPlayer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -97,7 +98,7 @@ public class PvComputedStats {
     public static PvComputedStats from(
         PvSourceData sourceData,
         BedwarsPlayer fallbackPlayer,
-        PvMode mode
+        BedwarsMode mode
     ) {
         int wins = 0;
         int losses = 0;
@@ -120,7 +121,7 @@ public class PvComputedStats {
         }
 
         if (
-            mode == PvMode.OVERALL &&
+            mode == BedwarsMode.OVERALL &&
             wins == 0 &&
             losses == 0 &&
             finalKills == 0 &&

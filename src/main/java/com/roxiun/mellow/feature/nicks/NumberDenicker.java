@@ -14,7 +14,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
+//? if ornithe {
+import com.roxiun.mellow.platform.event.ClientChatReceivedEvent;
+//?} else {
+/*import net.minecraftforge.client.event.ClientChatReceivedEvent;
+*///?}
 
 public class NumberDenicker {
 
@@ -23,7 +27,6 @@ public class NumberDenicker {
     private final AuroraApi auroraApi;
     private final NickUtils nickUtils;
 
-    private boolean gameStarted = false;
     private final Map<String, PotentialNick> nickToPotentials = new HashMap<>();
 
     private static final Pattern FINAL_KILL_PATTERN = Pattern.compile(
@@ -44,7 +47,6 @@ public class NumberDenicker {
     }
 
     public void onWorldChange() {
-        this.gameStarted = false;
         this.nickToPotentials.clear();
     }
 
@@ -54,14 +56,7 @@ public class NumberDenicker {
         String message = event.message.getUnformattedText().trim();
         message = message.replaceAll("§.", "").trim();
 
-        if (isBedwarsStartMessage(message)) {
-            if (!this.gameStarted) {
-                this.gameStarted = true;
-            }
-            return;
-        }
-
-        if (!this.gameStarted) return;
+        if (!com.roxiun.mellow.api.hypixel.HypixelFeatures.getInstance().getGameSnapshot().isInBedwarsMatch()) return;
 
         Matcher finalMatcher = FINAL_KILL_PATTERN.matcher(message);
         if (finalMatcher.find()) {
@@ -259,15 +254,6 @@ public class NumberDenicker {
             "§6" + realName + "§7 might be nicked as " + playerName + "§7.";
         ChatUtils.sendMessage(alertMsg);
         mc.thePlayer.playSound("note.pling", 1.0f, 1.0f);
-    }
-
-    private boolean isBedwarsStartMessage(String message) {
-        return (
-            message.equals("Protect your bed and destroy the enemy beds.") ||
-            (message.equals("You will respawn because you still have a bed!") &&
-                !(message.contains(":")) &&
-                !(message.contains("SHOUT")))
-        );
     }
 
     private boolean isPlayerInGame(String name) {

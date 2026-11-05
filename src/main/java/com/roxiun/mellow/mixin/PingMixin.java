@@ -53,9 +53,8 @@ public class PingMixin {
 
         boolean useLuna = PingProviderUtils.shouldUseLuna(Mellow.config);
         boolean useAurora = PingProviderUtils.shouldUseAurora(Mellow.config);
-        boolean useSeraph = PingProviderUtils.shouldUseSeraph(Mellow.config);
 
-        if (!useAurora && !useLuna && !useSeraph) {
+        if (!useAurora && !useLuna) {
             cir.setReturnValue(original);
             return;
         }
@@ -74,31 +73,6 @@ public class PingMixin {
             }
 
             cir.setReturnValue(original);
-            if (cached < 0 && !hasValidVanillaPing) {
-                Mellow.auroraPingService.fetchAsync(compactUuid);
-            }
-            return;
-        }
-
-        if (useSeraph) {
-            if (
-                Mellow.seraphPingService == null ||
-                !PingProviderUtils.hasSeraphApiKey(Mellow.config)
-            ) {
-                cir.setReturnValue(original);
-                return;
-            }
-
-            int cached = Mellow.seraphPingService.getCachedPing(uuid);
-            if (cached >= 0 && !hasValidVanillaPing) {
-                cir.setReturnValue(cached);
-                return;
-            }
-
-            cir.setReturnValue(original);
-            if (cached < 0 && !hasValidVanillaPing) {
-                Mellow.seraphPingService.fetchAsync(uuid, Mellow.config.seraphKey);
-            }
             return;
         }
 
@@ -117,8 +91,5 @@ public class PingMixin {
         }
 
         cir.setReturnValue(original);
-        if (cached < 0 && !hasValidVanillaPing) {
-            Mellow.lunaPingService.fetchAsync(uuid, Mellow.config.lunaPingApiKey);
-        }
     }
 }

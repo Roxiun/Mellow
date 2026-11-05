@@ -2,8 +2,13 @@ package com.roxiun.mellow.core.event;
 
 import com.roxiun.mellow.feature.stats.tab.ExtendedStatsTabOverlay;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.MouseEvent;
+//? if ornithe {
+import com.roxiun.mellow.platform.event.MouseEvent;
+import org.polyfrost.oneconfig.api.event.v1.invoke.impl.Subscribe;
+//?} else {
+/*import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+*///?}
 
 public class TabOverlayInputRouter {
 
@@ -14,7 +19,11 @@ public class TabOverlayInputRouter {
         this.tabOverlayRouter = tabOverlayRouter;
     }
 
-    @SubscribeEvent
+    //? if ornithe {
+    @Subscribe
+    //?} else {
+    /*@SubscribeEvent
+    *///?}
     public void onMouse(MouseEvent event) {
         if (event.dwheel == 0) {
             return;

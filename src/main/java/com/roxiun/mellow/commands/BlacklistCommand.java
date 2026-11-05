@@ -3,9 +3,6 @@ package com.roxiun.mellow.commands;
 import com.mojang.authlib.GameProfile;
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.mojang.MojangApi;
-import com.roxiun.mellow.api.seraph.SeraphApi;
-import com.roxiun.mellow.api.seraph.SeraphBlacklistReportType;
-import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.core.async.AsyncExecutor;
 import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.util.ChatUtils;
@@ -34,20 +31,14 @@ public class BlacklistCommand extends CommandBase {
 
     private final BlacklistManager blacklistManager;
     private final MojangApi mojangApi;
-    private final SeraphApi seraphApi;
-    private final MellowOneConfig config;
     private final String baseCommand;
 
     public BlacklistCommand(
         BlacklistManager blacklistManager,
-        MojangApi mojangApi,
-        SeraphApi seraphApi,
-        MellowOneConfig config
+        MojangApi mojangApi
     ) {
         this.blacklistManager = blacklistManager;
         this.mojangApi = mojangApi;
-        this.seraphApi = seraphApi;
-        this.config = config;
         this.baseCommand = BlacklistCommandResolver.getBaseCommand();
     }
 
@@ -58,7 +49,7 @@ public class BlacklistCommand extends CommandBase {
 
     @Override
     public List<String> getCommandAliases() {
-        return Arrays.asList("bl");
+        return Arrays.asList("bl", "mblacklist");
     }
 
     @Override
@@ -301,61 +292,15 @@ public class BlacklistCommand extends CommandBase {
                     playerName,
                     addRequest.getLocalReason()
                 );
-                SeraphApi.BlacklistSubmissionResult seraphSubmissionResult = null;
-                String seraphSubmissionError = null;
-
-                if (addRequest.shouldSubmitToSeraph()) {
-                    String seraphApiKey = normalizeApiKey(
-                        config == null ? null : config.seraphKey
-                    );
-                    if (!com.roxiun.mellow.api.seraph.SeraphAvailability.isEnabled()) {
-                        seraphSubmissionError = com.roxiun.mellow.api.seraph.SeraphAvailability.DISABLED_MESSAGE;
-                    } else if (seraphApi == null) {
-                        seraphSubmissionError =
-                            "Seraph integration is unavailable right now.";
-                    } else if (seraphApiKey.isEmpty()) {
-                        seraphSubmissionError =
-                            "Set a Seraph API key in OneConfig to submit reports.";
-                    } else {
-                        try {
-                            seraphSubmissionResult =
-                                seraphApi.submitBlacklistReport(
-                                    uuid.toString(),
-                                    seraphApiKey,
-                                    addRequest.getSeraphReportType(),
-                                    addRequest.getSeraphReason()
-                                );
-                            if (
-                                seraphSubmissionResult != null &&
-                                !seraphSubmissionResult.isSuccess()
-                            ) {
-                                seraphSubmissionError =
-                                    formatSeraphFailure(seraphSubmissionResult);
-                            }
-                        } catch (Exception e) {
-                            seraphSubmissionError = sanitizeFailureDetail(
-                                e.getMessage()
-                            );
-                        }
-                    }
-                }
-
                 if (playerAdded) {
-                    SeraphApi.BlacklistSubmissionResult finalSeraphSubmissionResult =
-                        seraphSubmissionResult;
-                    String finalSeraphSubmissionError = seraphSubmissionError;
+
                     MainThreadDispatcher.run(() ->
                         {
                             ChatUtils.sendCommandMessage(
                                 sender,
                                 "§aAdded " + playerName + " to the blacklist."
                             );
-                            maybeSendSeraphOutcome(
-                                sender,
-                                addRequest,
-                                finalSeraphSubmissionResult,
-                                finalSeraphSubmissionError
-                            );
+
                             maybeAlsoBlockNickedInGamePlayer(sender, playerName);
                         }
                     );
@@ -365,9 +310,7 @@ public class BlacklistCommand extends CommandBase {
                     String existingReason = existingPlayer == null
                         ? "(unknown)"
                         : existingPlayer.getReason();
-                    SeraphApi.BlacklistSubmissionResult finalSeraphSubmissionResult =
-                        seraphSubmissionResult;
-                    String finalSeraphSubmissionError = seraphSubmissionError;
+
                     MainThreadDispatcher.run(() ->
                         {
                             ChatUtils.sendCommandMessage(
@@ -377,12 +320,7 @@ public class BlacklistCommand extends CommandBase {
                                     " is already on the blacklist for reason: " +
                                     existingReason
                             );
-                            maybeSendSeraphOutcome(
-                                sender,
-                                addRequest,
-                                finalSeraphSubmissionResult,
-                                finalSeraphSubmissionError
-                            );
+
                             maybeAlsoBlockNickedInGamePlayer(sender, playerName);
                         }
                     );
@@ -446,21 +384,6 @@ public class BlacklistCommand extends CommandBase {
             return getListOfStringsMatchingLastWord(
                 args,
                 suggestions.toArray(new String[0])
-            );
-        }
-
-        if (args.length == 3 && "add".equalsIgnoreCase(args[0])) {
-            return getListOfStringsMatchingLastWord(args, "seraph");
-        }
-
-        if (
-            args.length == 4 &&
-            "add".equalsIgnoreCase(args[0]) &&
-            "seraph".equalsIgnoreCase(args[2])
-        ) {
-            return getListOfStringsMatchingLastWord(
-                args,
-                SeraphBlacklistReportType.getCompletionTokens()
             );
         }
 
@@ -585,80 +508,4 @@ public class BlacklistCommand extends CommandBase {
         return null;
     }
 
-    private void maybeSendSeraphOutcome(
-        ICommandSender sender,
-        BlacklistAddRequest addRequest,
-        SeraphApi.BlacklistSubmissionResult submissionResult,
-        String submissionError
-    ) {
-        if (addRequest == null || !addRequest.shouldSubmitToSeraph()) {
-            return;
-        }
-
-        if (submissionError != null && !submissionError.trim().isEmpty()) {
-            ChatUtils.sendMultilineCommandMessage(
-                sender,
-                "§7Seraph: §c" + submissionError
-            );
-            return;
-        }
-
-        if (submissionResult != null && submissionResult.isSuccess()) {
-            ChatUtils.sendMultilineCommandMessage(
-                sender,
-                "§7Seraph: §aSubmitted report as §f" +
-                    addRequest.getSeraphReportType().getDisplayLabel() +
-                    "§a."
-            );
-            return;
-        }
-
-        ChatUtils.sendMultilineCommandMessage(
-            sender,
-            "§7Seraph: §cReport was requested but no response was recorded."
-        );
-    }
-
-    private String formatSeraphFailure(
-        SeraphApi.BlacklistSubmissionResult submissionResult
-    ) {
-        if (submissionResult == null) {
-            return "Seraph report failed.";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("Seraph report failed with HTTP ");
-        builder.append(submissionResult.getStatusCode());
-
-        String detail = sanitizeFailureDetail(submissionResult.getResponseBody());
-        if (!detail.isEmpty()) {
-            builder.append(": ");
-            builder.append(detail);
-        }
-
-        return builder.toString();
-    }
-
-    private String sanitizeFailureDetail(String detail) {
-        if (detail == null) {
-            return "";
-        }
-
-        String sanitized = detail
-            .replace('\n', ' ')
-            .replace('\r', ' ')
-            .trim();
-        if (sanitized.isEmpty()) {
-            return "";
-        }
-
-        if (sanitized.length() > 140) {
-            sanitized = sanitized.substring(0, 137) + "...";
-        }
-        return sanitized;
-    }
-
-    private String normalizeApiKey(String apiKey) {
-        return apiKey == null ? "" : apiKey.trim();
-    }
 }

@@ -64,7 +64,6 @@ public class DebugStateCommand extends CommandBase {
 
     private void sendState(ICommandSender sender) {
         HypixelFeatures features = HypixelFeatures.getInstance();
-        features.onClientTick();
 
         GameSnapshot snapshot = features.getGameSnapshot();
         PartyState party = features.getPartyState();
@@ -103,16 +102,16 @@ public class DebugStateCommand extends CommandBase {
         );
         ChatUtils.sendMultilineCommandMessage(
             sender,
-            "§7Pregame reason: §f" + snapshot.getPregameReason()
+            "§7Phase: §f" + snapshot.getPhase()
         );
         ChatUtils.sendMultilineCommandMessage(
             sender,
             "§7Bedwars session: §f" + features.isInBedwarsSession() +
-            " §7| Bedwars match: §f" + features.isInBedwars()
+            " §7| Bedwars match: §f" + features.isInBedwarsMatch()
         );
         ChatUtils.sendMultilineCommandMessage(
             sender,
-            "§7State version: §f" + snapshot.getStateVersion()
+            "§7Session: §f" + snapshot.getSessionId() + " §7| State version: §f" + snapshot.getStateVersion()
         );
         ChatUtils.sendMultilineCommandMessage(
             sender,
@@ -164,7 +163,6 @@ public class DebugStateCommand extends CommandBase {
 
     private void sendPregame(ICommandSender sender) {
         HypixelFeatures features = HypixelFeatures.getInstance();
-        features.onClientTick();
 
         GameSnapshot snapshot = features.getGameSnapshot();
         List<String> lines = snapshot.getScoreboardLines();
@@ -207,7 +205,7 @@ public class DebugStateCommand extends CommandBase {
         );
         ChatUtils.sendMultilineCommandMessage(
             sender,
-            "§7Pregame reason: §f" + snapshot.getPregameReason()
+            "§7Phase: §f" + snapshot.getPhase()
         );
 
         if (playerLines.isEmpty()) {

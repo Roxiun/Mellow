@@ -1,6 +1,10 @@
 package com.roxiun.mellow.util.hitbox;
 
-import cc.polyfrost.oneconfig.config.core.OneColor;
+//? if ornithe {
+import com.roxiun.mellow.util.RgbaColor;
+//?} else {
+/*import cc.polyfrost.oneconfig.config.core.OneColor;
+*///?}
 import com.roxiun.mellow.config.MellowOneConfig;
 import com.roxiun.mellow.util.MinecraftColor;
 import java.awt.Color;
@@ -15,7 +19,11 @@ public final class TeamHitboxColorResolver {
 
     private TeamHitboxColorResolver() {}
 
-    public static OneColor resolveTeamHitboxColor(
+    //? if ornithe {
+    public static RgbaColor resolveTeamHitboxColor(
+    //?} else {
+    /*public static OneColor resolveTeamHitboxColor(
+    *///?}
         Entity entity,
         MellowOneConfig config,
         int alpha
@@ -47,7 +55,11 @@ public final class TeamHitboxColorResolver {
             config
         );
 
-        return new OneColor(rgb[0], rgb[1], rgb[2], clamp(alpha, 0, 255));
+        //? if ornithe {
+        return new RgbaColor(rgb[0], rgb[1], rgb[2], clamp(alpha, 0, 255));
+        //?} else {
+        /*return new OneColor(rgb[0], rgb[1], rgb[2], clamp(alpha, 0, 255));
+        *///?}
     }
 
     private static int[] applyHsvAdjustments(

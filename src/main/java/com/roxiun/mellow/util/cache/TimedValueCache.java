@@ -41,6 +41,11 @@ public class TimedValueCache<K, V> {
         if (key == null) {
             return;
         }
+        if (entries.size() >= 4096) {
+            entries.entrySet().removeIf(entry -> entry.getValue().isExpired(ttlMs));
+            java.util.Iterator<K> keys = entries.keySet().iterator();
+            if (entries.size() >= 4096 && keys.hasNext()) entries.remove(keys.next());
+        }
         entries.put(key, new CacheEntry<>(value));
     }
 

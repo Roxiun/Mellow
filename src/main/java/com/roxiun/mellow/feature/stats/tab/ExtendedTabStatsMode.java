@@ -2,7 +2,7 @@ package com.roxiun.mellow.feature.stats.tab;
 
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.api.hypixel.HypixelFeatures;
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.StatScope;
 import com.roxiun.mellow.feature.stats.StatScopeResolver;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import net.minecraft.client.Minecraft;

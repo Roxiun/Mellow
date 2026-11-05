@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "player": {
+    "displayname": "Player",
+    "stats": {
+      "TNTGames": {
+        "deaths_bowspleef": 15,
+        "deaths_tntag": 35,
+        "wins_tntag": 1
+      },
+      "MurderMystery": {
+        "wins": 113,
+        "games": 267,
+        "games_MURDER_CLASSIC": 121,
+        "wins_MURDER_CLASSIC": 78,
+        "kills_as_infected_MURDER_INFECTION": 10,
+        "games_MURDER_INFECTION": 14,
+        "kills_as_infected": 10,
+        "kills_as_survivor_MURDER_INFECTION": 7,
+        "kills_as_survivor": 7,
+        "kills": 94,
+        "games_MURDER_ASSASSINS": 4,
+        "kills_MURDER_ASSASSINS": 4,
+        "kills_MURDER_CLASSIC": 42,
+        "wins_MURDER_ASSASSINS": 2,
+        "wins_MURDER_INFECTION": 4,
+        "games_MURDER_DOUBLE_UP": 127,
+        "wins_MURDER_DOUBLE_UP": 29,
+        "kills_MURDER_DOUBLE_UP": 47
+      }
+    }
+  }
+}

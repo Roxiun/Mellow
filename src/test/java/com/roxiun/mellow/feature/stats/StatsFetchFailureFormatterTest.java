@@ -1,6 +1,6 @@
 package com.roxiun.mellow.feature.stats;
 
-import com.roxiun.mellow.api.provider.model.FetchFailureReason;
+import com.roxiun.mellow.api.model.FetchFailureReason;
 import com.roxiun.mellow.cache.ProfileFetchResult;
 import org.junit.Assert;
 import org.junit.Test;

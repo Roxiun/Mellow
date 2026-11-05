@@ -26,7 +26,7 @@ public class PartyState {
     public PartyState(boolean inParty, UUID leader, Map<UUID, PartyRole> members) {
         this.inParty = inParty;
         this.leader = leader;
-        this.members = Collections.unmodifiableMap(members);
+        this.members = Collections.unmodifiableMap(new java.util.HashMap<>(members));
     }
 
     public static PartyState empty() {

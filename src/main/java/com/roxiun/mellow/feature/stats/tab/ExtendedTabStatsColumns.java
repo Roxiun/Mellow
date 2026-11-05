@@ -1,9 +1,11 @@
 package com.roxiun.mellow.feature.stats.tab;
 
-import com.roxiun.mellow.api.provider.model.StatScope;
+import com.roxiun.mellow.stats.*;
 import com.roxiun.mellow.config.MellowOneConfig;
+//? if ornithe {
+import com.roxiun.mellow.config.StatOrder;
+//?}
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public final class ExtendedTabStatsColumns {
@@ -21,30 +23,14 @@ public final class ExtendedTabStatsColumns {
     public static final int TNT_RUN_HP_INDEX = 5;
     public static final int BEDWARS_TAGS_COLUMN = 12;
     public static final int BEDWARS_PING_COLUMN = 13;
-    public static final int BEDWARS_CLIENT_COLUMN = 14;
     public static final int SKYWARS_TAGS_COLUMN = 9;
     public static final int SKYWARS_PING_COLUMN = 10;
-    public static final int SKYWARS_CLIENT_COLUMN = 11;
     public static final int DUELS_TAGS_COLUMN = 12;
     public static final int DUELS_PING_COLUMN = 13;
-    public static final int DUELS_CLIENT_COLUMN = 14;
     public static final int BUILD_BATTLE_TAGS_COLUMN = 6;
     public static final int BUILD_BATTLE_PING_COLUMN = 7;
-    public static final int BUILD_BATTLE_CLIENT_COLUMN = 8;
     public static final int TNT_RUN_TAGS_COLUMN = 6;
     public static final int TNT_RUN_PING_COLUMN = 7;
-    public static final int TNT_RUN_CLIENT_COLUMN = 8;
-
-    private static final int[] BUILD_BATTLE_DEFAULT_COLUMNS = new int[] {
-        0, 1, 2, 3, BUILD_BATTLE_NONE_INDEX, BUILD_BATTLE_NONE_INDEX,
-        BUILD_BATTLE_NONE_INDEX, BUILD_BATTLE_NONE_INDEX, BUILD_BATTLE_NONE_INDEX,
-        BUILD_BATTLE_NONE_INDEX,
-    };
-
-    private static final int[] TNT_RUN_DEFAULT_COLUMNS = new int[] {
-        0, 2, 1, 3, TNT_RUN_NONE_INDEX, TNT_RUN_NONE_INDEX, TNT_RUN_NONE_INDEX,
-        TNT_RUN_NONE_INDEX, TNT_RUN_NONE_INDEX, TNT_RUN_NONE_INDEX,
-    };
 
     private ExtendedTabStatsColumns() {}
 
@@ -52,19 +38,67 @@ public final class ExtendedTabStatsColumns {
         StatScope scope,
         MellowOneConfig config
     ) {
+        GameDefinition<?> game = GameRegistry.find(scope);
+        if (game == null) return new int[0];
+        if (config == null) return scope == StatScope.BUILD_BATTLE || scope == StatScope.TNT_RUN
+            || scope == StatScope.TNT_TAG || scope == StatScope.BOW_SPLEEF || scope == StatScope.MURDER_MYSTERY
+            ? game.defaultColumns() : new int[0];
+
         if (scope == StatScope.BUILD_BATTLE) {
-            return BUILD_BATTLE_DEFAULT_COLUMNS.clone();
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return TNT_RUN_DEFAULT_COLUMNS.clone();
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.BUILD_BATTLE, config.buildBattleStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.buildBattleCustomStat1, config.buildBattleCustomStat2, config.buildBattleCustomStat3, config.buildBattleCustomStat4, config.buildBattleCustomStat5, config.buildBattleCustomStat6, config.buildBattleCustomStat7, config.buildBattleCustomStat8, config.buildBattleCustomStat9, config.buildBattleCustomStat10
+            };
+            *///?}
         }
 
-        if (config == null) {
-            return new int[0];
+        if (scope == StatScope.TNT_TAG) {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.TNT_TAG, config.tntTagStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.tntTagCustomStat1, config.tntTagCustomStat2, config.tntTagCustomStat3, config.tntTagCustomStat4, config.tntTagCustomStat5, config.tntTagCustomStat6, config.tntTagCustomStat7, config.tntTagCustomStat8, config.tntTagCustomStat9, config.tntTagCustomStat10
+            };
+            *///?}
+        }
+
+        if (scope == StatScope.BOW_SPLEEF) {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.BOW_SPLEEF, config.bowSpleefStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.bowSpleefCustomStat1, config.bowSpleefCustomStat2, config.bowSpleefCustomStat3, config.bowSpleefCustomStat4, config.bowSpleefCustomStat5, config.bowSpleefCustomStat6, config.bowSpleefCustomStat7, config.bowSpleefCustomStat8, config.bowSpleefCustomStat9, config.bowSpleefCustomStat10
+            };
+            *///?}
+        }
+
+        if (scope == StatScope.MURDER_MYSTERY) {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.MURDER_MYSTERY, config.murderMysteryStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.murderMysteryCustomStat1, config.murderMysteryCustomStat2, config.murderMysteryCustomStat3, config.murderMysteryCustomStat4, config.murderMysteryCustomStat5, config.murderMysteryCustomStat6, config.murderMysteryCustomStat7, config.murderMysteryCustomStat8, config.murderMysteryCustomStat9, config.murderMysteryCustomStat10
+            };
+            *///?}
+        }
+
+        if (scope == StatScope.TNT_RUN) {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.TNT_RUN, config.tntRunStatOrder);
+            //?} else {
+            /*return new int[] {
+                config.tntRunCustomStat1, config.tntRunCustomStat2, config.tntRunCustomStat3, config.tntRunCustomStat4, config.tntRunCustomStat5, config.tntRunCustomStat6, config.tntRunCustomStat7, config.tntRunCustomStat8, config.tntRunCustomStat9, config.tntRunCustomStat10
+            };
+            *///?}
         }
 
         if (scope == StatScope.SKYWARS) {
-            return new int[] {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.SKYWARS, config.skywarsStatOrder);
+            //?} else {
+            /*return new int[] {
                 config.skywarsCustomStat1,
                 config.skywarsCustomStat2,
                 config.skywarsCustomStat3,
@@ -76,10 +110,14 @@ public final class ExtendedTabStatsColumns {
                 config.skywarsCustomStat9,
                 config.skywarsCustomStat10,
             };
+            *///?}
         }
 
         if (scope == StatScope.DUELS) {
-            return new int[] {
+            //? if ornithe {
+            return StatOrder.toColumns(StatOrder.DUELS, config.duelsStatOrder);
+            //?} else {
+            /*return new int[] {
                 config.duelsCustomStat1,
                 config.duelsCustomStat2,
                 config.duelsCustomStat3,
@@ -91,8 +129,13 @@ public final class ExtendedTabStatsColumns {
                 config.duelsCustomStat9,
                 config.duelsCustomStat10,
             };
+            *///?}
         }
-
+        if (scope != StatScope.BEDWARS) return game.defaultColumns();
+        //? if ornithe {
+        return StatOrder.toColumns(StatOrder.BEDWARS, config.bedwarsStatOrder);
+        //?} else {
+        /*
         return new int[] {
             config.customStat1,
             config.customStat2,
@@ -105,410 +148,46 @@ public final class ExtendedTabStatsColumns {
             config.customStat9,
             config.customStat10,
         };
+        *///?}
     }
 
-    public static List<Integer> getConfiguredColumns(
-        StatScope scope,
-        MellowOneConfig config
-    ) {
-        int[] configured = getConfiguredStatsForScope(scope, config);
-        if (configured.length == 0) {
-            return Collections.emptyList();
+    public static List<Integer> getConfiguredColumns(StatScope scope, MellowOneConfig config) {
+        List<Integer> result = new ArrayList<>();
+        for (int column : getConfiguredStatsForScope(scope, config)) {
+            if (isSupportedColumn(scope, column)) result.add(column);
         }
-
-        int noneIndex = getNoneIndex(scope);
-        List<Integer> columns = new ArrayList<>(configured.length);
-        for (int configuredIndex : configured) {
-            if (configuredIndex == noneIndex) {
-                continue;
-            }
-            if (!isSupportedColumn(scope, configuredIndex)) {
-                continue;
-            }
-            columns.add(configuredIndex);
-        }
-
-        return columns;
+        return result;
     }
-
-    public static int getNoneIndex(StatScope scope) {
-        if (scope == StatScope.SKYWARS) {
-            return SKYWARS_NONE_INDEX;
-        }
-        if (scope == StatScope.DUELS) {
-            return DUELS_NONE_INDEX;
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return BUILD_BATTLE_NONE_INDEX;
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return TNT_RUN_NONE_INDEX;
-        }
-        return BEDWARS_NONE_INDEX;
+    public static StatDefinition definition(StatScope scope, int column) {
+        GameDefinition<?> game = GameRegistry.find(scope);
+        return game == null ? null : game.column(column);
     }
-
-    public static int getTagsColumnIndex(StatScope scope) {
-        if (scope == StatScope.SKYWARS) {
-            return SKYWARS_TAGS_COLUMN;
-        }
-        if (scope == StatScope.DUELS) {
-            return DUELS_TAGS_COLUMN;
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return BUILD_BATTLE_TAGS_COLUMN;
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return TNT_RUN_TAGS_COLUMN;
-        }
-        return BEDWARS_TAGS_COLUMN;
+    private static int index(StatScope scope, String id) {
+        GameDefinition<?> game = GameRegistry.find(scope);
+        return game == null ? -1 : game.columnIndex(id);
     }
-
-    public static int getPingColumnIndex(StatScope scope) {
-        if (scope == StatScope.SKYWARS) {
-            return SKYWARS_PING_COLUMN;
-        }
-        if (scope == StatScope.DUELS) {
-            return DUELS_PING_COLUMN;
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return BUILD_BATTLE_PING_COLUMN;
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return TNT_RUN_PING_COLUMN;
-        }
-        return BEDWARS_PING_COLUMN;
+    public static int getNoneIndex(StatScope scope) { return index(scope, "none"); }
+    public static int getTagsColumnIndex(StatScope scope) { return index(scope, "tags"); }
+    public static int getPingColumnIndex(StatScope scope) { return index(scope, "ping"); }
+    public static boolean isTagsColumn(StatScope scope, int column) { return hasStyle(scope, column, StatDefinition.Style.TAGS); }
+    public static boolean isPingColumn(StatScope scope, int column) { return hasStyle(scope, column, StatDefinition.Style.PING); }
+    public static boolean isHealthColumn(StatScope scope, int column) { return hasStyle(scope, column, StatDefinition.Style.HEALTH); }
+    private static boolean hasStyle(StatScope scope, int column, StatDefinition.Style style) {
+        StatDefinition stat = definition(scope, column);
+        return stat != null && stat.style() == style;
     }
-
-    public static int getClientColumnIndex(StatScope scope) {
-        if (scope == StatScope.SKYWARS) {
-            return SKYWARS_CLIENT_COLUMN;
-        }
-        if (scope == StatScope.DUELS) {
-            return DUELS_CLIENT_COLUMN;
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return BUILD_BATTLE_CLIENT_COLUMN;
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return TNT_RUN_CLIENT_COLUMN;
-        }
-        return BEDWARS_CLIENT_COLUMN;
+    public static boolean isSupportedColumn(StatScope scope, int column) {
+        StatDefinition stat = definition(scope, column);
+        return stat != null && stat.style() != StatDefinition.Style.NONE;
     }
-
-    public static boolean isTagsColumn(StatScope scope, int statIndex) {
-        return statIndex == getTagsColumnIndex(scope);
+    public static String getHeaderLabel(StatScope scope, int column) {
+        StatDefinition stat = definition(scope, column);
+        return stat == null ? "" : stat.label();
     }
-
-    public static boolean isPingColumn(StatScope scope, int statIndex) {
-        return statIndex == getPingColumnIndex(scope);
+    public static int getMinimumColumnWidth(StatScope scope, int column) {
+        StatDefinition stat = definition(scope, column);
+        return stat == null ? 36 : stat.width();
     }
-
-    public static boolean isClientColumn(StatScope scope, int statIndex) {
-        return statIndex == getClientColumnIndex(scope);
-    }
-
-    public static boolean isSupportedColumn(StatScope scope, int statIndex) {
-        if (
-            isTagsColumn(scope, statIndex) ||
-            isPingColumn(scope, statIndex) ||
-            isClientColumn(scope, statIndex)
-        ) {
-            return true;
-        }
-        if (scope == StatScope.SKYWARS) {
-            return (
-                (statIndex >= 0 && statIndex < SKYWARS_NONE_INDEX) ||
-                statIndex == SKYWARS_HP_INDEX
-            );
-        }
-        if (scope == StatScope.DUELS) {
-            return (
-                (statIndex >= 0 && statIndex < DUELS_NONE_INDEX) ||
-                statIndex == DUELS_HP_INDEX
-            );
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return (
-                (statIndex >= 0 && statIndex < BUILD_BATTLE_NONE_INDEX) ||
-                statIndex == BUILD_BATTLE_HP_INDEX
-            );
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return (
-                (statIndex >= 0 && statIndex < TNT_RUN_NONE_INDEX) ||
-                statIndex == TNT_RUN_HP_INDEX
-            );
-        }
-        return (
-            (statIndex >= 0 && statIndex < BEDWARS_NONE_INDEX) ||
-            statIndex == BEDWARS_HP_INDEX
-        );
-    }
-
-    public static boolean isHealthColumn(StatScope scope, int statIndex) {
-        if (scope == StatScope.SKYWARS) {
-            return statIndex == SKYWARS_HP_INDEX;
-        }
-        if (scope == StatScope.DUELS) {
-            return statIndex == DUELS_HP_INDEX;
-        }
-        if (scope == StatScope.BUILD_BATTLE) {
-            return statIndex == BUILD_BATTLE_HP_INDEX;
-        }
-        if (scope == StatScope.TNT_RUN) {
-            return statIndex == TNT_RUN_HP_INDEX;
-        }
-        return statIndex == BEDWARS_HP_INDEX;
-    }
-
-    public static String getHeaderLabel(StatScope scope, int statIndex) {
-        if (isTagsColumn(scope, statIndex)) {
-            return "TAGS";
-        }
-        if (isPingColumn(scope, statIndex)) {
-            return "PING";
-        }
-        if (isClientColumn(scope, statIndex)) {
-            return "CLIENT";
-        }
-        if (scope == StatScope.SKYWARS) {
-            switch (statIndex) {
-                case 0:
-                    return "TEAM";
-                case 1:
-                    return "LEVEL";
-                case 2:
-                    return "NAME";
-                case 3:
-                    return "KDR";
-                case 4:
-                    return "WLR";
-                case 5:
-                    return "WINS";
-                case 6:
-                    return "KILLS";
-                case SKYWARS_HP_INDEX:
-                    return "HP";
-                default:
-                    return "";
-            }
-        }
-
-        if (scope == StatScope.DUELS) {
-            switch (statIndex) {
-                case 0:
-                    return "TEAM";
-                case 1:
-                    return "DIV";
-                case 2:
-                    return "NAME";
-                case 3:
-                    return "KDR";
-                case 4:
-                    return "WLR";
-                case 5:
-                    return "WINS";
-                case 6:
-                    return "LOSSES";
-                case 7:
-                    return "KILLS";
-                case 8:
-                    return "DEATHS";
-                case 9:
-                    return "WS";
-                case DUELS_HP_INDEX:
-                    return "HP";
-                default:
-                    return "";
-            }
-        }
-
-        if (scope == StatScope.BUILD_BATTLE) {
-            switch (statIndex) {
-                case 0:
-                    return "TEAM";
-                case 1:
-                    return "TITLE";
-                case 2:
-                    return "NAME";
-                case 3:
-                    return "WINS";
-                case BUILD_BATTLE_HP_INDEX:
-                    return "HP";
-                default:
-                    return "";
-            }
-        }
-
-        if (scope == StatScope.TNT_RUN) {
-            switch (statIndex) {
-                case 0:
-                    return "TEAM";
-                case 1:
-                    return "WINS";
-                case 2:
-                    return "NAME";
-                case 3:
-                    return "RATIO";
-                case TNT_RUN_HP_INDEX:
-                    return "HP";
-                default:
-                    return "";
-            }
-        }
-
-        switch (statIndex) {
-            case 0:
-                return "TEAM";
-            case 1:
-                return "STARS";
-            case 2:
-                return "NAME";
-            case 3:
-                return "FKDR";
-            case 4:
-                return "WS";
-            case 5:
-                return "WLR";
-            case 6:
-                return "BBLR";
-            case 7:
-                return "WINS";
-            case 8:
-                return "BEDS";
-            case 9:
-                return "FINALS";
-            case BEDWARS_HP_INDEX:
-                return "HP";
-            default:
-                return "";
-        }
-    }
-
-    public static int getMinimumColumnWidth(StatScope scope, int statIndex) {
-        if (isTagsColumn(scope, statIndex)) {
-            return 36;
-        }
-        if (isPingColumn(scope, statIndex)) {
-            return 30;
-        }
-        if (isClientColumn(scope, statIndex)) {
-            return 34;
-        }
-        if (scope == StatScope.SKYWARS) {
-            switch (statIndex) {
-                case 0:
-                    return 28; // TEAM
-                case 1:
-                    return 56; // LEVEL
-                case 2:
-                    return 120; // NAME
-                case 3:
-                    return 40; // KDR
-                case 4:
-                    return 40; // WLR
-                case 5:
-                    return 42; // WINS
-                case 6:
-                    return 42; // KILLS
-                case SKYWARS_HP_INDEX:
-                    return 24; // HP
-                default:
-                    return 36;
-            }
-        }
-
-        if (scope == StatScope.DUELS) {
-            switch (statIndex) {
-                case 0:
-                    return 28; // TEAM
-                case 1:
-                    return 56; // DIVISION
-                case 2:
-                    return 120; // NAME
-                case 3:
-                    return 40; // KDR
-                case 4:
-                    return 40; // WLR
-                case 5:
-                    return 42; // WINS
-                case 6:
-                    return 48; // LOSSES
-                case 7:
-                    return 42; // KILLS
-                case 8:
-                    return 50; // DEATHS
-                case 9:
-                    return 36; // WS
-                case DUELS_HP_INDEX:
-                    return 24; // HP
-                default:
-                    return 36;
-            }
-        }
-
-        if (scope == StatScope.BUILD_BATTLE) {
-            switch (statIndex) {
-                case 0:
-                    return 28; // TEAM
-                case 1:
-                    return 86; // TITLE
-                case 2:
-                    return 120; // NAME
-                case 3:
-                    return 42; // WINS
-                case BUILD_BATTLE_HP_INDEX:
-                    return 24; // HP
-                default:
-                    return 36;
-            }
-        }
-
-        if (scope == StatScope.TNT_RUN) {
-            switch (statIndex) {
-                case 0:
-                    return 28; // TEAM
-                case 1:
-                    return 42; // WINS
-                case 2:
-                    return 120; // NAME
-                case 3:
-                    return 44; // RATIO
-                case TNT_RUN_HP_INDEX:
-                    return 24; // HP
-                default:
-                    return 36;
-            }
-        }
-
-        switch (statIndex) {
-            case 0:
-                return 28; // TEAM
-            case 1:
-                return 56; // STARS
-            case 2:
-                return 120; // NAME
-            case 3:
-                return 40; // FKDR
-            case 4:
-                return 42; // WS
-            case 5:
-                return 40; // WLR
-            case 6:
-                return 44; // BBLR
-            case 7:
-                return 42; // WINS
-            case 8:
-                return 42; // BEDS
-            case 9:
-                return 46; // FINALS
-            case BEDWARS_HP_INDEX:
-                return 24; // HP
-            default:
-                return 36;
-        }
-    }
-
     public static int estimateTotalWidth(StatScope scope, MellowOneConfig config) {
         List<Integer> columns = getConfiguredColumns(scope, config);
         if (columns.isEmpty()) {

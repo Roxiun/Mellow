@@ -1,8 +1,9 @@
 package com.roxiun.mellow.commands;
 
+import com.roxiun.mellow.stats.GameRegistry;
 import com.mojang.authlib.GameProfile;
-import com.roxiun.mellow.api.provider.StatsProvider;
-import com.roxiun.mellow.api.provider.model.ProviderId;
+import com.roxiun.mellow.api.hypixel.provider.StatsProvider;
+import com.roxiun.mellow.api.hypixel.provider.model.ProviderId;
 import com.roxiun.mellow.cache.PlayerCache;
 import com.roxiun.mellow.cache.ProfileFetchResult;
 import com.roxiun.mellow.config.MellowOneConfig;
@@ -74,7 +75,7 @@ public class PVCommand extends CommandBase {
                 ? ProviderId.HYPIXEL_PUBLIC
                 : selectedProvider.getProviderId();
 
-            if (profile == null || profile.getBedwarsPlayer() == null) {
+            if (profile == null || profile.getStats(GameRegistry.BEDWARS) == null) {
                 MainThreadDispatcher.run(() ->
                     ChatUtils.sendCommandMessage(
                         sender,

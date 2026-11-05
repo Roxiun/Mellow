@@ -1,6 +1,10 @@
 package com.roxiun.mellow.anticheat;
 
-import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
+//? if ornithe {
+import org.polyfrost.oneconfig.api.hypixel.v1.HypixelUtils;
+//?} else {
+/*import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils;
+*///?}
 import com.roxiun.mellow.Mellow;
 import com.roxiun.mellow.anticheat.check.Check;
 import com.roxiun.mellow.anticheat.check.impl.AutoBlockCheck;
@@ -23,8 +27,13 @@ import net.minecraft.event.HoverEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.common.MinecraftForge;
+//? if ornithe {
+import org.polyfrost.oneconfig.api.event.v1.EventManager;
+import com.roxiun.mellow.platform.event.TickEvent;
+//?} else {
+/*import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+*///?}
 
 public class AnticheatManager {
 
@@ -43,15 +52,21 @@ public class AnticheatManager {
         playerDataMap.put(player.getUniqueID(), new ACPlayerData(player));
     }
 
-    public void unregisterPlayer(EntityPlayer player) {
-        if (player != null) {
-            playerDataMap.remove(player.getUniqueID());
+    public void prunePlayers(net.minecraft.world.World world) {
+        if (world == null || !Mellow.config.anticheatEnabled) {
+            clearPlayers();
+            return;
         }
+        playerDataMap.values().removeIf(data -> {
+            EntityPlayer player = data.getPlayer();
+            return player.worldObj != world || world.getEntityByID(player.getEntityId()) != player;
+        });
     }
 
     public ACPlayerData getPlayerData(EntityPlayer player) {
         if (player == null) return null;
-        return playerDataMap.get(player.getUniqueID());
+        ACPlayerData data = playerDataMap.get(player.getUniqueID());
+        return data != null && data.getPlayer() == player ? data : null;
     }
 
     public void clearPlayers() {
@@ -59,7 +74,11 @@ public class AnticheatManager {
     }
 
     private void registerEvents() {
-        MinecraftForge.EVENT_BUS.register(new AnticheatListener(this));
+        //? if ornithe {
+        EventManager.INSTANCE.register(new AnticheatListener(this));
+        //?} else {
+        /*MinecraftForge.EVENT_BUS.register(new AnticheatListener(this));
+        *///?}
     }
 
     public void reloadChecks() {
@@ -113,7 +132,11 @@ public class AnticheatManager {
                 );
 
                 // Add WDR button if on Hypixel
-                if (HypixelUtils.INSTANCE.isHypixel()) {
+                //? if ornithe {
+                if (HypixelUtils.isHypixel()) {
+                //?} else {
+                /*if (HypixelUtils.INSTANCE.isHypixel()) {
+                *///?}
                     String plainName = player.getName().replaceAll("§.", "").trim();
                     boolean shouldBlockOnClick =
                         Mellow.nickUtils != null && Mellow.nickUtils.isNicked(plainName);

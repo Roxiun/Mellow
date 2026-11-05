@@ -20,14 +20,17 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                   fetch-depth: 10
 
-            - name: Set up JDK 17
-              uses: actions/setup-java@v2
+            - name: Set up Java 8/25 compilers and JDK 21 Gradle runtime
+              uses: actions/setup-java@v4
               with:
-                  java-version: 17
+                  java-version: |
+                      8
+                      25
+                      21
                   distribution: temurin
 
             - uses: actions/cache@v4
@@ -45,7 +48,7 @@ jobs:
               run: chmod +x ./gradlew
 
             - name: Build
-              run: ./gradlew build --no-daemon
+              run: ./gradlew :1.8.9-forge:build :1.8.9-ornithe:build --no-daemon
 
             - name: Get short SHA
               id: vars

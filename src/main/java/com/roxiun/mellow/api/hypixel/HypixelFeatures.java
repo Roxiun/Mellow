@@ -3,9 +3,7 @@ package com.roxiun.mellow.api.hypixel;
 import com.roxiun.mellow.gamestate.GameSnapshot;
 import com.roxiun.mellow.gamestate.GameStateManager;
 import com.roxiun.mellow.gamestate.PartyState;
-import com.roxiun.mellow.gamestate.query.GameContext;
-import com.roxiun.mellow.module.ModuleManager;
-import com.roxiun.mellow.module.bedwars.BedwarsModule;
+import com.roxiun.mellow.feature.bedwars.BedwarsFeatures;
 import java.util.List;
 import java.util.function.Consumer;
 import net.hypixel.data.type.GameType;
@@ -15,8 +13,7 @@ public class HypixelFeatures {
     private static final HypixelFeatures INSTANCE = new HypixelFeatures();
 
     private final GameStateManager gameStateManager = new GameStateManager();
-    private final ModuleManager moduleManager = new ModuleManager();
-    private final BedwarsModule bedwarsModule = new BedwarsModule();
+    private final BedwarsFeatures bedwarsFeatures = new BedwarsFeatures();
 
     private boolean initialized;
 
@@ -25,7 +22,7 @@ public class HypixelFeatures {
     }
 
     private HypixelFeatures() {
-        moduleManager.registerModule(bedwarsModule);
+
     }
 
     public synchronized void initialize() {
@@ -40,17 +37,20 @@ public class HypixelFeatures {
     public void onClientTick() {
         initialize();
         gameStateManager.onClientTick();
-        moduleManager.tick(gameStateManager.getSnapshot());
+        bedwarsFeatures.onTick(gameStateManager.getSnapshot());
     }
 
     public void onChat(String message) {
-        moduleManager.chat(message, gameStateManager.getSnapshot());
+        gameStateManager.onChat(message);
+        bedwarsFeatures.onChat(message, gameStateManager.getSnapshot());
     }
 
     public void onWorldChange() {
         gameStateManager.onWorldChange();
-        bedwarsModule.reset();
+        bedwarsFeatures.reset();
     }
+
+    public void onDisconnect() { gameStateManager.onDisconnect(); bedwarsFeatures.reset(); }
 
     public GameSnapshot getGameSnapshot() {
         return gameStateManager.getSnapshot();
@@ -60,20 +60,16 @@ public class HypixelFeatures {
         gameStateManager.addListener(listener);
     }
 
-    public GameContext getGameContext() {
-        return gameStateManager;
-    }
-
     public PartyState getPartyState() {
         return gameStateManager.getSnapshot().getPartyState();
     }
 
-    public boolean isInBedwars() {
+    public boolean isInBedwarsMatch() {
         return gameStateManager.getSnapshot().isInBedwarsMatch();
     }
 
     public boolean isInBedwarsSession() {
-        return gameStateManager.getSnapshot().isInBedwars();
+        return gameStateManager.getSnapshot().isInBedwarsSession();
     }
 
     public boolean isInPregameLobby() {
@@ -95,27 +91,27 @@ public class HypixelFeatures {
     }
 
     public String getEmeraldCounterText() {
-        return bedwarsModule.getTimerState().getEmeraldDisplayText();
+        return bedwarsFeatures.getTimerState().getEmeraldDisplayText();
     }
 
     public String getDiamondCounterText() {
-        return bedwarsModule.getTimerState().getDiamondDisplayText();
+        return bedwarsFeatures.getTimerState().getDiamondDisplayText();
     }
 
     public int getEmeraldCounterTime() {
-        return bedwarsModule.getTimerState().getEmeraldNext();
+        return bedwarsFeatures.getTimerState().getEmeraldNext();
     }
 
     public int getEmeraldSpawnCount() {
-        return bedwarsModule.getTimerState().getEmeraldCount();
+        return bedwarsFeatures.getTimerState().getEmeraldCount();
     }
 
     public int getDiamondCounterTime() {
-        return bedwarsModule.getTimerState().getDiamondNext();
+        return bedwarsFeatures.getTimerState().getDiamondNext();
     }
 
     public int getDiamondSpawnCount() {
-        return bedwarsModule.getTimerState().getDiamondCount();
+        return bedwarsFeatures.getTimerState().getDiamondCount();
     }
 
     public List<String> getBedwarsUpgradesDisplayLines(
@@ -130,7 +126,7 @@ public class HypixelFeatures {
         int textBlue,
         int textAlpha
     ) {
-        return bedwarsModule
+        return bedwarsFeatures
             .getUpgradesService()
             .getDisplayLinesWithFormatting(
                 useShortNames,

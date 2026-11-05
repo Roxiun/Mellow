@@ -18,7 +18,7 @@ public class CoralApiTest {
         FakeHttpURLConnection connection = new FakeHttpURLConnection(
             new URL(
                 "https://api.urchin.gg/v3/player/tags?player=" +
-                "00000000-0000-0000-0000-000000000001"
+                "00000000000000000000000000000001"
             ),
             200,
             "{\"uuid\":\"00000000000000000000000000000001\"," +

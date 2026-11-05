@@ -10,6 +10,19 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class AuroraWinstreakServiceTest {
+    @org.junit.Test public void clearPlayerDoesNotInvalidateOtherPlayersAndRejectsStaleWrites() {
+        AuroraWinstreakService service = new AuroraWinstreakService();
+        Object alex = service.getGeneration("alex"), sam = service.getGeneration("sam");
+        service.clearPlayer("alex");
+        org.junit.Assert.assertFalse(service.storeIfCurrent("alex", alex, 10));
+        org.junit.Assert.assertTrue(service.storeIfCurrent("sam", sam, 20));
+        org.junit.Assert.assertEquals(20, service.getCachedWinstreak("sam"));
+        service.pinForMatch("sam", 20);
+        service.clearCache();
+        org.junit.Assert.assertFalse(service.storeIfCurrent("sam", sam, 21));
+        org.junit.Assert.assertFalse(service.hasMatchWinstreak("sam"));
+    }
+
 
     @Test
     public void fetchWinstreakDoesNotSendAnApiKey() throws IOException {

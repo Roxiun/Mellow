@@ -1,5 +1,6 @@
 package com.roxiun.mellow.api.xadia;
 
+import com.roxiun.mellow.api.tags.TagReport;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.roxiun.mellow.support.FakeHttpURLConnection;
@@ -21,7 +22,7 @@ public class XadiaApiTest {
         + "{\"type\":\"possibly_cheating\",\"label\":\"Risky\",\"reason\":null,\"verified\":null}]}]}";
 
     private FakeHttpURLConnection connection(int status, String body) throws Exception {
-        return new FakeHttpURLConnection(new URL("https://xadia.sniped.me/v1/players"), status,
+        return new FakeHttpURLConnection(new URL("https://xadia.club/v1/players"), status,
             body, "{\"error\":\"request rejected\"}");
     }
 
@@ -86,7 +87,7 @@ public class XadiaApiTest {
     }
 
     @Test
-    public void errorsAndMalformedResponsesAreNotCached() throws Exception {
+    public void errorsAreRetriedAfterInvalidationInsteadOfReportedAsEmpty() throws Exception {
         for (int status : new int[] {401, 403, 429, 502, 200}) {
             AtomicInteger calls = new AtomicInteger();
             XadiaApi api = api(connection(status, "{\"results\":[]}"), calls);
@@ -98,6 +99,10 @@ public class XadiaApiTest {
                     if (status != 200) Assert.assertTrue(expected.getMessage().contains(Integer.toString(status)));
                 }
             }
+            Assert.assertEquals(1, calls.get());
+            api.clearCache();
+            try { api.fetchXadiaTags(null, "player", "key", false); Assert.fail(); }
+            catch (IOException expected) {}
             Assert.assertEquals(2, calls.get());
         }
     }
@@ -114,13 +119,31 @@ public class XadiaApiTest {
     }
 
     @Test
+    public void batchKeepsVerificationAndSharesIndividualLookupCache() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        FakeHttpURLConnection connection = connection(200, RESPONSE);
+        XadiaApi api = api(connection, calls);
+        java.util.Map<String, com.roxiun.mellow.api.model.ProviderResult<List<XadiaTag>>> results = api.fetchBatch(
+            new java.util.LinkedHashSet<>(Arrays.asList("player", "omitted")), "key", true);
+        Assert.assertTrue(results.get("player").isSuccess());
+        Assert.assertFalse(results.get("omitted").isSuccess());
+        Assert.assertEquals(Boolean.TRUE, results.get("player").getValue().get(0).getVerified());
+        Assert.assertEquals(3, api.fetchXadiaTags(null, "player", "key", true).size());
+        Assert.assertEquals(1, calls.get());
+        Assert.assertEquals("POST", connection.getRequestMethod());
+        JsonObject body = new JsonParser().parse(connection.getWrittenBody()).getAsJsonObject();
+        Assert.assertTrue(body.get("verified_only").getAsBoolean());
+        Assert.assertEquals(2, body.getAsJsonArray("players").size());
+    }
+
+    @Test
     public void profileAndTabCopiesKeepXadiaTags() {
         XadiaTag tag = new XadiaTag("sniper", "Sniper", null, true);
         PlayerProfile original = PlayerProfile.identity("uuid", "player");
-        PlayerProfile tagged = original.withXadiaTags(Arrays.asList(tag)).withTags(null, null);
-        Assert.assertFalse(original.isXadiaTagged());
-        Assert.assertTrue(tagged.isXadiaTagged());
-        Assert.assertTrue(tagged.getTabStats().isXadiaTagged());
-        Assert.assertSame(tag, tagged.getTabStats().getXadiaTags().get(0));
+        PlayerProfile tagged = original.withTags(TagReport.nativeTags(null, Arrays.asList(tag), java.util.Collections.emptyMap()));
+        Assert.assertFalse(original.getTags().has("Xadia"));
+        Assert.assertTrue(tagged.getTags().has("Xadia"));
+        Assert.assertTrue(tagged.getTabStats().getTags().has("Xadia"));
+        Assert.assertEquals("sniper", tagged.getTabStats().getTags().getTags().get(0).getType());
     }
 }

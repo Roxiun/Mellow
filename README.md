@@ -25,9 +25,10 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 - Supports [Coral API](https://api.urchin.gg/) tags (API key required)
 
-- Seraph integration is deprecated. All Seraph requests (tags, reports, ping, client detection, and UUID fallback) are disabled.
+- Identity lookup uses Mowojang with fallback providers. Retired Seraph tag, reporting, ping, and client-detection integrations have been removed.
 
-- Supports [Xadia API](https://xadia.sniped.me/) tags, including verified and unverified reports
+- Supports [Xadia API](https://xadia.club/) tags, including verified and unverified reports
+- Supports [Watcher](https://docs.watchertag.com/) tags with colored chat details and bracketed tab badges
 
 - Import your own local blacklist
 
@@ -54,16 +55,37 @@ This project is a fork continuation of <a href="https://github.com/xanning/Fonta
 
 ## Download
 
-Download the **Minecraft 1.8.9 Forge** jar from [Modrinth](https://modrinth.com/mod/statsify) and place it in your instance's `mods` folder. This edition targets Java 8 and uses OneConfig; Ornithe jars are for a separate loader.
+Choose the release JAR matching your **Minecraft 1.8.9 loader**:
 
-## Building
+| Target | Client Java | Settings |
+| --- | --- | --- |
+| Forge | Java 8 | OneConfig v0 |
+| Ornithe / OneClient | Java 25 | OneConfig v1 1.6.1+ |
 
-Run Gradle with **JDK 21**; Forge artifacts remain Java 8 compatible.
+Ornithe requires the complete OneConfig release and its dependencies (Compose Multiplatform and Fabric Language Kotlin), plus Pylon 0.1.7+. Optional integrations are PolyHitbox 1.3.1+, PolyNametag 1.2.1+ and VanillaHUD 3.5.3+. Use dependency releases matching your loader.
+
+Forge and Ornithe have independent settings and HUD layouts. Ornithe starts with fresh defaults in `mellow-v1.json`; Forge uses `mellow.json`. Blacklist and replay formats are preserved.
+
+## Building and testing
+
+Install JDK 8, 21 and 25. Run Gradle on **JDK 21**; the targets select their own compiler toolchains. Forge code and shaded dependencies remain Java 8 compatible.
 
 ```sh
 export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS
-./gradlew build
+./gradlew :1.8.9-forge:build :1.8.9-ornithe:build
+./gradlew :1.8.9-ornithe:runClient -PclientTest
+./gradlew :1.8.9-ornithe:runClient -PclientTest -PcompatMods
+./gradlew :1.8.9-forge:runClient -PclientTest
+./gradlew :1.8.9-forge:runClient -PclientTest -PcompatMods
 ```
+
+Release JARs are written to `versions/<target>/build/libs/`. Client smoke tests require a graphical environment and use isolated directories under each target's `build/client-test`. Omit `-PclientTest` for an interactive development client. Ornithe additionally supports `-PoneClientBaseline` and `-PoneClientCurrent` with `-PcompatMods` to check its dependency combinations. Forge smoke tests on Apple Silicon can use `-Plwjgl2Dir=/absolute/path/to/lwjgl2` for a compatible local LWJGL 2 distribution.
+
+## Source layout
+
+Stonecutter manages both targets with **Ornithe as the active development target**. Shared feature logic lives in `src/main`; small API differences use `//? if forge` / `//? if ornithe` conditions. Loader-specific settings, HUDs, launch support and resources live in `src/forge` and `src/ornithe`. Both loaders are maintained together on the same branch.
+
+Each target has its own build script. Keep MCP development names on both targets; Loom remaps the release JAR for its loader. The Ornithe mapping overlay is checked in at `mappings/mcp-1.8.9.tiny`. `python3 tools/generate_mappings.py` regenerates it and the canonical replay packet table. Stonecutter selects source branches; it does not replace these mappings.
 
 ## Usage
 
@@ -71,7 +93,9 @@ Open OneConfig with **Right Shift**. New configurations use **Bordic** for keyle
 
 Match stats fetch automatically. `/who` is optional; use `/refresh` to re-fetch stats during a supported live match.
 
-Enable Coral or Xadia and add their keys under **API Keys**. Xadia keys come from `/key generate` in its Discord bot; **Verified Tags Only** hides unverified reports. Number denicking requires an Aurora key and its feature toggle.
+Enable Coral, Xadia or Watcher under **Tags & Blacklists** and add their keys under **API Keys**. Watcher is off by default; get its key with `/apikey` in [Watcher’s Discord](https://discord.gg/watchertag). Each provider has its own tab visibility toggle. Xadia keys come from `/key generate` in its Discord bot; **Verified Tags Only** hides unverified reports. Number denicking requires an Aurora key and its feature toggle.
+
+Under **Tab Stats**, Ornithe uses draggable entries that you can uncheck to hide. Forge uses stat-slot dropdowns. Configure HUDs in the OneConfig HUD editor.
 
 ### Commands
 
@@ -85,22 +109,48 @@ Enable Coral or Xadia and add their keys under **API Keys**. Xadia keys come fro
 | `/coral <player>`, `/xadia <player>` | Provider tag lookups |
 | `/blacklist add/remove/list/import` | Manage your local blacklist; `/bl` also works |
 | `/annoylist add/remove/list/import` | Manage your annoy list |
-| `/tagignore add/remove/list/import` | Suppress Coral/Xadia tag alerts for selected players |
+| `/tagignore add/remove/list/import` | Suppress Coral/Xadia/Watcher tag alerts for selected players |
 | `/skindenick <player>` | Skin-based denicking |
 | `/denick <finals/beds> <number>` | Number-based denicking |
 | `/refresh` | Refresh stats in a live match |
 | `/mstatus <player>` | Online status, last login, and Luna lobby data |
 | `/namehistory <player>` | Name history |
 | `/winstreak <player>` | Visible BedWars winstreak, with Aurora fallback if enabled |
+| `/mellowstats <player> [game\|auto] [mode]` | Query any supported game; tab completion lists games and modes |
 | `/clearcache` | Clear cached player data |
 | `/mdebug <all/state/scoreboard/pregame>` | Game-state diagnostics |
 | `/mreplay` | Open the replay browser |
 
-List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. With the Seraph mod installed, use `/mblacklist` or `/bl` instead of `/blacklist`.
+List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. `/bl` and `/mblacklist` are aliases.
 
 Replay subcommands: `list`, `open <id/index>`, `info <id/index>`, `delete <id/index>`, and `tp <player>` (also `spectate`).
 
-Seraph requests are disabled; `/seraph`, `/client`, and legacy Seraph reporting remain deprecated.
+Coral and Xadia use native tag integrations; Watcher uses its documented `/api/v1/cubelify` endpoint. Stats and tags load independently; failed sources are reported separately.
+
+## Data and game-state flow
+
+- `gamestate/GameStateManager` owns connection, party, location, and game phase. `ScoreboardObservation` extracts sidebar facts; Bedwars chat signals provide explicit match-start evidence. A missing sidebar preserves the established phase. A new world/server starts an unknown session; lobby location and disconnect packets reset the relevant state. Session IDs are separate from ordinary snapshot revisions.
+- `feature/stats/InGameTabStatsSyncService` scans the live roster every 1.5 seconds. `StatsChecker` applies local checks immediately, schedules stats and tags independently, and applies results on the client thread only while their session and refresh generation remain current. Party checks use membership UUIDs independently of the match and never fetch stats. Successful remote checks are retained per member for the connection session, including across leaving/rejoining the party; newcomers are still checked. Local lists remain checked locally.
+- `cache/PlayerCache` owns request sharing and freshness. Adapters live in `api/hypixel/provider`; `HypixelPlayerData` handles provider envelopes and identity/rank differences. Raw responses are shared across commands, views, and game scopes. `stats/PlayerStatsService` parses a caller-supplied `StatsSelection`, without consulting live client state.
+- `stats/GameRegistry` lists supported games. Each game owns its parser, typed stats, submodes, tab columns, defaults, and chat output. Tab renderers consume `StatDefinition` metadata. `PlayerProfile` stores typed game results without a field per game. All supported games configure their column layouts inside OneConfig: checkable draggable lists on Ornithe and ordered dropdowns on Forge, using each platform's existing config file. Missing game data does not fall back to Bed Wars.
+- Coral, Xadia and Watcher share JSON HTTP handling through `api/tags/TagHttp` and request caching through `api/tags/TagRequests`. Watcher uses `CubelifyParser`; Xadia keeps its native API to preserve verification and reasons. Their responses become `TagReport` / `PlayerTag` values used by alerts and overlays. A report preserves failures separately from empty successful results. `TagPolicy` centralizes automatic tag suppression and tab visibility; manual lookups show the fetched report. `CubelifyParser` supplies shared envelope decoding with explicit provider mappings for warning tags, metadata, and HTTP-200 error badges.
+- Roster lookups use Coral/Xadia batches and Bordic bulk stats, in groups of at most 100. Single and batch requests share cache entries. Shared stats and tag responses stay fresh for five minutes. Successful identity lookups are retained for the connection session (bounded to 4,096 entries per cache), and cleared on disconnect or explicit cache clearing; identity failures expire after 30 seconds. Successful roster lookups are retained for the match; expiry does not trigger polling. Watcher has no documented batch endpoint: roster lookups reuse its individual cache, with at most 60 requests per rolling minute per key and a one-minute cooldown on HTTP 429. Cache clears do not reset that quota. Automatic failures receive at most one retry after 30 seconds (60 seconds for Watcher); stats rate limits impose a provider cooldown. Upstream provider caches may contain older data.
+- `/refresh` invalidates current players' stats and tags while retaining good displayed rows until replacements arrive. `/clearcache` invalidates cached and pending results without changing local lists. `RequestCache` bounds retained entries and shares pending work; clearing an entry detaches its old completion. Ping discovery runs from ticks, with rendering limited to cache reads; successful values remain for the match instead of being periodically refreshed.
+
+Supported game IDs include `tnt_tag`, `bow_spleef`, and `murder_mystery`. For example, `/mellowstats Player murder_mystery double_up` selects Double Up; Murder Mystery also supports `overall`, `classic`, `assassins`, and `infection`. Infection kills combine its infected and survivor counters. Bow Spleef's ratio is wins divided by deaths (wins when deaths are zero).
+
+Live provider checks on 2026-10-08 confirmed these three games through Abyss. Bordic responses checked omitted their stats; availability depends on the selected provider. Missing game data is reported as unavailable.
+
+**Smart Rank Styling** in OneConfig's Tab Stats settings decorates names in TNT Run, Bow Spleef, TNT Tag, Sumo 1v1, and Classic 1v1. TNT possession colours, spectators, aliases, and custom labels take precedence. Other modes retain server styling. The existing saved rank-toggle preference is retained; the default is on. Resolved-nickname display continues to follow the existing denicker behaviour.
+
+## Adding game stats
+
+1. Create a package under `stats/` containing the typed player stats, parser, and a `GameDefinition` (plus a mode enum when needed). Parsers receive normalised `HypixelPlayerData`, never a provider ID.
+2. Add a `StatScope` and register the definition in `GameRegistry`. Give each column a stable ID, label, formatting style, and default position. For compatibility with team/name composition, keep Team at index 0 and Name at index 2. The existing games illustrate badge and numeric columns at index 1.
+3. Define game detection and, if applicable, submode detection. Preserve missing data instead of silently substituting another game's or mode's totals.
+4. Add fixtures covering the API fields, calculations, and detection rules that are specific to the game. The shared command and tab renderers pick it up. Add its native OneConfig controls to each platform and connect them in `ExtendedTabStatsColumns`; keep the game's column IDs and defaults stable.
+
+Add submodes inside their game's package. The detailed Bed Wars profile viewer uses the same `BedwarsMode` definitions; its custom visual layout remains unchanged. Provider-specific transport or envelope changes belong under `api/hypixel`, independently of game definitions.
 
 ## Community
 

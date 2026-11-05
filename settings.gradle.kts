@@ -1,31 +1,30 @@
-@file:Suppress("PropertyName")
-
 pluginManagement {
     repositories {
-        gradlePluginPortal()
         mavenCentral()
-        maven("https://repo.polyfrost.org/releases") // Adds the Polyfrost maven repository to get Polyfrost Gradle Toolkit
+        gradlePluginPortal()
+        maven("https://maven.kikugie.dev/releases")
+        maven("https://maven.kikugie.dev/snapshots")
+        maven("https://maven.fabricmc.net/")
+        maven("https://maven.ornithemc.net/releases")
+        maven("https://repo.essential.gg/repository/maven-public")
+        maven("https://maven.architectury.dev/")
+        maven("https://maven.minecraftforge.net/")
     }
-    plugins {
-        val pgtVersion = "0.6.5" // Sets the default versions for Polyfrost Gradle Toolkit
-        id("org.polyfrost.multi-version.root") version pgtVersion
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "gg.essential.loom")
+                useModule("gg.essential:architectury-loom:${requested.version}")
+        }
     }
 }
-
-val mod_name: String by settings
-
-// Configures the root project Gradle name based on the value in `gradle.properties`
-rootProject.name = mod_name
-rootProject.buildFileName = "root.gradle.kts"
-
-// Adds all of our build target versions to the classpath if we need to add version-specific code.
-listOf(
-    "1.8.9-forge", // Update this if you want to remove/add a version, along with `build.gradle.kts` and `root.gradle.kts`.
-    //"1.12.2-forge" // uncomment if you want 1.12.2 support in your mod
-).forEach { version ->
-    include(":$version")
-    project(":$version").apply {
-        projectDir = file("versions/$version")
-        buildFileName = "../../build.gradle.kts"
+plugins {
+    id("dev.kikugie.stonecutter") version "0.9.6"
+}
+rootProject.name = "Mellow"
+stonecutter {
+    create(rootProject) {
+        version("1.8.9-forge", "1.8.9").buildscript("build.forge.gradle.kts")
+        version("1.8.9-ornithe", "1.8.9").buildscript("build.ornithe.gradle.kts")
+        vcsVersion = "1.8.9-ornithe"
     }
 }
