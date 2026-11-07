@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.roxiun.mellow.api.model.ProviderResult;
 import com.roxiun.mellow.api.tags.*;
 import com.roxiun.mellow.util.formatting.FormattingUtils;
+import com.roxiun.mellow.util.UUIDUtils;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -27,7 +28,9 @@ public class WatcherApi {
         boolean useUuid = !id.isEmpty() && !"error".equals(id);
         if (!useUuid) id = normalize(name);
         if (id.isEmpty()) throw new IOException("A player UUID or username is required.");
-        final String identifier = id;
+        // Watcher returns no tags for compact UUIDs; its lookup requires hyphens.
+        final String identifier = useUuid && id.matches("[0-9a-f]{32}")
+            ? UUIDUtils.fromString(id).toString() : id;
         return new ArrayList<>(requests.get(id + "|" + apiKey, () -> {
             reserve(apiKey);
             URL url = new URL("https://api.watchertag.com/api/v1/cubelify?key="

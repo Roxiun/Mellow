@@ -33,7 +33,7 @@ public class WatcherApiTest {
     @Test public void queryAuthenticationNormalizesUuidAndPreservesChatAndTabPresentation() throws Exception {
         Api api = new Api(new AtomicLong());
         List<PlayerTag> tags = api.fetchTags("A3F81C5D-72E6-4B09-B8D1-C4E7F2096A3B", "Player", " key+& ");
-        assertEquals("https://api.watchertag.com/api/v1/cubelify?key=key%2B%26&uuid=a3f81c5d72e64b09b8d1c4e7f2096a3b", api.url.toString());
+        assertEquals("https://api.watchertag.com/api/v1/cubelify?key=key%2B%26&uuid=a3f81c5d-72e6-4b09-b8d1-c4e7f2096a3b", api.url.toString());
         assertEquals("GET", api.connection.getRequestMethod());
         assertNull(api.connection.getRequestProperty("X-API-Key"));
         assertEquals("§8[§4BC§8]§r", tags.get(0).getIcon());
@@ -47,6 +47,19 @@ public class WatcherApiTest {
         assertTrue(report.messages().get(1).startsWith("§b§lWatcher§r§b: §4§lBLATANT"));
         assertEquals(tags.get(0).getIcon(), PlayerProfile.identity("uuid", "Player").withTags(report)
             .getTabStats().getTags().from("Watcher").get(0).getIcon());
+    }
+
+    @Test public void compactRosterUuidsUseHyphensOnTheWireAndShareTheIndividualCache() throws Exception {
+        Api api = new Api(new AtomicLong());
+        String compact = "3e707a3b380f4a798aca3c22818c71cd";
+        String dashed = "3e707a3b-380f-4a79-8aca-3c22818c71cd";
+        assertEquals(2, api.fetchPlayers(Collections.singleton(compact), "key").get(compact).getValue().size());
+        assertTrue(api.url.toString().endsWith("&uuid=" + dashed));
+        assertEquals(2, api.fetchTags(dashed, "TheSilentVoider", "key").size());
+        assertEquals(1, api.calls);
+        api.clearPlayer(dashed, null);
+        api.fetchTags(compact, null, "key");
+        assertEquals(2, api.calls);
     }
 
     @Test public void individualAndRosterLookupsShareCacheAndInvalidation() throws Exception {
