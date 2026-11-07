@@ -52,6 +52,27 @@ public final class ClientSmokeTest implements ClientModInitializer {
             S02PacketChat decoded = (S02PacketChat) ReplayPacketCodec.decode(frame);
             if (!decoded.getChatComponent().getUnformattedText().equals("Mellow replay smoke test"))
                 throw new AssertionError("Replay roundtrip changed message");
+            net.minecraft.network.PacketBuffer payload = new net.minecraft.network.PacketBuffer(io.netty.buffer.Unpooled.buffer());
+            try {
+                payload.writeByte(0);
+                payload.writeString("Replay brand");
+                payload.readByte();
+                int readerIndex = payload.readerIndex();
+                var custom = new net.minecraft.network.play.server.S3FPacketCustomPayload("MC|Brand", payload);
+                ReplayPacketFrame first = ReplayPacketCodec.encode(44, custom);
+                ReplayPacketFrame second = ReplayPacketCodec.encode(44, custom);
+                if (payload.readerIndex() != readerIndex || payload.refCnt() != 1)
+                    throw new AssertionError("Replay capture modified live custom payload");
+                if (!java.util.Arrays.equals(first.getPayload(), second.getPayload()))
+                    throw new AssertionError("Repeated capture lost custom payload bytes");
+                var restored = (net.minecraft.network.play.server.S3FPacketCustomPayload) ReplayPacketCodec.decode(first);
+                try {
+                    if (!restored.getChannelName().equals("MC|Brand")
+                        || !restored.getBufferData().readStringFromBuffer(100).equals("Replay brand")
+                        || !payload.readStringFromBuffer(100).equals("Replay brand"))
+                        throw new AssertionError("Replay capture corrupted custom payload");
+                } finally { restored.getBufferData().release(); }
+            } finally { payload.release(); }
             // Relative moves are nested packet classes and must also roundtrip across mappings.
             for (Class<?> type : S14PacketEntity.class.getDeclaredClasses()) {
                 if (Packet.class.isAssignableFrom(type)) {

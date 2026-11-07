@@ -4,6 +4,7 @@ import io.netty.buffer.Unpooled;
 import java.lang.reflect.Constructor;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.play.server.S3FPacketCustomPayload;
 
 public final class ReplayPacketCodec {
 
@@ -40,7 +41,15 @@ public final class ReplayPacketCodec {
         throws Exception {
         PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
         try {
-            packet.writePacketData(buffer);
+            if (packet instanceof S3FPacketCustomPayload) {
+                S3FPacketCustomPayload custom = (S3FPacketCustomPayload) packet;
+                PacketBuffer data = custom.getBufferData();
+                buffer.writeString(custom.getChannelName());
+                // Vanilla writePacketData consumes the live payload's reader index.
+                buffer.writeBytes(data, data.readerIndex(), data.readableBytes());
+            } else {
+                packet.writePacketData(buffer);
+            }
             byte[] payload = new byte[buffer.readableBytes()];
             buffer.readBytes(payload);
             //? if ornithe {
