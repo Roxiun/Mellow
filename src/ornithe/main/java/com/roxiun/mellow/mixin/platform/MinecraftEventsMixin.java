@@ -1,4 +1,6 @@
 package com.roxiun.mellow.mixin.platform;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.roxiun.mellow.platform.event.*;
 import org.polyfrost.oneconfig.api.event.v1.EventManager;
 import org.spongepowered.asm.mixin.*;
@@ -7,9 +9,10 @@ import org.spongepowered.asm.mixin.injection.callback.*;
 @Mixin(net.minecraft.client.Minecraft.class)
 public abstract class MinecraftEventsMixin {
  @Shadow public net.minecraft.client.multiplayer.WorldClient theWorld;
- @Redirect(method="runTick",at=@At(value="INVOKE",target="Lorg/lwjgl/input/Mouse;next()Z"))
- private boolean mellow$mouse(){
-  while(org.lwjgl.input.Mouse.next()){
+ // Wrapped rather than redirected so it chains with other mods that also hook this Mouse.next() call.
+ @WrapOperation(method="runTick",at=@At(value="INVOKE",target="Lorg/lwjgl/input/Mouse;next()Z"))
+ private boolean mellow$mouse(Operation<Boolean> original){
+  while(original.call()){
    MouseEvent event=new MouseEvent(org.lwjgl.input.Mouse.getEventDWheel(),org.lwjgl.input.Mouse.getEventButton(),org.lwjgl.input.Mouse.getEventButtonState());
    EventManager.INSTANCE.post(event);
    if(!event.isCanceled()) return true;
