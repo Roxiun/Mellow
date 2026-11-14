@@ -50,7 +50,7 @@ public class TabOverlayRouter {
     }
 
     public boolean isPinned() {
-        return pinnedByDoubleTap && isExtendedModeActive();
+        return pinnedByDoubleTap && isExtendedModeActive() && config.extendedTabStatsDoubleTapPin;
     }
 
     //? if ornithe {
@@ -163,6 +163,11 @@ public class TabOverlayRouter {
     }
 
     private void onTabReleased(long now) {
+        if (config == null || !config.extendedTabStatsDoubleTapPin) {
+            clearTapSequence();
+            tabPressStartedAtMs = NO_TIME;
+            return;
+        }
         long holdDurationMs = tabPressStartedAtMs == NO_TIME
             ? Long.MAX_VALUE
             : now - tabPressStartedAtMs;

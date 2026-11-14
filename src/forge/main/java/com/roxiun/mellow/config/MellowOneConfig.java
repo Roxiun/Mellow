@@ -288,6 +288,14 @@ public class MellowOneConfig extends Config {
     )
     public boolean extendedTabStatsView = true;
 
+    @Switch(
+        name = "Double-Tap Tab To Pin",
+        description = "Quickly tapping the tab key twice keeps the tab list open. Turn off if rapid tab tapping feels wrong.",
+        category = "Tab Stats",
+        subcategory = "Extended View"
+    )
+    public boolean extendedTabStatsDoubleTapPin = true;
+
     @Dropdown(
         name = "Style",
         options = {"Extended Tabs", "Extended Tabs Clean"},
@@ -2041,12 +2049,12 @@ public class MellowOneConfig extends Config {
         dependOn("enableReplayRecording", "recordChatInReplays");
         dependOn("printStats", "tags");
         dependOn("tabStats", "showStarsWithBrackets", "showNickWithBrackets", "showRanksInGameTabStats",
-            "extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
+            "extendedTabStatsView", "extendedTabStatsDoubleTapPin", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders", "extendedTabStatsShowHeads",
             "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding", "highlightTaggedPlayers",
             "showDot12", "showDot23", "showDot34",
             "showDot45", "showDot56", "showDot67", "showDot78", "showDot89", "showDot910",
             "showUrchinTagsInTab", "showXadiaTagsInTab", "showWatcherTagsInTab");
-        dependOn("extendedTabStatsView", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
+        dependOn("extendedTabStatsView", "extendedTabStatsDoubleTapPin", "extendedTabStatsStyle", "extendedTabStatsInLobbies", "extendedTabStatsHeaders",
             "extendedTabStatsShowHeads", "extendedTabStatsTeamColumnMode", "extendedTabStatsStripCombinedTeamPadding",
             "highlightTaggedPlayers");
         hideIf("extendedTabStatsStripCombinedTeamPadding",
