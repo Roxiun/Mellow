@@ -111,7 +111,7 @@ Under **Tab Stats**, Ornithe uses draggable entries that you can uncheck to hide
 | `/annoylist add/remove/list/import` | Manage your annoy list |
 | `/tagignore add/remove/list/import` | Suppress Coral/Xadia/Watcher tag alerts for selected players |
 | `/skindenick <player>` | Skin-based denicking |
-| `/denick <finals/beds> <number>` | Number-based denicking |
+| `/denick <finals/beds> <number> [<finals/beds> <number>]` | Number-based denicking |
 | `/refresh` | Refresh stats in a live match |
 | `/mstatus <player>` | Online status, last login, and Luna lobby data |
 | `/namehistory <player>` | Name history |
@@ -120,6 +120,8 @@ Under **Tab Stats**, Ornithe uses draggable entries that you can uncheck to hide
 | `/clearcache` | Clear cached player data |
 | `/mdebug <all/state/scoreboard/pregame>` | Game-state diagnostics |
 | `/mreplay` | Open the replay browser |
+
+`/denick beds 14068 finals 24526` searches for players matching both counters, in either order. It uses the same ranges and candidate limits as automatic counter lookups and shows each counter’s distance. Single-counter searches still work.
 
 List commands take `add <player> [reason]`, `remove <player>`, `list`, or `import <filename>`. Put import files in your instance's `config/mellow` folder. `/bl` and `/mblacklist` are aliases.
 

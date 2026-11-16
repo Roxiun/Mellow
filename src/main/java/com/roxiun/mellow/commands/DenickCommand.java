@@ -8,7 +8,7 @@ import com.roxiun.mellow.core.async.MainThreadDispatcher;
 import com.roxiun.mellow.util.ChatUtils;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
+import com.roxiun.mellow.feature.nicks.DenickQuery;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
@@ -30,98 +30,54 @@ public class DenickCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/denick <finals | beds> <number>";
+        return DenickQuery.USAGE;
     }
 
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
-        if (args.length != 2) {
-            ChatUtils.sendCommandMessage(
-                sender,
-                "§cInvalid usage. Use: " + getCommandUsage(sender)
-            );
-            return;
-        }
-
-        String type = args[0];
-        if (
-            !type.equalsIgnoreCase("finals") && !type.equalsIgnoreCase("beds")
-        ) {
-            ChatUtils.sendCommandMessage(
-                sender,
-                "§cInvalid type. Use 'finals' or 'beds'."
-            );
-            return;
-        }
-
-        String numberStr = args[1];
+        final DenickQuery query;
         try {
-            Integer.parseInt(numberStr.replace(",", ""));
-        } catch (NumberFormatException e) {
-            ChatUtils.sendCommandMessage(
-                sender,
-                "§cInvalid number: " + numberStr
-            );
+            query = DenickQuery.parse(args);
+        } catch (IllegalArgumentException e) {
+            ChatUtils.sendCommandMessage(sender, "§c" + e.getMessage());
             return;
         }
 
+        int finalsRange = DenickSearchOptions.range(config.finalsRange);
+        int bedsRange = DenickSearchOptions.range(config.bedsRange);
+        int max = DenickSearchOptions.limit(config.maxResults);
+        String key = config.auroraApiKey;
         ChatUtils.sendCommandMessage(sender, "§aSearching for players...");
-
         AsyncExecutor.getInstance().command(() -> {
             try {
-                int range = DenickSearchOptions.range(type.equalsIgnoreCase("finals")
-                    ? config.finalsRange : config.bedsRange);
-                int max = DenickSearchOptions.limit(config.maxResults);
-
-                AuroraApi.AuroraResponse response = auroraApi.queryStats(
-                    type,
-                    numberStr,
-                    range,
-                    max,
-                    config.auroraApiKey
-                );
-
+                List<DenickQuery.Match> matches = query.search(auroraApi, finalsRange, bedsRange, max, key);
                 MainThreadDispatcher.run(() -> {
-                    if (response != null && response.success) {
-                        if (response.data.isEmpty()) {
-                            ChatUtils.sendCommandMessage(
-                                sender,
-                                "§cNo players found."
-                            );
-                        } else {
-                            String players = response.data
-                                .stream()
-                                .map(
-                                    p ->
-                                        "§a" +
-                                        p.name +
-                                        " §7(distance: " +
-                                        p.distance +
-                                        ")"
-                                )
-                                .collect(Collectors.joining(", "));
-                            ChatUtils.sendCommandMessage(
-                                sender,
-                                "§aFound players: " + players
-                            );
+                    if (matches.isEmpty()) {
+                        ChatUtils.sendCommandMessage(sender, query.isCombined()
+                            ? "§cNo shared matches in the returned results." : "§cNo players found.");
+                        return;
+                    }
+                    ChatUtils.sendCommandMessage(sender, "§a" + matches.size()
+                        + (query.isCombined() ? " players matched both stats:" : " players found:"));
+                    for (DenickQuery.Match match : matches) {
+                        String distances = match.bedsDistance == null ? "" : "beds: " + distance(match.bedsDistance);
+                        if (match.finalsDistance != null) {
+                            if (!distances.isEmpty()) distances += ", ";
+                            distances += "finals: " + distance(match.finalsDistance);
                         }
-                    } else {
-                        ChatUtils.sendCommandMessage(
-                            sender,
-                            "§cError fetching data from Aurora API."
-                        );
+                        ChatUtils.sendCommandMessage(sender, "§a" + match.name + " §7— " + distances);
                     }
                 });
-            } catch (IOException e) {
-                MainThreadDispatcher.run(() -> {
-                    ChatUtils.sendCommandMessage(
-                        sender,
-                        "§cAn error occurred while fetching data."
-                    );
-                });
+            } catch (IOException | RuntimeException e) {
+                MainThreadDispatcher.run(() -> ChatUtils.sendCommandMessage(sender,
+                    "§cSearch failed while fetching data from Aurora API. Please try again."));
                 e.printStackTrace();
             }
         });
+    }
+
+    private static String distance(int distance) {
+        return distance == 0 ? "exact" : distance + " away";
     }
 
     @Override
@@ -132,6 +88,10 @@ public class DenickCommand extends CommandBase {
     ) {
         if (args.length == 1) {
             return getListOfStringsMatchingLastWord(args, "finals", "beds");
+        }
+        if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("finals")) return getListOfStringsMatchingLastWord(args, "beds");
+            if (args[0].equalsIgnoreCase("beds")) return getListOfStringsMatchingLastWord(args, "finals");
         }
         return null;
     }
